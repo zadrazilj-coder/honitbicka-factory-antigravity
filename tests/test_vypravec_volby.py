@@ -13,6 +13,7 @@ from honbicka.modely import Archetyp, Karta, Koncept, Profil, TypUzlu
 from honbicka.orchestrator import (
     MAX_ITERACI_KARTA,
     _extrahuj_cisla_voleb,
+    _nouzova_karta,
     _ocekavana_cisla_voleb,
     _oprav_volby_deterministicky,
     _prompt_vypravec,
@@ -182,3 +183,49 @@ def test_napis_kartu_neopravitelne_se_zaloguje(valid_mapa, valid_zadani):
                                    measurer=measurer_dle_delky)
     assert karta is not None  # hra se nezastaví
     assert any(e.get("volby_neopravitelne") for e in log)
+
+
+# ------- O6: nouzová karta má platnou navigaci ----------------------------- #
+def test_nouzova_karta_ma_platne_volby_jedna_hrana(valid_mapa):
+    # uzel 8 má jedinou hranu → 10
+    uzel = valid_mapa.uzel(8)
+    karta = _nouzova_karta(uzel, _koncept(), valid_mapa)
+    assert _volby_v_karte_platne(karta, uzel, valid_mapa)
+    assert _extrahuj_cisla_voleb(karta.predni) == {10}
+    assert _extrahuj_cisla_voleb(karta.zadni) == {10}
+
+
+def test_nouzova_karta_ma_platne_volby_vice_hran(valid_mapa):
+    # uzel 7 má dvě hrany → {8, 9}
+    uzel = valid_mapa.uzel(7)
+    karta = _nouzova_karta(uzel, _koncept(), valid_mapa)
+    assert _volby_v_karte_platne(karta, uzel, valid_mapa)
+    assert _extrahuj_cisla_voleb(karta.predni) == {8, 9}
+
+
+def test_nouzova_karta_cilova_karta_bez_voleb(valid_mapa):
+    cil = next(u for u in valid_mapa.uzly if u.typ == TypUzlu.CIL)
+    karta = _nouzova_karta(cil, _koncept(), valid_mapa)
+    assert _volby_v_karte_platne(karta, cil, valid_mapa)  # bez hran = vždy platné
+    assert _extrahuj_cisla_voleb(karta.predni) == set()  # žádné (falešné) →N
+
+
+def test_nouzova_karta_ma_zadni_30_pro_core_rozcestnik(valid_mapa):
+    # uzel 2 → [3, 4]; uděláme 4 jako SIDE, aby uzel 2 potřeboval zadni_30
+    valid_mapa.uzel(4).profil = Profil.SIDE
+    uzel = valid_mapa.uzel(2)
+    karta = _nouzova_karta(uzel, _koncept(), valid_mapa)
+    assert karta.zadni_30 is not None
+    assert _extrahuj_cisla_voleb(karta.zadni_30) == {3}  # jen CORE cíl
+    assert _volby_v_karte_platne(karta, uzel, valid_mapa)
+
+
+def test_napis_kartu_nouzova_karta_po_vycerpani_schema_pokusu(valid_mapa, valid_zadani):
+    # model 3× vrátí nepoužitelný obsah (chybí povinná pole) → nouzová karta
+    # MUSÍ mít platnou navigaci, ne rozbité "Cesta pokračuje dál." bez čísel.
+    klient = FakeKlient(cyklus={"nesmysl": True})
+    uzel = valid_mapa.uzel(8)
+    karta, fits, log = napis_kartu(klient, valid_zadani, _koncept(), valid_mapa, uzel,
+                                   measurer=measurer_dle_delky)
+    assert any(e.get("nouzova_karta") for e in log)
+    assert _volby_v_karte_platne(karta, uzel, valid_mapa)

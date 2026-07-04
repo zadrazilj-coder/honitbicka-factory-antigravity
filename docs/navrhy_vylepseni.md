@@ -118,6 +118,13 @@
 - 🟡 **O6 · Nouzová karta nemá volby.** `_nouzova_karta` negeneruje „→ karta X" —
   vytištěná by rozbila navigaci. Doplnit hrany uzlu jako generické volby
   („A) Pokračuj → karta {cil}").
+  **✅ OPRAVENO 2026-07-04:** `_nouzove_volby()` vygeneruje „A) Pokračuj → N"
+  pro každou hranu uzlu (přímo z grafu, ne z LLM — nikdy neselže O1 kontrolu).
+  `_nouzova_karta` teď bere i `mapa` a doplní `zadni_30` (jen CORE cíle) pro
+  CORE rozcestníky se SIDE sousedem. Cílová karta (bez hran) dostane text
+  „Příběh na této kartě končí." bez falešných šipek. 7 nových testů
+  (1 hrana, více hran, cílová karta, zadni_30, end-to-end přes `napis_kartu`
+  po vyčerpání schema-pokusů), 188/188 (bez slow), ruff čistý.
 - 🟡 **O7 · Kolize slugu.** Slug se odvozuje z tématu; opakovaná hra se stejným
   tématem přepíše `skiny/<slug>/` a registr dostane duplicitní slug. Návrh: při
   existenci adresáře přidat sufix `-{seed}`.
@@ -403,7 +410,10 @@
 2. ✅ SZ1: duplex/kalibrace — asymetrické značky + instrukce obou režimů — ČÁSTEČNĚ OPRAVENO 2026-07-04 (kód hotový; reálný tisk vyžaduje ruční ověření uživatelem)
 3. ✅ SC1+V1+T3: postavy/léčitel/nápověda do scaffolderu + řádek tabulky do škálování — OPRAVENO 2026-07-04 (odhalen vedlejší nález: 180/3600 pre-existující AHA edge-case, netýká se této opravy, viz V1)
 4. ✅ C1+T2: fail-fast bez GTK v CLI — OPRAVENO 2026-07-04
-5. O6: nouzová karta s volbami
+5. ✅ O6: nouzová karta s volbami — OPRAVENO 2026-07-04
+
+**VLNA 1 DOKONČENA 2026-07-04** (body 1–5 výše). 188 testů (bez slow), ruff
+čistý. Commity: viz git log (O1, SZ1, SC1+V1+T3, C1+T2, O6).
 
 **Vlna 2 — kvalita obsahu a rychlost:**
 6. O3: koncept do promptu vypravěče (narativní soudržnost)

@@ -32,6 +32,7 @@ from honbicka.modely import (
     Archetyp,
     FitCheck,
     Hra,
+    Hrana,
     Karta,
     Koncept,
     Mapa,
@@ -480,15 +481,39 @@ def _normalizuj_kartu(data: dict, uzel: Uzel) -> dict:
     return data
 
 
-def _nouzova_karta(uzel: Uzel, koncept: Koncept) -> Karta:
+_PISMENA_VOLEB = "ABCDEFGH"
+
+
+def _nouzove_volby(hrany: list[Hrana]) -> str:
+    """Bezpečné volby „A) Pokračuj → N" z hran uzlu (O6) — bez nich by
+    nouzová karta neměla žádnou platnou navigaci a rozbila by hru."""
+    if not hrany:
+        return "Příběh na této kartě končí."
+    return "  ".join(
+        f"{_PISMENA_VOLEB[i] if i < len(_PISMENA_VOLEB) else i + 1}) Pokračuj → {h.cil}"
+        for i, h in enumerate(hrany)
+    )
+
+
+def _nouzova_karta(uzel: Uzel, koncept: Koncept, mapa: Mapa) -> Karta:
     """Nouzová karta, když model 3× nevrátí validní obsah — hra se dokončí,
-    slabá karta je označena v logu (nikdy neshodí celý balíček, spec §4)."""
-    return Karta(
+    slabá karta je označena v logu (nikdy neshodí celý balíček, spec §4).
+    Volby (O6) se generují přímo z hran grafu, takže vždy odpovídají mapě
+    (na rozdíl od LLM textu je není třeba ověřovat přes _volby_v_karte_platne)."""
+    karta = Karta(
         cislo=uzel.cislo, nazev=uzel.nazev, typ=uzel.typ,
         atmosfera=f"({koncept.tema}) Toto místo skrývá další střípek příběhu; "
                   "rozhlédni se a poskládej, co jsi dosud zjistil.",
-        predni="Zvaž, kudy dál, a vyber cestu.", zadni="Cesta pokračuje dál.",
+        predni=f"Zvaž, kudy dál. {_nouzove_volby(uzel.hrany)}",
+        zadni=f"Cesta pokračuje. {_nouzove_volby(uzel.hrany)}",
     )
+    if _potrebuje_30_variantu(mapa, uzel):
+        hrany_core = [
+            h for h in uzel.hrany
+            if (c := mapa.uzel(h.cil)) is None or c.profil != Profil.SIDE
+        ]
+        karta.zadni_30 = f"Cesta pokračuje. {_nouzove_volby(hrany_core)}"
+    return karta
 
 
 def _orez_atmosfery(karta: Karta, measurer: Measurer) -> list[FitCheck]:
@@ -555,7 +580,7 @@ def napis_kartu(
         )
         zkrat = max(10, round(prekroceni * 100) + 5)
     if karta is None:  # model 3× nevrátil validní obsah → nouzová karta
-        karta = _nouzova_karta(uzel, koncept)
+        karta = _nouzova_karta(uzel, koncept, mapa)
         log.append({"faze": 3, "karta": uzel.cislo, "nouzova_karta": True})
     elif not _volby_v_karte_platne(karta, uzel, mapa):
         # Poslední pokus měl validní obsah, ale volby stále neodpovídají grafu.
