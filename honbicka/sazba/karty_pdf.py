@@ -1,5 +1,5 @@
 """Imposice tiskových karet (spec §6): portrait 148×210, 2 vedle sebe na A4
-na šířku, svislý řez; duplex „otáčet po delší straně" → zadní strany ve STEJNÉM
+na šířku, svislý řez; duplex „otáčet po delší straně“ → zadní strany ve STEJNÉM
 vodorovném pořadí (levá zůstává levá). Kalibrační arch je strana 1–2 každého PDF.
 """
 
@@ -37,23 +37,41 @@ def _arch(levy: str, pravy: str) -> str:
 
 
 def _kalibrace() -> tuple[str, str]:
-    """Přední a zadní kalibrační arch: značka na stejné pozici → při pohledu
-    proti světlu se přední/zadní musí krýt (ověření duplexu, spec §6)."""
+    """Přední a zadní kalibrační arch.
+
+    Značka je záměrně ASYMETRICKÁ a MIMO střed slotu (šipka + popisek u
+    horního levého rohu) — na rozdíl od symetrického čtverce uprostřed
+    spolehlivě odhalí i ZRCADLENÉ otočení, ne jen posun (SZ1). Správný režim
+    duplexu („otáčet po delší“ vs. „po kratší straně“) je driver-specifický
+    a nejde určit dopředu (viz docs/rozhodnuti.md) — kalibrace proto místo
+    předpokladu nabízí obě varianty a grafické ověření."""
     znacka = (
-        "<div style='position:absolute;left:64mm;top:100mm;width:20mm;height:20mm;"
-        "border:0.4mm solid #000'></div>"
+        "<div style='position:absolute;left:15mm;top:15mm'>"
+        "<div style='width:0;height:0;border-top:10mm solid transparent;"
+        "border-bottom:10mm solid transparent;border-left:15mm solid #000'></div>"
+        "<div style='font-size:8pt;font-weight:bold;margin-top:2mm'>SMĚR →<br>HORNÍ ROH</div>"
+        "</div>"
     )
     hl_p = "<div class='hlavicka'>KALIBRACE — PŘEDNÍ</div>"
     hl_z = "<div class='hlavicka'>KALIBRACE — ZADNÍ</div>"
+    instrukce_predni = (
+        "<p>Vytiskni oboustranně (duplex), touto stranou nahoru. Zkus nejprve "
+        "nastavení tiskárny „otáčet/přehnout po DELŠÍ straně“. Po vytištění "
+        "přehni arch proti světlu a porovnej se ZADNÍ stranou.</p>"
+    )
+    instrukce_zadni = (
+        "<p><b>Šipka i popisek „HORNÍ ROH“ se kryjí a míří STEJNĚ</b> (ne "
+        "zrcadlově, ne otočeně) → duplex i řez sedí, tiskni celou sadu.</p>"
+        "<p><b>Nekryjí se nebo šipka míří jinam?</b> Přepni v ovladači tiskárny "
+        "duplex na „otáčet po KRATŠÍ straně“ a vytiskni tuto kalibrační "
+        "stranu znovu, než tiskneš celou sadu karet.</p>"
+    )
     predni = _arch(
-        f"<div class='slot slot-left'>{hl_p}"
-        f"<p>Vytiskni duplex „otáčet po delší straně“. Přehni arch proti světlu — "
-        f"tento rámeček se musí krýt s rámečkem na ZADNÍ straně.</p>{znacka}</div>",
+        f"<div class='slot slot-left'>{hl_p}{instrukce_predni}{znacka}</div>",
         f"<div class='slot slot-right'>{hl_p}{znacka}</div>",
     )
     zadni = _arch(
-        f"<div class='slot slot-left'>{hl_z}"
-        f"<p>Zákryt OK → řez i duplex sedí. Zákryt mimo → uprav tiskárnu.</p>{znacka}</div>",
+        f"<div class='slot slot-left'>{hl_z}{instrukce_zadni}{znacka}</div>",
         f"<div class='slot slot-right'>{hl_z}{znacka}</div>",
     )
     return predni, zadni

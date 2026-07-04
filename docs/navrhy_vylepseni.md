@@ -274,6 +274,20 @@
   otočení o 180° ani zrcadlení spolehlivě), (b) do průvodce dát OBĚ varianty
   („pokud je zadní strana vzhůru nohama, přepni na kratší stranu"), (c) volitelně
   generovat obě zadní imposice. Ověřit prvním reálným tiskem.
+  **✅ ČÁSTEČNĚ OPRAVENO 2026-07-04** (a)+(b) implementovány, (c) vědomě
+  vynechánO — viz níže. `_kalibrace()` (`honbicka/sazba/karty_pdf.py`): symetrický
+  čtverec uprostřed nahrazen CSS trojúhelníkem („SMĚR →" + popisek „HORNÍ ROH")
+  posunutým MIMO střed i osy souměrnosti slotu (15mm/15mm místo ~74mm/105mm) —
+  taková značka spolehlivě odhalí i zrcadlené otočení (symetrický středový čtverec
+  by se pod špatnou transformací mohl náhodně stále překrývat). Kalibrace i
+  průvodce (`pruvodce.py`) teď explicitně nabízí OBĚ varianty („delší" i „kratší
+  strana") s návodem, co dělat, když se značky nekryjí/šipka míří jinam. **(c)
+  vynecháno záměrně:** generování dvou zadních imposic by zdvojnásobilo PDF a
+  zesložitilo tiskový postup; (a)+(b) dávají uživateli dost informace k
+  samodiagnóze bez nutnosti dvou variant souboru. Reálný tisk (fyzická
+  kalibrace) je mimo dosah tohoto prostředí — **vyžaduje ruční ověření
+  uživatelem**. 3 nové testy (pozice mimo střed, asymetrický tvar, obě varianty
+  v textu), 175/175 (bez slow), ruff čistý, reálný PDF render ověřen (6 stran).
 - 🟡 **SZ2 · Měřicí stránka 4000 mm** v `_weasy_measurer` — obsah delší než 4000 mm
   by se stránkoval a výška lhala. U karet nehrozí, ale guard (assert 1 stránka) je
   zadarmo.
@@ -348,7 +362,7 @@
 
 **Vlna 1 — správnost tištěné hry (bez ní nemá smysl tisknout):**
 1. ✅ O1+T1: volby v textu karet ↔ hrany grafu (deterministická kontrola + oprava promptu) — OPRAVENO 2026-07-04
-2. SZ1: duplex/kalibrace — asymetrické značky + instrukce obou režimů
+2. ✅ SZ1: duplex/kalibrace — asymetrické značky + instrukce obou režimů — ČÁSTEČNĚ OPRAVENO 2026-07-04 (kód hotový; reálný tisk vyžaduje ruční ověření uživatelem)
 3. SC1+V1+T3: postavy/léčitel/nápověda do scaffolderu + řádek tabulky do škálování
 4. C1+T2: fail-fast bez GTK v CLI
 5. O6: nouzová karta s volbami

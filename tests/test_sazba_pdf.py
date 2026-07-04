@@ -45,6 +45,25 @@ def test_kalibracni_arch_je_prvni():
     assert html.index("KALIBRACE") < html.index("Karta 1")
 
 
+def test_kalibracni_znacka_je_mimo_stred_a_asymetricka():
+    # SZ1: symetrický čtverec uprostřed neodhalí zrcadlené otočení; značka
+    # musí být mimo osy souměrnosti slotu (148.5×210 mm) a mít asymetrický tvar.
+    html = postav_html_karet(_karty(2), nadpis="Test")
+    assert "left:15mm;top:15mm" in html  # mimo střed (bylo by ~74mm/105mm)
+    # trojúhelník (asymetrický tvar) přes rozdílné CSS border strany
+    assert "border-left:15mm solid #000" in html
+    assert "border-top:10mm solid transparent" in html
+
+
+def test_kalibrace_zminuje_obe_varianty_otoceni():
+    # SZ1: správný duplex režim závisí na ovladači tiskárny — kalibrace musí
+    # nabídnout obě varianty, ne jen předpokládat jednu.
+    html = postav_html_karet(_karty(2), nadpis="Test").lower()
+    assert "delší straně" in html
+    assert "kratší straně" in html
+    assert "směr" in html and "horní roh" in html
+
+
 def test_css_pasti_weasyprint():
     html = postav_html_karet(_karty(2), nadpis="Test")
     assert "margin: 0" in html            # body margin 0

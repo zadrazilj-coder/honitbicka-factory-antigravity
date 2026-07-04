@@ -106,8 +106,12 @@ def postav_html_pruvodce(
     feedback = "<ol>" + "".join(f"<li>{esc(o)}</li>" for o in FEEDBACK_OTAZKY) + "</ol>"
     tisk = (
         "<p>Karty: A4 na šířku, 2 karty A5 na výšku vedle sebe, svislý řez uprostřed. "
-        "Duplex „otáčet po delší straně“. Nejdřív vytiskni KALIBRAČNÍ arch (strana 1–2) "
-        "a ověř zákryt proti světlu. Herní list A5, tento průvodce A4.</p>"
+        "Nejdřív vytiskni jen KALIBRAČNÍ arch (strana 1–2) a ověř proti světlu, že se "
+        "šipka a popisek „HORNÍ ROH“ kryjí a míří stejným směrem na přední i zadní "
+        "straně. Zkus duplex „otáčet po delší straně“ — pokud se značky nekryjí nebo "
+        "je šipka zrcadlově otočená, přepni v ovladači tiskárny na „otáčet po kratší "
+        "straně“ a kalibraci zopakuj. Teprve pak tiskni celou sadu karet. "
+        "Herní list A5, tento průvodce A4.</p>"
     )
     priloha = "".join(
         f"<div><b>#{k.cislo} {esc(k.nazev)}</b><p><i>{esc(k.atmosfera)}</i></p>"
