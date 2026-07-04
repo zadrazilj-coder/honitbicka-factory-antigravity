@@ -87,7 +87,7 @@ def test_vyrob_hru_uspech(tmp_path):
 
     assert hra.report.stav == StavHry.OK
     assert hra.mapa is not None
-    assert len(hra.karty) == 20
+    assert len(hra.karty) == 21  # scaffolder staví 21 uzlů
     assert len(hra.report.editorial_report) == 7
     assert hra.report.simulation_reports  # neprázdné
     # bez GTK se PDF nevyrenderuje → zaznamenáno, ale hra je datově platná
@@ -102,13 +102,28 @@ def test_vyrob_hru_uspech(tmp_path):
 
 
 def test_vyrob_hru_failed_kdyz_mapa_neprojde(tmp_path):
+    # Legacy LLM-architekt cesta: špatná mapa → FÁZE 1 nekonverguje → FAILED.
     bad = build_valid_mapa_60().model_dump(mode="json")
-    bad["pozice_aha_uzel"] = 2  # AHA trvale mimo pásmo → FÁZE 1 selže
+    bad["pozice_aha_uzel"] = 2  # AHA trvale mimo pásmo
+    klient = DispatchKlient(bad)
+    zadani = Zadani(vek=VekPasmo.V09_12, format_hracu="dvojice", tema="Kapka vody")
+    hra = vyrob_hru(zadani, klient, seed=1, measurer=measurer_dle_delky,
+                    skiny_dir=str(tmp_path / "skiny"),
+                    registr_cesta=str(tmp_path / "skiny" / "registr.md"),
+                    zatridit=False, pouzij_scaffolder=False)
+    assert hra.report.stav == StavHry.FAILED
+    assert hra.mapa is None
+    assert (tmp_path / "skiny" / hra.slug / "koncept.md").is_file()
+
+
+def test_vyrob_hru_scaffolder_je_default(tmp_path):
+    # Scaffolder ignoruje (nevalidní) mapu z LLM a přesto vyrobí validní hru.
+    bad = build_valid_mapa_60().model_dump(mode="json")
+    bad["pozice_aha_uzel"] = 2
     klient = DispatchKlient(bad)
     zadani = Zadani(vek=VekPasmo.V09_12, format_hracu="dvojice", tema="Kapka vody")
     hra = vyrob_hru(zadani, klient, seed=1, measurer=measurer_dle_delky,
                     skiny_dir=str(tmp_path / "skiny"),
                     registr_cesta=str(tmp_path / "skiny" / "registr.md"), zatridit=False)
-    assert hra.report.stav == StavHry.FAILED
-    assert hra.mapa is None
-    assert (tmp_path / "skiny" / hra.slug / "koncept.md").is_file()
+    assert hra.report.stav == StavHry.OK  # scaffolder = spolehlivá FÁZE 1
+    assert hra.mapa is not None and len(hra.karty) == 21

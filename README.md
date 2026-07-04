@@ -33,8 +33,8 @@ Pipeline jedné hry (FÁZE 0–5, `honbicka/orchestrator.py`):
 
 ```
 FÁZE 0  registr → okna zákazů → losování (archetyp, práh, pozice AHA)
-FÁZE 1  architekt → koncept + mapa → validace; opravná smyčka
-        (max 4 iterace → relosování seedu, max 2×, pak FAIL)
+FÁZE 1  koncept (LLM) + mapa: deterministický scaffolder staví validní graf
+        (Python vlastní strukturu; LLM architekt je legacy fallback)
 FÁZE 2  simulace (BFS agent) → délka + pozice AHA v čase
 FÁZE 3  vypravěč karta po kartě → A5 fit-check každé karty ihned
 FÁZE 4  redaktor R1–R7 s ověřenými citacemi (grep v kartách)

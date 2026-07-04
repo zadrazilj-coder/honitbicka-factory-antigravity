@@ -229,6 +229,30 @@ rozpojený. Rychlejší (47 s), ale výrazně horší. Závěr: thinking režim 
 je pro strukturální úvahu klíčový; přepnutí modelu problém neřeší →
 **deterministický scaffolder (výše) je jediná robustní cesta.**
 
+## 2026-07-04 · M8 · ŘEŠENÍ: deterministický scaffolder (FÁZE 1 bez LLM)
+Na základě zjištění o nekonvergenci a zamítnuté coder-sondy postaven
+`honbicka/scaffold.py`: `postav_skeleton` deterministicky staví graf, který
+projde `validuj_par_30_60` **z konstrukce** (ověřeno **3600/3600** kombinací
+věk × obtížnost × formát × prostředí × seed). Struktura: pevných 21 uzlů
+(12 CORE trunk = validní 30min hra + 9 SIDE, které se sbíhají do trunku před
+AHA). **AHA uzel se volí adaptivně** — simuluje se pozice AHA (v čase) pro
+každý dominátor trunku a vybere se ten nejblíž STŘEDU pásma pro 30min i 60min
+zároveň. Klíčová rozhodnutí při ladění:
+- AHA uzel = ten centrovaný (ne první „v pásmu" na kraji — kraj + variabilita
+  simulace = občasný fail);
+- scaffolder i finální validace musí použít **stejný počet průchodů** (15 —
+  spec „≥5"; 5 je pro výběr uzlu příliš šumivé);
+- pevných 21 uzlů (žádný proměnný SIDE filler, který rozkolísal 60min AHA);
+- koncept-počty (teorie/stopy/konce) přepisuje Python z `pocty_cile`
+  (LLM je občas netrefí i se structured outputem).
+`vyrob_hru(pouzij_scaffolder=True)` je **default**; LLM architekt zůstává jako
+legacy cesta (`False`). FÁZE 1 je tím **okamžitá, deterministická, bez rizika
+konvergence** — přesně dle spec §3 „LLM tvoří (koncept, texty), Python rozhoduje
+(struktura)". LLM tak dělá jen to, co umí spolehlivě.
+> **Kompromis:** karetní topologie je zatím jeden pevný vzor (variabilita jde
+> z archetypu, pozice AHA, prahu a témat/textů LLM). Více topologických vzorů
+> je kandidát na budoucí iteraci.
+
 ## 2026-07-04 · M8 · Opravná re-generace karet dle redakce — odloženo
 Plná zpětná smyčka FÁZE 4→3 (redaktor označí karty → vypravěč přepíše) není
 implementována; neúspěšné R-checky se zapisují do `report.chyby` a hru

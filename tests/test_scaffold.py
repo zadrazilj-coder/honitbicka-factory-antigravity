@@ -1,0 +1,76 @@
+"""Testy deterministického scaffolderu (FÁZE 1 bez LLM)."""
+
+import pytest
+
+from honbicka.modely import Archetyp, Koncept, Obtiznost, Profil, VekPasmo, Zadani
+from honbicka.orchestrator import losuj_parametry, pocty_cile
+from honbicka.scaffold import POCET_SIMULACI, postav_skeleton
+from honbicka.validatory.agregace import validuj_par_30_60
+from honbicka.validatory.simulace import povinne_uzly
+
+
+def _koncept(zadani, params):
+    c = pocty_cile(zadani)
+    return Koncept(archetyp=params.archetyp, tema="Kapka vody", mechanismus_reseni="m",
+                   falesne_teorie=c["falesne_teorie"], pravdive_stopy=c["pravdive_stopy"],
+                   konce=c["konce"])
+
+
+def _skeleton(vek=VekPasmo.V09_12, fmt="dvojice", obt=Obtiznost.LEHKA, seed=0,
+              prostredi=None):
+    zad = Zadani(vek=vek, format_hracu=fmt, obtiznost=obt, tema="Kapka vody",
+                 prostredi=prostredi or ["les", "potok"])
+    params = losuj_parametry(zad, seed)
+    kon = _koncept(zad, params)
+    return zad, kon, params, postav_skeleton(zad, kon, params)
+
+
+@pytest.mark.parametrize("obt", list(Obtiznost))
+@pytest.mark.parametrize("fmt", ["dvojice", "volny_format", "tymy_4x4", "jednotlivci"])
+def test_skeleton_projde_validaci(obt, fmt):
+    # projít napříč seedy (pokrývá různé archetypy a jejich AHA pásma)
+    for seed in range(14):
+        zad, kon, params, mapa = _skeleton(fmt=fmt, obt=obt, seed=seed)
+        v, _ = validuj_par_30_60(mapa, zad, kon, pocet_simulaci=POCET_SIMULACI)
+        assert v.ok, (fmt, obt.value, seed, params.archetyp.value, v.chyby)
+
+
+def test_pokryva_vsechny_archetypy():
+    videno = set()
+    for seed in range(60):
+        _, _, params, _ = _skeleton(seed=seed)
+        videno.add(params.archetyp)
+    assert videno == set(Archetyp)
+
+
+def test_vekovy_strop_projde():
+    for vek in (VekPasmo.V04_06, VekPasmo.V06_09):
+        zad, kon, _, mapa = _skeleton(vek=vek, seed=3)
+        v, _ = validuj_par_30_60(mapa, zad, kon, pocet_simulaci=POCET_SIMULACI)
+        assert v.ok, v.chyby
+
+
+def test_struktura():
+    _, _, _, mapa = _skeleton()
+    assert len(mapa.uzly) == 21
+    assert len(mapa.core_uzly) == 12
+    # AHA uzel je na povinné trase (dominátor) a nese klíčové svědectví
+    assert mapa.pozice_aha_uzel in povinne_uzly(mapa)
+    klic = [u.cislo for u in mapa.uzly if u.klicove_svedectvi]
+    assert klic == [mapa.pozice_aha_uzel]
+
+
+def test_deterministicky():
+    a = _skeleton(seed=7)[3]
+    b = _skeleton(seed=7)[3]
+    assert a.model_dump() == b.model_dump()
+
+
+def test_komponenty_dle_obtiznosti():
+    # 60min: lehka 2, stredni 3, tezka 4 komponent; CORE vždy 2
+    for obt, ocek in [(Obtiznost.LEHKA, 2), (Obtiznost.STREDNI, 3), (Obtiznost.TEZKA, 4)]:
+        _, _, _, mapa = _skeleton(obt=obt)
+        komp_all = {k for u in mapa.uzly for k in u.komponenty}
+        komp_core = {k for u in mapa.uzly if u.profil == Profil.CORE for k in u.komponenty}
+        assert len(komp_all) == ocek
+        assert len(komp_core) == 2

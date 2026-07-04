@@ -113,13 +113,16 @@ def test_spust_davku_uspech(tmp_path):
 
 
 def test_spust_davku_failed_nezastavi(tmp_path):
-    bad = build_valid_mapa_60().model_dump(mode="json")
-    bad["pozice_aha_uzel"] = 2  # trvale mimo pásmo → každá hra FAILED
-    klient = DispatchKlient(bad)
+    from honbicka.llm import HonbickaLLMError
+
+    class RaisingKlient:
+        def generuj_json(self, role, uzivatel, schema, extra_system=None):
+            raise HonbickaLLMError("model nedostupný")
+
     plan = [BatchPolozka(vek=VekPasmo.V09_12, format_hracu="dvojice", pocet=3)]
-    report = spust_davku(plan, klient, measurer=measurer_dle_delky,
+    report = spust_davku(plan, RaisingKlient(), measurer=measurer_dle_delky,
                          skiny_dir=str(tmp_path / "skiny"),
                          registr_cesta=str(tmp_path / "skiny" / "registr.md"),
                          zatridit=False)
-    assert report.celkem == 3  # dávka doběhla celá
+    assert report.celkem == 3  # dávka doběhla celá i přes chyby
     assert report.failed == 3

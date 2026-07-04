@@ -187,6 +187,11 @@ def faze1a_koncept(klient: OllamaKlient, zadani: Zadani, params: LosovaneParamet
         "Pravda se odvozuje průnikem stop, žádný zdroj ji neprozradí."
     )
     data = klient.generuj_json(Role.ARCHITEKT, prompt, SCHEMA_KONCEPT)
+    # Počty teorií/stop/konců jsou strukturální omezení (§SKÁLOVÁNÍ) → vlastní je
+    # Python, ne LLM: přepiš je na cílové hodnoty (model je občas netrefí).
+    data["falesne_teorie"] = cile["falesne_teorie"]
+    data["pravdive_stopy"] = cile["pravdive_stopy"]
+    data["konce"] = cile["konce"]
     return Koncept.model_validate(data)
 
 
@@ -579,8 +584,13 @@ def vyrob_hru(
     skiny_dir: str = "skiny",
     registr_cesta: str = "skiny/registr.md",
     zatridit: bool = True,
+    pouzij_scaffolder: bool = True,
 ) -> Hra:
     """Provede jednu hru celým stavovým strojem FÁZE 0–5 (spec §4).
+
+    `pouzij_scaffolder=True` (default): FÁZE 1 staví mapu deterministicky
+    (`scaffold.postav_skeleton`) — spolehlivé a okamžité. False = legacy LLM
+    architekt s opravnou smyčkou (nekonverguje spolehlivě, viz docs/rozhodnuti.md).
 
     `measurer` default = reálný WeasyPrint (vyžaduje GTK); testy dodají fake.
     PDF krok bez GTK selže měkce (report.chyby), hra zůstane datově platná.
@@ -603,16 +613,31 @@ def vyrob_hru(
     slug = _slug(koncept.tema)
     hra_dir = os.path.join(skiny_dir, slug)
 
-    # FÁZE 1b — architekt + opravná smyčka
-    f1 = faze1_architekt(klient, zadani, koncept, params, zakazane_archetypy=zakazane)
-    log.extend(f1.log)
-    if not f1.ok or f1.mapa is None:
-        report = Report(slug=slug, seed=seed, archetyp=params.archetyp,
-                        iterace=f1.iterace_celkem, stav=StavHry.FAILED, chyby=f1.chyby)
-        _zapis_skin(hra_dir, _koncept_md(koncept, params), None, [], report, log)
-        return Hra(slug=slug, zadani=zadani, koncept=_koncept_md(koncept, params),
-                   mapa=None, karty=[], report=report)
-    mapa = f1.mapa
+    # FÁZE 1b — mapa: deterministický scaffolder (default) nebo LLM architekt
+    if pouzij_scaffolder:
+        from honbicka.scaffold import POCET_SIMULACI, postav_skeleton
+        mapa = postav_skeleton(zadani, koncept, params)
+        v_mapa, _ = validuj_par_30_60(mapa, zadani, koncept, pocet_simulaci=POCET_SIMULACI)
+        log.append({"faze": 1, "scaffolder": True, "ok": v_mapa.ok, "chyby": v_mapa.chyby,
+                    "aha_uzel": mapa.pozice_aha_uzel})
+        if not v_mapa.ok:  # nemělo by nastat (validní z konstrukce)
+            report = Report(slug=slug, seed=seed, archetyp=params.archetyp, iterace=1,
+                            stav=StavHry.FAILED, chyby=["scaffolder: " + c for c in v_mapa.chyby])
+            _zapis_skin(hra_dir, _koncept_md(koncept, params), None, [], report, log)
+            return Hra(slug=slug, zadani=zadani, koncept=_koncept_md(koncept, params),
+                       mapa=None, karty=[], report=report)
+        iterace_faze1 = 1
+    else:
+        f1 = faze1_architekt(klient, zadani, koncept, params, zakazane_archetypy=zakazane)
+        log.extend(f1.log)
+        if not f1.ok or f1.mapa is None:
+            report = Report(slug=slug, seed=seed, archetyp=params.archetyp,
+                            iterace=f1.iterace_celkem, stav=StavHry.FAILED, chyby=f1.chyby)
+            _zapis_skin(hra_dir, _koncept_md(koncept, params), None, [], report, log)
+            return Hra(slug=slug, zadani=zadani, koncept=_koncept_md(koncept, params),
+                       mapa=None, karty=[], report=report)
+        mapa = f1.mapa
+        iterace_faze1 = f1.iterace_celkem
 
     # FÁZE 3 — vypravěč karta po kartě + A5 fit-check
     karty, fit, log = faze3_vypravec(klient, zadani, koncept, mapa, measurer=measurer, log=log)
@@ -631,7 +656,7 @@ def vyrob_hru(
         chyby.append("redakční posudek našel nedostatky (viz editorial_report)")
 
     report = Report(
-        slug=slug, seed=seed, archetyp=params.archetyp, iterace=f1.iterace_celkem,
+        slug=slug, seed=seed, archetyp=params.archetyp, iterace=iterace_faze1,
         stav=StavHry.OK, editorial_report=editorial, simulation_reports=sim_reports,
         fit_check=fit, chyby=chyby,
         validation_report={"karet": len(karty), "core_karet": len(mapa.core_uzly)},
