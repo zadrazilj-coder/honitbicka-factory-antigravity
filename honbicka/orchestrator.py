@@ -523,12 +523,44 @@ def _karty_blob(karty: list[Karta]) -> str:
     )
 
 
+# Uvozovky (rovné i české), kterými model citaci obaluje.
+_UVOZOVKY = "\"'“”„«»‚‘’"
+_PREFIX_CISLA_KARTY = re.compile(r"^#\d+[^:]{0,60}:\s*")
+_ELIPSA = re.compile(r"\.\.\.|…")
+
+
+def _ocisti_citaci(text: str) -> str:
+    """Model citaci často obalí uvozovkami a/nebo prefixem „#N Název:" — pro
+    ověření proti kartám (`c in blob`) je potřeba čistý úryvek. Přednostně
+    vytáhne nejdelší úsek v uvozovkách (ignoruje okolní text i prefix); jinak
+    jen odsekne prefix „#N …:" na začátku."""
+    t = text.strip()
+    m = re.search(r'["“„]([^"“”„]{3,})["”]', t)
+    if m:
+        return m.group(1).strip()
+    return _PREFIX_CISLA_KARTY.sub("", t).strip(_UVOZOVKY).strip()
+
+
+def _citace_je_dolozena(citace: str, blob: str) -> bool:
+    """Ověří citaci proti kartám. Model smí legitimně spojit dva doslovné
+    úryvky elipsou („…"/"...") — pak se každý fragment ověří zvlášť (musí jich
+    být ≥2 a všechny doslova v kartách); jinak požaduje celý úryvek doslova."""
+    text = _ocisti_citaci(citace)
+    if not text:
+        return False
+    if text in blob:
+        return True
+    fragmenty = [f.strip(" .") for f in _ELIPSA.split(text)]
+    fragmenty = [f for f in fragmenty if len(f) >= 3]
+    return len(fragmenty) >= 2 and all(f in blob for f in fragmenty)
+
+
 def faze4_redaktor(
     klient: OllamaKlient, karty: list[Karta], koncept: Koncept, zadani: Zadani
 ) -> list[RedakceVerdikt]:
     """Projde checky R1–R7. Každý verdikt MUSÍ citovat doslovné úryvky z karet;
-    orchestrátor je ověří (grep) — bez existující citace je verdikt neplatný
-    (spec §3/§12)."""
+    orchestrátor je ověří (grep, po očištění uvozovek/prefixu) — bez existující
+    citace je verdikt neplatný (spec §3/§12)."""
     blob = _karty_blob(karty)
     verdikty: list[RedakceVerdikt] = []
     for kod, popis in REDAKCE_CHECKY.items():
@@ -546,8 +578,9 @@ def faze4_redaktor(
                 zduvodneni=f"[posudek nedostupný: {type(exc).__name__}]"))
             continue
         v.check = kod
-        # Ověření citací: každý úryvek musí být v kartách doslova.
-        if not v.citace_karet or not all(c in blob for c in v.citace_karet):
+        # Ověření citací: každý úryvek musí být v kartách doslova (příp. jako
+        # dva fragmenty spojené elipsou — viz _citace_je_dolozena).
+        if not v.citace_karet or not all(_citace_je_dolozena(c, blob) for c in v.citace_karet):
             v.verdikt = False
             v.zduvodneni = (v.zduvodneni + " [citace neověřena]").strip()
         verdikty.append(v)
