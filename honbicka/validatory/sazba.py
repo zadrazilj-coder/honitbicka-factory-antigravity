@@ -15,7 +15,7 @@ from collections.abc import Callable
 
 from honbicka.modely import FitCheck, Karta
 from honbicka.sazba.karta_html import karta_strana_html
-from honbicka.sazba.render import SazbaNedostupna
+from honbicka.sazba.render import SazbaNedostupna, _zajisti_gtk_dll_cestu
 
 # A5 na výšku, mm (dodatek 3.4-7).
 A5_SIRKA_MM = 148.0
@@ -51,6 +51,7 @@ def limit_mm() -> float:
 
 def _weasy_measurer(html_fragment: str, sirka_mm: float) -> float:
     """Reálný render fragmentu do boxu dané šíře; vrátí výšku obsahu v mm."""
+    _zajisti_gtk_dll_cestu()
     try:
         from weasyprint import CSS, HTML
     except Exception as exc:  # native GTK libs chybí

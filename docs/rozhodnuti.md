@@ -267,3 +267,26 @@ je plně injektovatelný/mockovatelný, aby testy (mimo `@slow`) nikdy
 nepotřebovaly GPU ani běžící Ollamu. **Důvod:** spec §10 vyžaduje golden/e2e
 testy bez živého modelu; jediná síťová závislost za běhu je localhost Ollama
 (spec §12).
+
+## 2026-07-04 · VYŘEŠENO: GTK/WeasyPrint na Windows (dřívější omezení odpadá)
+Dřívější omezení „GTK chybí → PDF se nevyrenderuje" bylo způsobeno **jinou
+příčinou, než se předpokládalo**. Uživatel nainstaloval GTK4 a WeasyPrint
+přesto hlásil `cannot load library 'libgobject-2.0-0'`. Root cause: **Python
+3.8+ na Windows ignoruje proměnnou `PATH` při hledání závislostí DLL**
+(bezpečnostní změna „safe DLL search mode") — knihovny GTK/Pango/cairo
+existovaly (nalezeny v `C:\msys64\ucrt64\bin`), ale `ctypes`/cffi je nenašly,
+dokud nebyl adresář připojen přes `os.add_dll_directory()`.
+
+**Řešení:** `honbicka/sazba/render.py::_zajisti_gtk_dll_cestu()` — hledá GTK
+knihovny (marker `libgobject-2.0-0.dll`) v seznamu známých umístění (MSYS2
+`ucrt64`/`mingw64`, GTK3-Runtime, gvsbuild), nebo v `HONBICKA_GTK_DIR`
+(env var), a připojí nalezený adresář přes `os.add_dll_directory()`. Voláno
+idempotentně před každým importem `weasyprint` (`je_dostupne()`, `zapis_pdf()`,
+`validatory/sazba.py::_weasy_measurer()`). **Ověřeno end-to-end:** reálný A5
+fit-check i reálné PDF (karty 60/30min, herní list, průvodce) vyrenderovány
+z dat živě vygenerované hry „čtyři světla"; počet stran v PDF (24/14/2/9)
+přesně odpovídá `pocet_stran()`. **Důvod:** centralizace v jednom místě
+(`render.py`) místo opakování detekce na obou importních místech; env var
+je únikový poklop pro netypická umístění GTK. Testováno v `tests/
+test_render_gtk.py` s injektovaným seznamem kandidátů (deterministické,
+nezávislé na tom, jestli testovací stroj GTK skutečně má).

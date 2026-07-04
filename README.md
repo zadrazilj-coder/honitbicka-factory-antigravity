@@ -69,8 +69,10 @@ ollama pull qwen3.6:27b
 #    HSA_OVERRIDE_GFX_VERSION=11.0.0 ollama serve
 
 # 3) GTK runtime pro WeasyPrint (nutné pro generování PDF)
-#    Windows: nainstaluj GTK3 runtime
-#      (https://github.com/tschoonj/GTK-for-Windows-Runtime-Installer)
+#    Windows: nejjednodušší je MSYS2 (https://www.msys2.org/), pak v MSYS2 shellu:
+#      pacman -S mingw-w64-ucrt-x86_64-gtk3
+#    (jde i GTK3-Runtime-Win64 installer nebo gvsbuild — hlavní je najít adresář
+#    s libgobject-2.0-0.dll; viz poznámka o DLL pasti níže)
 #    Linux: apt install libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0
 #    macOS: brew install pango gdk-pixbuf libffi
 ```
@@ -79,6 +81,14 @@ ollama pull qwen3.6:27b
 > ale PDF se nevyrenderuje — `report.chyby` to zaznamená a hra zůstane datově
 > platná. A5 fit-check vyžaduje reálný render, takže bez GTK nelze potvrdit
 > vejití karet na stránku (nikdy netiskneme „naslepo" — spec §12).
+
+> **Windows DLL past (ověřeno):** i s nainstalovaným GTK WeasyPrint hlásí
+> `cannot load library 'libgobject-2.0-0'`. Příčina: Python 3.8+ na Windows
+> **ignoruje `PATH` pro závislosti DLL** („safe DLL search") — nestačí mít GTK
+> v PATH, je nutné `os.add_dll_directory()`. `honbicka/sazba/render.py` to dělá
+> automaticky, pokud GTK najde ve známém umístění (MSYS2 `ucrt64`/`mingw64`,
+> GTK3-Runtime, gvsbuild). Jiné umístění nastav proměnnou `HONBICKA_GTK_DIR`
+> (cesta k adresáři s `libgobject-2.0-0.dll`).
 
 ## Použití
 
@@ -130,7 +140,8 @@ reálnému `qwen3.6:27b` a přeskočí se, když Ollama neběží.
   přesuň klíčové svědectví…").
 - **Reprodukce:** seed je v reportu i registru; `vyrob_hru(..., seed=<N>)`
   zopakuje běh.
-- **PDF chybí:** chybí GTK runtime (viz Instalace).
+- **PDF chybí:** chybí GTK runtime, nebo ho `_zajisti_gtk_dll_cestu()` nenašla
+  v žádném známém umístění — nastav `HONBICKA_GTK_DIR` (viz Instalace).
 
 ## Struktura
 
