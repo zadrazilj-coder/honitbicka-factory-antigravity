@@ -90,8 +90,13 @@ def test_vyrob_hru_uspech(tmp_path):
     assert len(hra.karty) == 21  # scaffolder staví 21 uzlů
     assert len(hra.report.editorial_report) == 7
     assert hra.report.simulation_reports  # neprázdné
-    # bez GTK se PDF nevyrenderuje → zaznamenáno, ale hra je datově platná
-    assert any("PDF" in c for c in hra.report.chyby)
+    # PDF krok: bez GTK selže měkce (zaznamenáno), s GTK se vyrenderuje čistě.
+    from honbicka.sazba.render import je_dostupne
+    if je_dostupne():
+        assert not any("PDF nevyrenderováno" in c for c in hra.report.chyby)
+        assert (tmp_path / "skiny" / hra.slug / "karty_60min.pdf").is_file()
+    else:
+        assert any("PDF" in c for c in hra.report.chyby)
 
     skin = tmp_path / "skiny" / hra.slug
     for f in ("koncept.md", "mapa.json", "karty.json", "report.json", "log.jsonl"):
