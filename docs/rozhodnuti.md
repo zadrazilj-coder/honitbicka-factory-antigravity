@@ -222,6 +222,12 @@ přesune/omezí klicove_svedectvi na spočtený trunk, ořízne komponenty na 2,
 dorovná CORE flagy). Tím se konvergence stane deterministickou.
 Levnější experiment: zkusit `qwen3-coder:30b` (lokálně dostupný) — coder model
 může být lepší v produkci strukturovaných grafů.
+**Sonda coder modelem (2026-07-04): ZAMÍTNUTO.** `qwen3-coder:30b` (thinking
+off — Ollama vrací 400 na think:true u ne-thinking modelu) dal na první pokus
+**54 chyb** (vs qwen3.6 = 9), navíc ignoroval CORE/SIDE (vše CORE) a graf byl
+rozpojený. Rychlejší (47 s), ale výrazně horší. Závěr: thinking režim qwen3.6
+je pro strukturální úvahu klíčový; přepnutí modelu problém neřeší →
+**deterministický scaffolder (výše) je jediná robustní cesta.**
 
 ## 2026-07-04 · M8 · Opravná re-generace karet dle redakce — odloženo
 Plná zpětná smyčka FÁZE 4→3 (redaktor označí karty → vypravěč přepíše) není
