@@ -83,6 +83,16 @@
   po vygenerování karty vytáhnout regexem `→(\d+)` z `predni`/`zadni`, porovnat
   s `{h.cil for h in uzel.hrany}`; při neshodě cílený opravný pokus („volby vedou
   PŘESNĚ na čísla: …"); prompt vypravěče má cílová čísla vyjmenovat jako povinná.
+  **✅ OPRAVENO 2026-07-04:** `_volby_v_karte_platne()` + `_ocekavana_cisla_voleb()`
+  (`honbicka/orchestrator.py`) ověří `predni`/`zadni`/`zadni_30` proti hranám uzlu
+  (zadni_30 proti CORE podmnožině). `napis_kartu` při neshodě zopakuje s cíleným
+  opravným promptem (nová „KRITICKÉ: čísla za šipkou…" věta v base promptu +
+  `oprava_voleb` korekce); po vyčerpání pokusů `_oprav_volby_deterministicky()`
+  jednoznačně přepíše všechna „→N" na jediný platný cíl (má-li uzel jen 1 hranu);
+  víc hran = nejednoznačné, zaloguje se `volby_neopravitelne` a probublá do
+  `report.chyby`. Ověřeno retroaktivně na živých datech (karta 8 „čtyři světla":
+  `_volby_v_karte_platne` správně vrátí False). 14 nových testů
+  (`tests/test_vypravec_volby.py`), 173/173 (bez slow), ruff čistý.
 - 🔴 **O2 · Redaktor vidí jen zlomek hry.** `blob[:4000]` = ~4 karty z 21, navíc slepé
   oříznutí uprostřed karty a bias na nízká čísla. R4 („namátkou 5 karet") ani R1
   (průnik stop) nelze poctivě posoudit. Návrh: místo prefixu **vzorkovat celé karty**
@@ -337,7 +347,7 @@
 ## 10 · Souhrn — doporučené pořadí prací
 
 **Vlna 1 — správnost tištěné hry (bez ní nemá smysl tisknout):**
-1. O1+T1: volby v textu karet ↔ hrany grafu (deterministická kontrola + oprava promptu)
+1. ✅ O1+T1: volby v textu karet ↔ hrany grafu (deterministická kontrola + oprava promptu) — OPRAVENO 2026-07-04
 2. SZ1: duplex/kalibrace — asymetrické značky + instrukce obou režimů
 3. SC1+V1+T3: postavy/léčitel/nápověda do scaffolderu + řádek tabulky do škálování
 4. C1+T2: fail-fast bez GTK v CLI

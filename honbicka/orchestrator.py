@@ -359,12 +359,14 @@ def _kontext_karty(mapa: Mapa, uzel: Uzel) -> dict:
 def _prompt_vypravec(
     zadani: Zadani, koncept: Koncept, uzel: Uzel, kontext: dict,
     dve_varianty: bool, zkrat_o_pct: int | None, oprava_schematu: bool = False,
+    oprava_voleb: bool = False,
 ) -> str:
     volby = "; ".join(
         f"→{s['cislo']} {s['nazev']}" + (f" [podmínka: {s['podminka']}]" if s["podminka"] else "")
         + (" (SIDE)" if s["side"] else "")
         for s in kontext["sousedi"]
     ) or "(cílová karta — bez voleb)"
+    cisla = sorted({s["cislo"] for s in kontext["sousedi"]})
     smi = []
     if kontext["je_aha"]:
         smi.append("ZDE padá AHA odhalení — nech hráče poznat pravdu, ale neoznamuj ji přímo")
@@ -384,6 +386,11 @@ def _prompt_vypravec(
         "Atmosférický odstavec (300–500 znaků) je POVINNÝ. Fyzický úkol vždy s příběhovým "
         "důvodem (PROČ). Neúspěšná větev ať baví víc než úspěšná.\n"
     )
+    if cisla:
+        zaklad += (
+            f"KRITICKÉ: čísla za šipkou (→) v `predni` i `zadni` MUSÍ být PŘESNĚ "
+            f"z množiny {cisla} — žádná jiná, a nikdy číslo této karty ({uzel.cislo}).\n"
+        )
     if smi:
         zaklad += "Tato karta: " + "; ".join(smi) + ".\n"
     if dve_varianty:
@@ -401,7 +408,65 @@ def _prompt_vypravec(
             f"\nPŘEDCHOZÍ odpověď neměla správná pole. Vrať PŘESNĚ pole {pole} "
             "jako plochý JSON objekt (žádné vnořené struktury, žádné 'id')."
         )
+    if oprava_voleb:
+        zaklad += (
+            f"\nPŘEDCHOZÍ karta odkazovala na ŠPATNÁ čísla za šipkou (→). Volby MUSÍ "
+            f"vést PŘESNĚ na čísla {cisla} — zkontroluj a oprav VŠECHNY šipky."
+        )
     return zaklad
+
+
+# Regex „→ N" (číslo volby v textu karty) — pro ověření proti hranám grafu (O1).
+_SIPKA_CISLO = re.compile(r"→\s*(\d+)")
+
+
+def _extrahuj_cisla_voleb(text: str) -> set[int]:
+    return {int(n) for n in _SIPKA_CISLO.findall(text)}
+
+
+def _ocekavana_cisla_voleb(mapa: Mapa, uzel: Uzel, *, jen_core: bool = False) -> set[int]:
+    """Platná cílová čísla pro tento uzel. `jen_core=True` (varianta zadni_30)
+    vyloučí cíle typu SIDE — ty se v 30min variantě nesmí objevit (spec §5)."""
+    cile = {h.cil for h in uzel.hrany}
+    if not jen_core:
+        return cile
+    return {c for c in cile if (u := mapa.uzel(c)) is None or u.profil != Profil.SIDE}
+
+
+def _volby_v_karte_platne(karta: Karta, uzel: Uzel, mapa: Mapa) -> bool:
+    """Ověří, že každé „→N" v textu karty odpovídá skutečné hraně grafu (O1) —
+    bez toho by vytištěná karta mohla poslat hráče na špatnou/neexistující kartu."""
+    ocekavana = _ocekavana_cisla_voleb(mapa, uzel)
+    if not ocekavana:
+        return True  # cílová karta / uzel bez hran — nic k ověření
+
+    def _shoduje(text: str, platna: set[int]) -> bool:
+        nalezena = _extrahuj_cisla_voleb(text)
+        return bool(nalezena) and nalezena <= platna
+
+    if not _shoduje(karta.predni, ocekavana) or not _shoduje(karta.zadni, ocekavana):
+        return False
+    if karta.zadni_30:
+        ocekavana_core = _ocekavana_cisla_voleb(mapa, uzel, jen_core=True)
+        if not _shoduje(karta.zadni_30, ocekavana_core):
+            return False
+    return True
+
+
+def _oprav_volby_deterministicky(karta: Karta, uzel: Uzel, mapa: Mapa) -> Karta:
+    """Poslední záchrana po vyčerpání opravných promptů: má-li uzel jediný
+    platný cíl, jednoznačně přepíše všechna „→N" na správné číslo (bezpečné —
+    není co zaměnit). Víc cílů = nejednoznačná oprava, ponechá se beze změny
+    (zavolávající kód to zaznamená do logu/report.chyby)."""
+    ocekavana = _ocekavana_cisla_voleb(mapa, uzel)
+    if len(ocekavana) == 1:
+        cil = next(iter(ocekavana))
+        nahrada = rf"→{cil}"
+        karta.predni = _SIPKA_CISLO.sub(nahrada, karta.predni)
+        karta.zadni = _SIPKA_CISLO.sub(nahrada, karta.zadni)
+        if karta.zadni_30:
+            karta.zadni_30 = _SIPKA_CISLO.sub(nahrada, karta.zadni_30)
+    return karta
 
 
 def _normalizuj_kartu(data: dict, uzel: Uzel) -> dict:
@@ -445,22 +510,27 @@ def napis_kartu(
     klient: OllamaKlient, zadani: Zadani, koncept: Koncept, mapa: Mapa, uzel: Uzel,
     *, measurer: Measurer, log: list[dict] | None = None,
 ) -> tuple[Karta, list[FitCheck], list[dict]]:
-    """Napíše a fit-checkne jednu kartu. Max 3 pokusy o zkrácení přes LLM,
-    pak deterministický ořez atmosféry (spec §4 FÁZE 3)."""
+    """Napíše a fit-checkne jednu kartu. Max 3 pokusy o opravu (schéma, volby
+    ↔ hrany grafu — O1, zkrácení) přes LLM, pak deterministický fallback
+    (spec §4 FÁZE 3). Volby v textu MUSÍ odpovídat skutečným hranám uzlu —
+    jinak by vytištěná karta posílala hráče na špatné/neexistující číslo."""
     log = log if log is not None else []
     kontext = _kontext_karty(mapa, uzel)
     dve = _potrebuje_30_variantu(mapa, uzel)
     zkrat: int | None = None
     oprava_schematu = False
+    oprava_voleb = False
     karta: Karta | None = None
     fits: list[FitCheck] = []
     for pokus in range(1, MAX_ITERACI_KARTA + 1):
-        prompt = _prompt_vypravec(zadani, koncept, uzel, kontext, dve, zkrat, oprava_schematu)
+        prompt = _prompt_vypravec(zadani, koncept, uzel, kontext, dve, zkrat,
+                                  oprava_schematu, oprava_voleb)
         data = _normalizuj_kartu(klient.generuj_json(Role.VYPRAVEC, prompt, SCHEMA_KARTA), uzel)
         try:
             karta = Karta.model_validate(data)
         except ValidationError as exc:
             oprava_schematu = True  # model nevrátil správná pole → oprav a zkus znovu
+            oprava_voleb = False
             log.append({"faze": 3, "karta": uzel.cislo, "pokus": pokus,
                         "schema_chyba": exc.error_count()})
             continue
@@ -468,6 +538,13 @@ def napis_kartu(
         karta.cislo, karta.typ = uzel.cislo, uzel.typ  # čísla/typ řídí graf, ne LLM
         if not dve:
             karta.zadni_30 = None
+
+        if not _volby_v_karte_platne(karta, uzel, mapa):
+            oprava_voleb = True  # „→N" v textu neodpovídá hranám grafu (O1) → oprav
+            log.append({"faze": 3, "karta": uzel.cislo, "pokus": pokus, "volby_chyba": True})
+            continue
+        oprava_voleb = False
+
         fits = fit_check_karty(karta, measurer=measurer)
         log.append({"faze": 3, "karta": uzel.cislo, "pokus": pokus,
                     "ok": all(f.verdikt for f in fits)})
@@ -480,6 +557,14 @@ def napis_kartu(
     if karta is None:  # model 3× nevrátil validní obsah → nouzová karta
         karta = _nouzova_karta(uzel, koncept)
         log.append({"faze": 3, "karta": uzel.cislo, "nouzova_karta": True})
+    elif not _volby_v_karte_platne(karta, uzel, mapa):
+        # Poslední pokus měl validní obsah, ale volby stále neodpovídají grafu.
+        karta = _oprav_volby_deterministicky(karta, uzel, mapa)
+        if _volby_v_karte_platne(karta, uzel, mapa):
+            log.append({"faze": 3, "karta": uzel.cislo, "volby_opraveny_deterministicky": True})
+        else:
+            # Víc než 1 platný cíl = nejednoznačná oprava; zaznamenat pro report.chyby.
+            log.append({"faze": 3, "karta": uzel.cislo, "volby_neopravitelne": True})
     fits = _orez_atmosfery(karta, measurer)  # deterministický fallback
     log.append({"faze": 3, "karta": uzel.cislo, "orez": "atmosfera",
                 "ok": all(f.verdikt for f in fits)})
@@ -744,6 +829,9 @@ def vyrob_hru(
         chyby.append("některé karty nesedí na A5 (fit-check)")
     if any(not v.verdikt for v in editorial):
         chyby.append("redakční posudek našel nedostatky (viz editorial_report)")
+    neopravitelne = sorted({e["karta"] for e in log if e.get("volby_neopravitelne")})
+    if neopravitelne:
+        chyby.append(f"volby na kartách {neopravitelne} neodpovídají grafu (O1, viz log)")
 
     report = Report(
         slug=slug, seed=seed, archetyp=params.archetyp, iterace=iterace_faze1,

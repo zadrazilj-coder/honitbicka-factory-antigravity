@@ -31,7 +31,10 @@ def measurer_dle_delky(html: str, sirka: float) -> float:
     return len(text) / 45.0 * 5.0
 
 
-def _karta_dict(atmosfera, predni="Krátký příběh a volby.", zadni="Výsledek.", zadni_30=None):
+def _karta_dict(atmosfera, predni="Krátký příběh a volby. →10", zadni="Výsledek. →10",
+                zadni_30=None):
+    # →10 odpovídá jediné hraně uzlu 8 ve valid_mapa (viz conftest) — testy níže
+    # ověřují schéma/fit-check/ořez, ne kontrolu voleb↔grafu (O1, viz test_vypravec_volby.py).
     d = {"cislo": 1, "nazev": "X", "typ": "postava",
          "atmosfera": atmosfera, "predni": predni, "zadni": zadni}
     if zadni_30 is not None:
