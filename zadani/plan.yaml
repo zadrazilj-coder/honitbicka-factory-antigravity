@@ -1,0 +1,15 @@
+# Příklad dávkového plánu (honbicka batch zadani/plan.yaml).
+# Kombinace věk × formát × počet her; témata doplní téma-generátor
+# (diverzita proti registru posledních 10 her).
+hry:
+  - vek: "06-09"
+    format_hracu: volny_format
+    pocet: 3
+    prostredi: [les, louka]
+  - vek: "09-12"
+    format_hracu: tymy_4x4
+    pocet: 2
+    obtiznost: stredni
+  - vek: "16plus"
+    format_hracu: dvojice
+    pocet: 1

@@ -1,0 +1,9 @@
+# Příklad zadání jedné hry (honbicka gen zadani/hra.yaml).
+# Vyrobí VŽDY pár 30min (core) + 60min (master).
+tema: "cesta kapky vody z mraku do studny"   # volitelné — jinak téma-generátor
+vek: "06-09"                                  # 04-06 | 06-09 | 09-12 | 12-15 | 16plus
+format_hracu: volny_format                    # nebo tymy_4x4, jednotlivci, dvojice
+prostredi: [louka, les, potok]
+obtiznost: lehka                              # lehka | stredni | tezka
+ton: "laskavý přírodovědný humor"
+jazyk: cs

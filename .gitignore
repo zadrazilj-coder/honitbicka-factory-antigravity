@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Test / tooling
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Výstupy běhu (generované hry) — necommitovat pracovní artefakty
+skiny/*/
+!skiny/.gitkeep
+hotove_hry/*/
+!hotove_hry/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db

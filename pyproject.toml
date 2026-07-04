@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "honbicka-factory"
+version = "0.1.0"
+description = "Autonomní agentní systém pro sériové generování venkovních karetních her (engine Honbička 3.3/3.4)."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.6",
+    "requests>=2.31",
+    "PyYAML>=6.0",
+    "weasyprint>=61.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+    "black>=24.0",
+]
+
+[project.scripts]
+honbicka = "honbicka.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["honbicka*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: testy vyžadující živý Ollama model (RX 7900 XTX / ROCm)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
