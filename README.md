@@ -1,5 +1,7 @@
 # HONBIČKA FACTORY
 
+[![CI](https://github.com/zadrazilj-coder/honbicka-factory/actions/workflows/ci.yml/badge.svg)](https://github.com/zadrazilj-coder/honbicka-factory/actions/workflows/ci.yml)
+
 Autonomní agentní systém pro sériové generování venkovních karetních her
 (engine **Honbička 3.3/3.4**) na lokálním hardwaru. Z jednořádkového zadání —
 nebo zcela automaticky v dávce — vyrobí kompletní tisknutelnou hru a zvládne
