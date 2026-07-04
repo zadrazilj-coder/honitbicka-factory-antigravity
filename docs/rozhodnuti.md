@@ -183,6 +183,24 @@ ne přesné hodnoty enumů/požadovaných polí; místa, kde plán/graf zná spr
 hodnotu, ji mají doplnit před `model_validate`. Regrese pokryta unit testem
 (`test_vygeneruj_tema_robustni_vuci_nedokonalemu_modelu`).
 
+## 2026-07-04 · M8 · Živý shakedown architekta → posílení promptu
+Diagnostika `_zavolej_architekta` proti reálnému `qwen3.6:27b` (téma „cesta
+kapky vody", seed 42, 21 uzlů) odhalila, že vágní prompt vedl k mapě bez hran
+(96 chyb: vše osiřelé/softlock). Postupné posílení `_prompt_architekt`:
+1. explicitní struktura hran (`hrany:[{cil:N}]`) + příklad uzlu → **96→9 chyb**
+   (všechny uzly dostaly hrany);
+2. gated/strez/slepé mají vstupní hrany + CORE musí samo splnit 30min počty
+   → zmizely chyby souvislosti i CORE škálování;
+3. klíčová svědectví jen 2–3 na povinné ose + CORE ≥2 rozcestí/≥1 smyčka
+   (dominátorové umístění, zbývající třída chyb).
+**Zjištění (operační):** architekt (thinking ON, 21-uzlový graf) trvá
+~380–450 s / volání; koncept ~165 s. FÁZE 1 s opravnou smyčkou tak může trvat
+desítky minut — akceptovatelné pro noční dávku, ne pro interaktivní běh.
+Reziduální chyby prvního pokusu jsou přesně ty, které opravná smyčka dostává
+jako cílené diagnostiky, takže konvergence je reálná (na rozdíl od původního
+stavu). **Plná konvergence živého běhu ověřena empiricky na trajektorii chyb,
+ne kompletním during-noc během** (GPU čas).
+
 ## 2026-07-04 · M8 · Opravná re-generace karet dle redakce — odloženo
 Plná zpětná smyčka FÁZE 4→3 (redaktor označí karty → vypravěč přepíše) není
 implementována; neúspěšné R-checky se zapisují do `report.chyby` a hru

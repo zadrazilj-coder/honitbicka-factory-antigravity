@@ -58,7 +58,7 @@ from honbicka.validatory import VysledekValidace
 from honbicka.validatory.agregace import validuj_par_30_60
 from honbicka.validatory.sazba import Measurer, _weasy_measurer, fit_check_karty
 from honbicka.validatory.simulace import pasmo_aha
-from honbicka.validatory.skalovani import SKALA, VEK_STROP
+from honbicka.validatory.skalovani import SKALA, VEK_STROP, komponenty_rozsah
 
 MAX_ITERACI_ARCHITEKT = 4  # spec §4 FÁZE 1
 MAX_RELOSOVANI = 2  # spec §4 FÁZE 1
@@ -193,22 +193,54 @@ def faze1a_koncept(klient: OllamaKlient, zadani: Zadani, params: LosovaneParamet
 def _prompt_architekt(
     zadani: Zadani, koncept: Koncept, params: LosovaneParametry, diagnostiky: list[str]
 ) -> str:
+    n = params.pocet_karet_60
+    komp = komponenty_rozsah(60, zadani.obtiznost)
     zaklad = (
-        f"Postav mapu hry jako graf {params.pocet_karet_60} uzlů (60min).\n"
-        f"Archetyp: {params.archetyp.value}. Téma: {koncept.tema}.\n"
-        f"TVRDÁ omezení: práh počítadla={params.prah_aktivity}; "
-        f"AHA odhalení kolem {params.pozice_aha_pct:.0f} % délky "
-        f"(pásmo {params.aha_pasmo[0]:.0f}–{params.aha_pasmo[1]:.0f} %).\n"
-        "Každý uzel označ profil=CORE (i ve 30min verzi) nebo SIDE (jen 60min). "
-        "CORE podgraf musí sám tvořit hratelnou 30min hru (onboarding, hlavní osa, "
-        "všechna povinná svědectví, cíl). Klíčová svědectví pověs na povinnou trasu.\n"
-        "Dodrž typy uzlů, hrany, komponenty, kostku a škálovací počty."
+        f"Postav mapu hry „{koncept.tema}“ jako ORIENTOVANÝ GRAF {n} uzlů (60min).\n\n"
+        "STRUKTURA (kritické): pole `uzly` je seznam uzlů. KAŽDÝ uzel má pole "
+        "`hrany` = seznam voleb, kde každá volba je objekt `{\"cil\": <číslo jiného "
+        "uzlu>}`. Bez hran je graf nefunkční!\n"
+        "Příklad uzlu (JSON):\n"
+        '  {"cislo":1,"nazev":"Kraj lesa","typ":"onboarding","region":"les",'
+        '"prostredi":"les","profil":"CORE","komponenty":[],"kostka":false,'
+        '"klicove_svedectvi":false,"hrany":[{"cil":2},{"cil":3}]}\n\n'
+        f"ČÍSLOVÁNÍ: uzly 1..{n}. Uzel 1 = onboarding (START). Poslední uzel = typ "
+        "`cil` (má prázdné `hrany`). VŠECHNY ostatní uzly mají ≥1 hranu.\n"
+        "SOUVISLOST: z uzlu 1 se musí dát dojít do KAŽDÉHO uzlu; z každého uzlu se "
+        "musí dát dojít do cíle (žádný osiřelý uzel, žádný softlock). I gated, "
+        "strez a slepé uzly MAJÍ vstupní hrany — zámek je jen podmínka na hraně, "
+        "ne chybějící cesta; hráč na ně dojde.\n\n"
+        f"TVRDÁ OMEZENÍ:\n"
+        f"- archetyp zvratu = {params.archetyp.value}\n"
+        f"- prah_aktivity = {params.prah_aktivity}; pozice_aha_uzel = uzel na povinné "
+        f"trase kolem {params.pozice_aha_pct:.0f} % cesty (za gated/jednosměrkou)\n"
+        f"- typy uzlů (použij přesně tyto řetězce): onboarding, rozcesti, sber, "
+        "prechod, slepa, jednosmer, smycka, strez, gated, informace, postava, "
+        "lecitel, obchodnik, cil\n"
+        f"- POČTY: střežené(strez) 2–3, gated 2, informace ≥3, obchodnik ≥1, "
+        f"regiony 2–3, komponenty artefaktu {komp[0]}–{komp[1]} (rozděl je na uzly), "
+        f"~30 % uzlů má kostka=true\n"
+        f"- TOPOLOGIE: ≥3 uzly s 2+ hranami (rozcestí), ≥2 typ smycka, ≥2 typ slepa "
+        "(krátké, vrací zpět), ≥2 jednosměrné (typ jednosmer nebo hrana s "
+        '"jednosmerna":true); žádné dvě `sber` hned za sebou\n\n'
+        "PROFIL 30/60: každý uzel má profil=CORE nebo SIDE. CORE uzlů je 8–12 a "
+        "SAMY tvoří kompletní hratelnou 30min hru — propojené jen přes CORE uzly. "
+        "CORE proto MUSÍ samo obsahovat: onboarding (uzel 1), cíl, ≥1 strez, "
+        "1 gated, ≥2 informace, ≥1 slepá, ≥2 rozcestí (uzel s 2+ hranami), "
+        "≥1 smyčka (typ smycka), obě komponenty artefaktu, klíčová svědectví, "
+        "~30 % CORE uzlů s kostka=true, a jen 1–2 regiony. "
+        "SIDE uzly (zbytek) jsou vedlejší obohacení jen pro 60min a NEsmí být "
+        "jedinou cestou k ničemu povinnému.\n"
+        "KLÍČOVÁ SVĚDECTVÍ: označ klicove_svedectvi=true jen u 2–3 uzlů, a to POUZE "
+        "na hlavní ose — uzly, kterými projde KAŽDÁ cesta k cíli (typicky hned za "
+        "gated podmínkou nebo jednosměrkou). NIKDY na slepé/vedlejší větvi. Stejně "
+        "tak pozice_aha_uzel musí ležet na této povinné ose.\n\n"
+        "Vrať JEN JSON: archetyp, seed, prah_aktivity, pozice_aha_uzel, regiony, uzly."
     )
     if diagnostiky:
-        oprava = "\n\nOPRAV tyto konkrétní nedostatky předchozí mapy:\n" + "\n".join(
-            f"- {d}" for d in diagnostiky
+        zaklad += "\n\nOPRAV tyto konkrétní nedostatky předchozí mapy:\n" + "\n".join(
+            f"- {d}" for d in diagnostiky[:15]
         )
-        return zaklad + oprava
     return zaklad
 
 
