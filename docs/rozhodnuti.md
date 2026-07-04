@@ -201,6 +201,28 @@ jako cílené diagnostiky, takže konvergence je reálná (na rozdíl od původn
 stavu). **Plná konvergence živého běhu ověřena empiricky na trajektorii chyb,
 ne kompletním during-noc během** (GPU čas).
 
+## 2026-07-04 · M8 · Plný živý FÁZE 1 loop → NEKONVERGUJE (klíčové zjištění)
+Plný živý běh opravné smyčky (12 iterací, 93 min, seed 42) proti
+`qwen3.6:27b` **nedokonvergoval** na validní mapu. Chybovost osciluje kolem
+~2 (nejlepší pokus: 2 chyby), ale model nikdy netrefí 0. Inkrementální oprava
+(přiložení předchozí mapy + „oprav jen tohle") oscilaci zmírnila, ale model
+i tak rozbíjí dříve správné části.
+**Nejtěžší třída chyb = grafové dominátory:** „klíčové svědectví/AHA uzel není
+na povinné trase", „pozice AHA 92 %", opakovaně osiřelé uzly. Vyžadují úvahu,
+kterými uzly projde KAŽDÁ cesta — a musí platit současně pro plný graf i CORE
+podgraf. To je pro 27B model generující JSON nespolehlivé.
+**Diagnóza:** pipeline i validátory jsou správné a přísné; problém je, že LLM
+má splnit tvrdé topologické invarianty, které mají dle spec §3 („LLM tvoří,
+Python rozhoduje") patřit deterministickému kódu.
+**Doporučený fix (nový pracovní balík, nad rámec M1–M8):** deterministický
+**graf-scaffolder / auto-repair** — LLM dodá kreativní obsah (regiony, témata
+uzlů, kdo nese stopu, beaty archetypu), Python zaručí souvislost, dominátory
+klíčových svědectví a AHA uzlu, a validitu CORE podgrafu (dopojí osiřelé,
+přesune/omezí klicove_svedectvi na spočtený trunk, ořízne komponenty na 2,
+dorovná CORE flagy). Tím se konvergence stane deterministickou.
+Levnější experiment: zkusit `qwen3-coder:30b` (lokálně dostupný) — coder model
+může být lepší v produkci strukturovaných grafů.
+
 ## 2026-07-04 · M8 · Opravná re-generace karet dle redakce — odloženo
 Plná zpětná smyčka FÁZE 4→3 (redaktor označí karty → vypravěč přepíše) není
 implementována; neúspěšné R-checky se zapisují do `report.chyby` a hru

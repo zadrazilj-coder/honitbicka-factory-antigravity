@@ -191,7 +191,8 @@ def faze1a_koncept(klient: OllamaKlient, zadani: Zadani, params: LosovaneParamet
 
 
 def _prompt_architekt(
-    zadani: Zadani, koncept: Koncept, params: LosovaneParametry, diagnostiky: list[str]
+    zadani: Zadani, koncept: Koncept, params: LosovaneParametry, diagnostiky: list[str],
+    predchozi_json: str | None = None,
 ) -> str:
     n = params.pocet_karet_60
     komp = komponenty_rozsah(60, zadani.obtiznost)
@@ -241,15 +242,27 @@ def _prompt_architekt(
         zaklad += "\n\nOPRAV tyto konkrétní nedostatky předchozí mapy:\n" + "\n".join(
             f"- {d}" for d in diagnostiky[:15]
         )
+        if predchozi_json:
+            # Inkrementální oprava: nech model minimálně upravit PŘEDCHOZÍ mapu,
+            # ať se neopravují chyby regenerací celé mapy (oscilace).
+            zaklad += (
+                "\n\nToto je tvá PŘEDCHOZÍ mapa. ZACHOVEJ vše ostatní beze změny a "
+                "uprav jen to nutné k opravě chyb výše (přidej/uber hranu, přeznač "
+                "uzel, přesuň komponentu). NEgeneruj mapu od nuly:\n" + predchozi_json
+            )
     return zaklad
 
 
 def _zavolej_architekta(
     klient: OllamaKlient, zadani: Zadani, koncept: Koncept, params: LosovaneParametry,
-    diagnostiky: list[str],
+    diagnostiky: list[str], predchozi_mapa: Mapa | None = None,
 ) -> tuple[Mapa | None, str | None]:
-    """Jedno volání architekta. Vrací (mapa, None) nebo (None, popis chyby schématu)."""
-    prompt = _prompt_architekt(zadani, koncept, params, diagnostiky)
+    """Jedno volání architekta. Vrací (mapa, None) nebo (None, popis chyby schématu).
+
+    `predchozi_mapa` (poslední naparsovaná mapa) se při opravě přiloží k promptu
+    pro inkrementální úpravu místo regenerace od nuly."""
+    predchozi_json = predchozi_mapa.model_dump_json() if predchozi_mapa is not None else None
+    prompt = _prompt_architekt(zadani, koncept, params, diagnostiky, predchozi_json)
     data = klient.generuj_json(Role.ARCHITEKT, prompt, SCHEMA_MAPA)  # HonbickaLLMError → nahoru
     try:
         return Mapa.model_validate(data), None
@@ -278,14 +291,17 @@ def faze1_architekt(
     akt = params
     for reseed in range(MAX_RELOSOVANI + 1):
         diagnostiky: list[str] = []
+        predchozi_mapa: Mapa | None = None  # pro inkrementální opravu (reset po relosování)
         for iterace in range(1, MAX_ITERACI_ARCHITEKT + 1):
             vysledek.iterace_celkem += 1
-            mapa, schema_chyba = _zavolej_architekta(klient, zadani, koncept, akt, diagnostiky)
+            mapa, schema_chyba = _zavolej_architekta(
+                klient, zadani, koncept, akt, diagnostiky, predchozi_mapa)
             if mapa is None:
                 vysledek.log.append({"faze": 1, "reseed": reseed, "iterace": iterace,
                                      "seed": akt.seed, "ok": False, "chyby": [schema_chyba]})
                 diagnostiky = [schema_chyba or "neplatná mapa"]
                 continue
+            predchozi_mapa = mapa  # poslední naparsovaná mapa → základ pro opravu
             v = validator(mapa)
             vysledek.log.append({"faze": 1, "reseed": reseed, "iterace": iterace,
                                  "seed": akt.seed, "ok": v.ok, "chyby": v.chyby})
