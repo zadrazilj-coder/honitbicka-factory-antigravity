@@ -42,3 +42,19 @@ def test_sestav_yaml_vynecha_prazdne():
 def test_bez_prikazu_je_chyba():
     with pytest.raises(SystemExit):
         main([])
+
+
+def test_gen_bez_gtk_failfastuje_pred_llm(tmp_path, monkeypatch, capsys):
+    # C1/T2: `honbicka gen` bez GTK musí selhat rychle a čitelně, PŘED
+    # jakýmkoli voláním LLM — dřív padalo až uprostřed FÁZE 3 (SazbaNedostupna).
+    import honbicka.orchestrator as orch
+    monkeypatch.setattr(orch, "je_dostupne", lambda: False)
+    monkeypatch.chdir(tmp_path)
+    zadani = tmp_path / "hra.yaml"
+    zadani.write_text("vek: '09-12'\ntema: Test\n", encoding="utf-8")
+
+    rc = main(["gen", str(zadani)])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "FAILED" in out
+    assert "GTK" in out

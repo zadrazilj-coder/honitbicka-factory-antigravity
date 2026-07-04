@@ -357,6 +357,18 @@
   `vyrob_hru` zavolat `sazba.render.je_dostupne()`; když ne → **fail-fast s jasnou
   hláškou PŘED prvním LLM voláním**, nebo explicitní `--bez-fitchecku` fallback na
   odhad znaků se zápisem „fit-check aproximován" do reportu (netisknout!).
+  **✅ OPRAVENO 2026-07-04** (fail-fast varianta; fallback-na-odhad NEimplementován —
+  viz níže). `vyrob_hru` po FÁZE 0 (levné, bez LLM/GTK) zkontroluje: pokud volající
+  nepředal vlastní `measurer` A `je_dostupne()` je False → okamžitě vrátí
+  `Hra`/`Report` se `stav=FAILED` a čitelnou chybou (zmiňuje `HONBICKA_GTK_DIR`),
+  BEZ jediného volání `klient.generuj_json`. Vlastní `measurer` (testy, budoucí
+  `--bez-fitchecku`) fail-fast obchází. `cli._cmd_gen` už chybu správně tiskl
+  (`report.chyby`) — žádná změna v CLI nebyla potřeba. **Fallback „--bez-fitchecku"
+  s odhadem znaků NEimplementován:** spec §12 „nikdy netiskneme naslepo" činí
+  aproximovaný fit-check rizikovým i s varováním; fail-fast je bezpečnější
+  výchozí chování. 4 nové testy (LLM nikdy nezavoláno, chyba obsahuje „GTK",
+  vlastní measurer fail-fast obchází, CLI exit-kód 1 s hláškou), 183/183
+  (bez slow), ruff čistý.
 - 🟡 **C2 · Dávka nezapisuje průběžný report na disk.** `spust_davku` drží výsledky
   v paměti; pád/přerušení přes noc ztratí přehled (hry samotné na disku jsou).
   Návrh: append `skiny/davka_<timestamp>.jsonl` po každé hře.
@@ -390,7 +402,7 @@
 1. ✅ O1+T1: volby v textu karet ↔ hrany grafu (deterministická kontrola + oprava promptu) — OPRAVENO 2026-07-04
 2. ✅ SZ1: duplex/kalibrace — asymetrické značky + instrukce obou režimů — ČÁSTEČNĚ OPRAVENO 2026-07-04 (kód hotový; reálný tisk vyžaduje ruční ověření uživatelem)
 3. ✅ SC1+V1+T3: postavy/léčitel/nápověda do scaffolderu + řádek tabulky do škálování — OPRAVENO 2026-07-04 (odhalen vedlejší nález: 180/3600 pre-existující AHA edge-case, netýká se této opravy, viz V1)
-4. C1+T2: fail-fast bez GTK v CLI
+4. ✅ C1+T2: fail-fast bez GTK v CLI — OPRAVENO 2026-07-04
 5. O6: nouzová karta s volbami
 
 **Vlna 2 — kvalita obsahu a rychlost:**

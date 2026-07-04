@@ -52,7 +52,7 @@ from honbicka.registr import (
 from honbicka.sazba.herni_list import postav_html_herni_list
 from honbicka.sazba.karty_pdf import uloz_pdf_karet
 from honbicka.sazba.pruvodce import postav_html_pruvodce
-from honbicka.sazba.render import SazbaNedostupna, zapis_pdf
+from honbicka.sazba.render import SazbaNedostupna, je_dostupne, zapis_pdf
 from honbicka.taxonomie import zatrid_hru
 from honbicka.validatory import VysledekValidace
 from honbicka.validatory.agregace import validuj_par_30_60
@@ -762,18 +762,35 @@ def vyrob_hru(
     architekt s opravnou smyčkou (nekonverguje spolehlivě, viz docs/rozhodnuti.md).
 
     `measurer` default = reálný WeasyPrint (vyžaduje GTK); testy dodají fake.
-    PDF krok bez GTK selže měkce (report.chyby), hra zůstane datově platná.
+    Bez GTK a bez vlastního `measurer` (C1) hra FAIL-FASTuje HNED po FÁZE 0 —
+    PŘED prvním (drahým) voláním LLM — místo pádu uprostřed FÁZE 3. PDF krok
+    (FÁZE 5) bez GTK selže měkce (report.chyby), hra zůstane datově platná.
     """
+    pouziva_vychozi_measurer = measurer is None
     measurer = measurer or _weasy_measurer
     seed = seed if seed is not None else random.randint(1, 10**9)
     log: list[dict] = []
 
-    # FÁZE 0 — registr → okna zákazů → losování
+    # FÁZE 0 — registr → okna zákazů → losování (bez LLM, bez GTK)
     zaznamy = nacti_registr(registr_cesta)
     zakazane = zakazane_archetypy(zaznamy)
     params = losuj_parametry(zadani, seed, zakazane)
     log.append({"faze": 0, "seed": seed, "archetyp": params.archetyp.value,
                 "prah": params.prah_aktivity, "zakazane": sorted(a.value for a in zakazane)})
+
+    # Fail-fast (C1): bez GTK by fit-check/PDF stejně spadl, ale AŽ po
+    # zaplacení drahé LLM generace (koncept + karty). Zjisti to HNED.
+    if pouziva_vychozi_measurer and not je_dostupne():
+        slug = _slug(zadani.tema or f"hra-{seed}")
+        chyba = (
+            "GTK/WeasyPrint není dostupné — A5 fit-check i PDF renderování by "
+            "selhaly až po drahé LLM generaci. Nainstaluj GTK runtime (viz README, "
+            "proměnná HONBICKA_GTK_DIR) nebo předej vlastní `measurer`."
+        )
+        log.append({"faze": 0, "akce": "fail_fast_gtk", "chyba": chyba})
+        report = Report(slug=slug, seed=seed, archetyp=params.archetyp, iterace=0,
+                        stav=StavHry.FAILED, chyby=[chyba])
+        return Hra(slug=slug, zadani=zadani, koncept="", mapa=None, karty=[], report=report)
 
     # FÁZE 1a — koncept
     koncept = faze1a_koncept(klient, zadani, params)

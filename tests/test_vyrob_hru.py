@@ -213,3 +213,42 @@ def test_vyrob_hru_scaffolder_je_default(tmp_path):
                     registr_cesta=str(tmp_path / "skiny" / "registr.md"), zatridit=False)
     assert hra.report.stav == StavHry.OK  # scaffolder = spolehlivá FÁZE 1
     assert hra.mapa is not None and len(hra.karty) == 21
+
+
+# ------- C1/T2: fail-fast bez GTK (PŘED prvním voláním LLM) ---------------- #
+class PocitajiciKlient:
+    """Klient, který počítá volání — fail-fast nesmí volat LLM ani jednou."""
+
+    def __init__(self):
+        self.pocet_volani = 0
+
+    def generuj_json(self, role, uzivatel, schema, extra_system=None):
+        self.pocet_volani += 1
+        raise AssertionError("fail-fast: LLM nemělo být vůbec voláno")
+
+
+def test_vyrob_hru_failfast_bez_gtk_nevola_llm(tmp_path, monkeypatch):
+    import honbicka.orchestrator as orch
+    monkeypatch.setattr(orch, "je_dostupne", lambda: False)
+    klient = PocitajiciKlient()
+    zadani = Zadani(vek=VekPasmo.V09_12, format_hracu="dvojice", tema="Kapka vody")
+    hra = vyrob_hru(zadani, klient, seed=1,
+                    skiny_dir=str(tmp_path / "skiny"),
+                    registr_cesta=str(tmp_path / "skiny" / "registr.md"), zatridit=False)
+    assert klient.pocet_volani == 0  # LLM nebylo vůbec zavoláno
+    assert hra.report.stav == StavHry.FAILED
+    assert hra.mapa is None
+    assert any("GTK" in c for c in hra.report.chyby)
+
+
+def test_vyrob_hru_vlastni_measurer_obejde_failfast(tmp_path, monkeypatch):
+    # Vlastní measurer → GTK nepotřeba, fail-fast se nesmí spustit.
+    import honbicka.orchestrator as orch
+    monkeypatch.setattr(orch, "je_dostupne", lambda: False)
+    mapa_dump = build_valid_mapa_60().model_dump(mode="json")
+    klient = DispatchKlient(mapa_dump)
+    zadani = Zadani(vek=VekPasmo.V09_12, format_hracu="dvojice", tema="Kapka vody")
+    hra = vyrob_hru(zadani, klient, seed=1, measurer=measurer_dle_delky,
+                    skiny_dir=str(tmp_path / "skiny"),
+                    registr_cesta=str(tmp_path / "skiny" / "registr.md"), zatridit=False)
+    assert hra.report.stav == StavHry.OK
