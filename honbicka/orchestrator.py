@@ -22,7 +22,7 @@ from datetime import date
 
 from pydantic import ValidationError
 
-from honbicka.llm import OllamaKlient, Role
+from honbicka.llm import HonbickaLLMError, OllamaKlient, Role
 from honbicka.modely import (
     SCHEMA_KARTA,
     SCHEMA_KONCEPT,
@@ -358,7 +358,7 @@ def _kontext_karty(mapa: Mapa, uzel: Uzel) -> dict:
 
 def _prompt_vypravec(
     zadani: Zadani, koncept: Koncept, uzel: Uzel, kontext: dict,
-    dve_varianty: bool, zkrat_o_pct: int | None,
+    dve_varianty: bool, zkrat_o_pct: int | None, oprava_schematu: bool = False,
 ) -> str:
     volby = "; ".join(
         f"→{s['cislo']} {s['nazev']}" + (f" [podmínka: {s['podminka']}]" if s["podminka"] else "")
@@ -370,12 +370,18 @@ def _prompt_vypravec(
         smi.append("ZDE padá AHA odhalení — nech hráče poznat pravdu, ale neoznamuj ji přímo")
     if kontext["klicove_svedectvi"]:
         smi.append("nese klíčové svědectví (stopu k pravdě) — podej ho jako výpověď postavy")
+    pole = '"nazev", "atmosfera", "predni", "zadni"' + (', "zadni_30"' if dve_varianty else "")
     zaklad = (
         f"Napiš JEDNU kartu č. {uzel.cislo} „{uzel.nazev}“ (typ {uzel.typ.value}).\n"
         f"Téma: {koncept.tema}. Věk: {zadani.vek.value}, tón: {zadani.ton or koncept.zanr}.\n"
         f"Volby (zadní strana): {volby}.\n"
-        "Přední strana MUSÍ obsahovat atmosférický odstavec (300–500 znaků) + příběh. "
-        "Rozpočet ~1300–1500 znaků na stranu (10 pt A5). Fyzický úkol vždy s příběhovým "
+        f"Vrať POUZE JSON s poli {pole}:\n"
+        '  "nazev" = název karty; "atmosfera" = atmosférický odstavec 300–500 znaků; '
+        '"predni" = příběh + volby (A/B…); "zadni" = výsledky voleb.\n'
+        'Příklad: {"nazev":"Kraj lesa","atmosfera":"Mezi kmeny se plazí mlha a čtvrté '
+        'světlo kdesi zhaslo…","predni":"Stojíš na kraji lesa. A) k potoku →2  B) na '
+        'mýtinu →3","zadni":"A) U potoka najdeš čerstvou stopu. B) Mýtina mlčí."}\n'
+        "Atmosférický odstavec (300–500 znaků) je POVINNÝ. Fyzický úkol vždy s příběhovým "
         "důvodem (PROČ). Neúspěšná větev ať baví víc než úspěšná.\n"
     )
     if smi:
@@ -390,7 +396,34 @@ def _prompt_vypravec(
             f"\nPŘEDCHOZÍ karta přetekla A5. Zkrať text o ~{zkrat_o_pct} % — "
             "ubírej z atmosférického odstavce, NIKDY z voleb/mechaniky."
         )
+    if oprava_schematu:
+        zaklad += (
+            f"\nPŘEDCHOZÍ odpověď neměla správná pole. Vrať PŘESNĚ pole {pole} "
+            "jako plochý JSON objekt (žádné vnořené struktury, žádné 'id')."
+        )
     return zaklad
+
+
+def _normalizuj_kartu(data: dict, uzel: Uzel) -> dict:
+    """Srovná drobné odchylky výstupu modelu (id→cislo, doplní typ/nazev)."""
+    if not isinstance(data, dict):
+        return {}
+    if "cislo" not in data:
+        data["cislo"] = data.get("id", uzel.cislo)
+    data.setdefault("typ", uzel.typ.value)
+    data.setdefault("nazev", uzel.nazev)
+    return data
+
+
+def _nouzova_karta(uzel: Uzel, koncept: Koncept) -> Karta:
+    """Nouzová karta, když model 3× nevrátí validní obsah — hra se dokončí,
+    slabá karta je označena v logu (nikdy neshodí celý balíček, spec §4)."""
+    return Karta(
+        cislo=uzel.cislo, nazev=uzel.nazev, typ=uzel.typ,
+        atmosfera=f"({koncept.tema}) Toto místo skrývá další střípek příběhu; "
+                  "rozhlédni se a poskládej, co jsi dosud zjistil.",
+        predni="Zvaž, kudy dál, a vyber cestu.", zadni="Cesta pokračuje dál.",
+    )
 
 
 def _orez_atmosfery(karta: Karta, measurer: Measurer) -> list[FitCheck]:
@@ -418,12 +451,20 @@ def napis_kartu(
     kontext = _kontext_karty(mapa, uzel)
     dve = _potrebuje_30_variantu(mapa, uzel)
     zkrat: int | None = None
+    oprava_schematu = False
     karta: Karta | None = None
     fits: list[FitCheck] = []
     for pokus in range(1, MAX_ITERACI_KARTA + 1):
-        prompt = _prompt_vypravec(zadani, koncept, uzel, kontext, dve, zkrat)
-        data = klient.generuj_json(Role.VYPRAVEC, prompt, SCHEMA_KARTA)
-        karta = Karta.model_validate(data)
+        prompt = _prompt_vypravec(zadani, koncept, uzel, kontext, dve, zkrat, oprava_schematu)
+        data = _normalizuj_kartu(klient.generuj_json(Role.VYPRAVEC, prompt, SCHEMA_KARTA), uzel)
+        try:
+            karta = Karta.model_validate(data)
+        except ValidationError as exc:
+            oprava_schematu = True  # model nevrátil správná pole → oprav a zkus znovu
+            log.append({"faze": 3, "karta": uzel.cislo, "pokus": pokus,
+                        "schema_chyba": exc.error_count()})
+            continue
+        oprava_schematu = False
         karta.cislo, karta.typ = uzel.cislo, uzel.typ  # čísla/typ řídí graf, ne LLM
         if not dve:
             karta.zadni_30 = None
@@ -436,6 +477,9 @@ def napis_kartu(
             (f.vyska_mm - f.limit_mm) / f.limit_mm for f in fits if not f.verdikt
         )
         zkrat = max(10, round(prekroceni * 100) + 5)
+    if karta is None:  # model 3× nevrátil validní obsah → nouzová karta
+        karta = _nouzova_karta(uzel, koncept)
+        log.append({"faze": 3, "karta": uzel.cislo, "nouzova_karta": True})
     fits = _orez_atmosfery(karta, measurer)  # deterministický fallback
     log.append({"faze": 3, "karta": uzel.cislo, "orez": "atmosfera",
                 "ok": all(f.verdikt for f in fits)})
@@ -490,10 +534,17 @@ def faze4_redaktor(
     for kod, popis in REDAKCE_CHECKY.items():
         prompt = (
             f"Check {kod}: {popis}\nVěk {zadani.vek.value}, téma „{koncept.tema}“.\n"
-            "Posuď karty a doslovně cituj úryvky jako důkaz.\n\n" + blob[:6000]
+            "Posuď karty a doslovně cituj úryvky jako důkaz.\n\n" + blob[:4000]
         )
-        data = klient.generuj_json(Role.REDAKTOR, prompt, SCHEMA_REDAKCE)
-        v = RedakceVerdikt.model_validate(data)
+        try:
+            data = klient.generuj_json(Role.REDAKTOR, prompt, SCHEMA_REDAKCE)
+            v = RedakceVerdikt.model_validate(data)
+        except (HonbickaLLMError, ValidationError) as exc:
+            # Posudek je sekundární — chyba/timeout jednoho checku neshodí hru.
+            verdikty.append(RedakceVerdikt(
+                check=kod, verdikt=False,
+                zduvodneni=f"[posudek nedostupný: {type(exc).__name__}]"))
+            continue
         v.check = kod
         # Ověření citací: každý úryvek musí být v kartách doslova.
         if not v.citace_karet or not all(c in blob for c in v.citace_karet):
@@ -642,7 +693,13 @@ def vyrob_hru(
     # FÁZE 3 — vypravěč karta po kartě + A5 fit-check
     karty, fit, log = faze3_vypravec(klient, zadani, koncept, mapa, measurer=measurer, log=log)
 
-    # FÁZE 4 — redaktor R1–R7 s ověřenými citacemi
+    # Průběžný zápis: koncept/mapa/karty se uloží HNED po FÁZE 3, ať drahou
+    # generaci nezahodí případný pád redaktora/sazby (spec §4 — jedna vada balíček nešhodí).
+    predbezny = Report(slug=slug, seed=seed, archetyp=params.archetyp, iterace=iterace_faze1,
+                       stav=StavHry.OK, fit_check=fit)
+    _zapis_skin(hra_dir, _koncept_md(koncept, params), mapa, karty, predbezny, log)
+
+    # FÁZE 4 — redaktor R1–R7 s ověřenými citacemi (resilientní: chyba neshodí hru)
     editorial = faze4_redaktor(klient, karty, koncept, zadani)
 
     # simulace pro report
