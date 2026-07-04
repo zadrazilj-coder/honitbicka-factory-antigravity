@@ -1,0 +1,363 @@
+# Návrhy vylepšení — audit kódu HONBIČKA FACTORY
+
+> Průběžně zapisovaný audit celého kódu (2026-07-04). Tři osy:
+> **M** = mechanismus (architektura/logika) · **R** = rychlost (výkon) ·
+> **S** = správnost popisů (docstringy, komentáře, prompty vs. realita).
+> Priorita: 🔴 vysoká · 🟡 střední · 🟢 nízká (nice-to-have).
+
+**Stav auditu:** DOKONČENO 2026-07-04.
+
+- [x] honbicka/llm.py
+- [x] honbicka/modely.py
+- [x] honbicka/orchestrator.py
+- [x] honbicka/scaffold.py
+- [x] honbicka/validatory/ (topologie, skalovani, simulace, sazba, agregace)
+- [x] honbicka/sazba/ (render, styl, karty_pdf, herni_list, pruvodce, karta_html)
+- [x] honbicka/registr.py + taxonomie.py
+- [x] honbicka/davka.py + feedback.py + cli.py
+- [x] tests/ (mezery v pokrytí)
+- [x] Souhrn a doporučené pořadí
+
+---
+
+## 1 · honbicka/llm.py
+
+### Mechanismus
+- 🔴 **L1 · Jednotné volání „JSON + pydantic" v klientu.** `generuj_json` opakuje jen při
+  nevalidním *JSONu*; pydantic validace probíhá až na volajících místech a každé ji řeší
+  jinak (architekt vrací error-tuple, vypravěč má vlastní retry, koncept/téma dřív padaly).
+  Oba živé pády generace („čtyři světla" #1, téma-generátor) by nevznikly, kdyby existovalo
+  `generuj_model(role, prompt, Model) -> Model`, které v JEDNÉ retry smyčce řeší
+  json.loads + `Model.model_validate` + opravný prompt s výpisem pydantic chyb.
+  Volající místa by se zjednodušila a chování sjednotilo.
+- 🔴 **L2 · Per-model `think` handling.** Ollama vrací HTTP 400 pro `think:true` na
+  ne-thinking modelu (ověřeno sondou qwen3-coder). Klient s `model=` overridem se rozbije.
+  Návrh: parametr `OllamaKlient(thinking_podporovano=True)` nebo detekce přes
+  `/api/show` při prvním volání; při 400 s "think" jednorázově zopakovat bez něj.
+- 🟡 **L3 · Retry na transientní chyby transportu.** ReadTimeout/5xx = okamžitý tvrdý fail.
+  Redaktor tak ztratil 7/7 posudků. Návrh: 1 opakování na timeout/5xx (s logem), teprve
+  pak `HonbickaLLMError`. (Spec §1 předepisuje 3× retry jen pro nevalidní JSON — retry na
+  síťovou chybu je doplněk, ne obcházení.)
+- 🟡 **L4 · `_base_url` pašované v payloadu.** `payload["_base_url"]` + `pop()` v transportu
+  je křehké (mock transporty klíč vidí a musí ho ignorovat). Čistší: `Transport =
+  Callable[[str, dict, float], dict]` (base_url jako argument).
+- 🟡 **L5 · `keep_alive`.** Ollama defaultně uvolní model po ~5 min nečinnosti. Mezi hrami
+  v dávce (zápis, validace, sazba) může dojít k unload→reload (~30 s ztráta). Přidat
+  `"keep_alive": "30m"` do payloadu.
+- 🟢 **L6 · `generuj_text` je mrtvý kód** — nikde se nevolá (vypravěč používá structured
+  output). Smazat, nebo označit jako záměrné API do budoucna.
+
+### Rychlost
+- 🔴 **L7 · Redaktor: 7 sekvenčních thinking-ON volání = hlavní časový zabiják**
+  (~15 min timeoutů v živém běhu). Návrhy v pořadí účinnosti:
+  (a) jedno volání se schématem `list[RedakceVerdikt]` pro všech 7 checků najednou
+  (7× méně prefill+thinking), fallback per-check při selhání;
+  (b) thinking OFF pro redaktora (temp 0.3 zůstává) — thinking je u klasifikační úlohy
+  s citacemi pravděpodobně zbytný; ověřit živě;
+  (c) menší `num_ctx` (viz L8).
+- 🟡 **L8 · `num_ctx` 32768 pro redaktora je předimenzované** — vstup je ~4000 znaků
+  (≈1500 tokenů). 8192–16384 stačí a šetří VRAM/prefill. U architekta je 32768 oprávněné
+  jen pro legacy cestu s přiloženou předchozí mapou; scaffolder architekta nevolá.
+- 🟢 **L9 · Streaming (`stream:true`)** — dnes timeout zahodí i téměř hotovou odpověď.
+  Se streamem lze resetovat timeout per-token („idle timeout" místo „total timeout")
+  a dlouhé generace přestanou umírat na pevný strop.
+
+### Správnost popisů
+- 🟡 **L10 · Docstringy lžou o počtu rolí:** modul říká „tři pracovní role + téma-generátor",
+  třída `OllamaKlient` „k jednomu modelu se třemi rolemi" — enum má ČTYŘI role a klient
+  slouží všem. Sjednotit na „čtyři role".
+- 🟡 **L11 · `generuj_text` docstring** („pro role, jejichž výstupem jsou volné texty
+  karet") popisuje něco, co se neděje — texty karet jdou přes structured output.
+- 🟢 **L12 · `RoleConfig` docstring** odkazuje na „doplní M3/M4/M7" — milníky hotové,
+  odkaz je zastaralý.
+
+---
+
+## 2 · honbicka/orchestrator.py
+
+### Mechanismus
+- 🔴 **O1 · Volby v textu karty se neověřují proti grafu.** Živý běh „čtyři světla"
+  ukázal, že vypravěč si čísla voleb vymýšlí (karta 8 měla „→8" — odkaz sama na sebe;
+  graf vede 8→10/11). Vytištěná hra by hráče posílala na špatné karty — **chyba
+  správnosti finálního produktu**. Návrh (deterministicky, dle „Python rozhoduje"):
+  po vygenerování karty vytáhnout regexem `→(\d+)` z `predni`/`zadni`, porovnat
+  s `{h.cil for h in uzel.hrany}`; při neshodě cílený opravný pokus („volby vedou
+  PŘESNĚ na čísla: …"); prompt vypravěče má cílová čísla vyjmenovat jako povinná.
+- 🔴 **O2 · Redaktor vidí jen zlomek hry.** `blob[:4000]` = ~4 karty z 21, navíc slepé
+  oříznutí uprostřed karty a bias na nízká čísla. R4 („namátkou 5 karet") ani R1
+  (průnik stop) nelze poctivě posoudit. Návrh: místo prefixu **vzorkovat celé karty**
+  (AHA karta + klíčové svědectví + 3–4 náhodné dle seedu) a pro R1/R2 přidat
+  koncept (mechanismus řešení) do promptu.
+- 🔴 **O3 · Vypravěč nezná zápletku.** Prompt karty předává jen téma+typ+sousedy —
+  ne mechanismus řešení, falešné teorie, rekvizitu. Každá karta si proto vymýšlí
+  vlastní příběhové prvky (v „čtyřech světlech" viditelné: karty jsou atmosférické,
+  ale narativně nespojité — zrcadla, panely, lampy bez souvislosti). Návrh: do
+  promptu přidat 2–3 řádky konceptu (mechanismus, rekvizita, falešná teorie) +
+  instrukci, co karta smí/nesmí prozradit vzhledem k pozici před/za AHA.
+  **Pravděpodobně největší páka na kvalitu obsahu.**
+- 🔴 **O4 · Slovník žánru (Patro 1 bod 10) neimplementován.** `Koncept.slovnik_zakazana`
+  existuje, ale žádná kontrola karty negrepuje. Deterministická kontrola je triviální
+  (substring přes všechny strany karet) — přidat do FÁZE 3 hned za fit-check
+  (s cíleným opravným promptem „nahraď slovo X").
+- 🟡 **O5 · Koncept je hubený a kazí okna zákazů.** Živě: `mechanismus_reseni=
+  "prunik_stop"`, rekvizita `"denik_detektiva"` (snake_case tokeny). Tyto řetězce se
+  zapisují do registru a porovnávají v oknech zákazů — generické tokeny učiní
+  deduplikaci bezcennou (každá hra „prunik_stop" = kolize navždy). Návrh: prompt
+  konceptu s příkladem plných vět („Drak kýchá kvůli pylu květiny — hráč to odvodí
+  z…"), min. délka pole validovaná pydantic (`min_length`).
+- 🟡 **O6 · Nouzová karta nemá volby.** `_nouzova_karta` negeneruje „→ karta X" —
+  vytištěná by rozbila navigaci. Doplnit hrany uzlu jako generické volby
+  („A) Pokračuj → karta {cil}").
+- 🟡 **O7 · Kolize slugu.** Slug se odvozuje z tématu; opakovaná hra se stejným
+  tématem přepíše `skiny/<slug>/` a registr dostane duplicitní slug. Návrh: při
+  existenci adresáře přidat sufix `-{seed}`.
+- 🟡 **O8 · Trojí validace téže mapy.** Scaffolder interně simuluje (výběr AHA),
+  `vyrob_hru` validuje s `POCET_SIMULACI=15`, a pak `validuj_par_30_60` běží PO TŘETÍ
+  (default 5) jen kvůli `sim_reports` — výsledky první validace se zahazují (`_`).
+  Návrh: použít reporty z první validace (funkce je už vrací) a smazat třetí běh.
+  Zároveň sjednotit počet průchodů (15 vs 5 dává jiný medián — zdroj dřívějšího bugu).
+- 🟡 **O9 · `_pdf_sady` chytá jen `SazbaNedostupna`.** Jiná výjimka WeasyPrintu
+  (chyba fontu, interní chyba na konkrétní kartě) shodí celou hru PO drahé generaci.
+  Chytat `Exception` → zapsat do `report.chyby` (skin už je uložený, měkký fail).
+- 🟡 **O10 · `ATMOSFERA_FLOOR=200` porušuje dodatek 3.4-7** (atmosféra 300–500 znaků
+  POVINNÁ). Ořez smí jít pod 300. Rozhodnout: buď floor 300 + při nevejití nechat
+  fit-check fail (a řešit zkrácením mechaniky?… ne — spíš re-prompt), nebo odchylku
+  explicitně zapsat do docs/rozhodnuti.md. Teď je to tichý rozpor.
+- 🟢 **O11 · `LosovaneParametry.pocet_karet_60` scaffolder ignoruje** (staví fix 21),
+  ale losování ho dál generuje a loguje — matoucí stopa v logu. Buď z losování pro
+  scaffolder cestu vyřadit, nebo zalogovat „scaffolder: pevných 21".
+- 🟢 **O12 · Spec-mezery (vědomé, k evidenci):** Patro 1 bod 11 (bezpečnost úkolů dle
+  physical_intensity/prostředí — banka úkolů nemodelována), bod 13 (bypass), P9/kostkové
+  tabulky 1–6 jako strukturovaná data. Zapsáno i v rozhodnuti.md; sem pro úplnost.
+
+### Rychlost
+- 🔴 **O13 · FÁZE 4 = 7 × thinking-ON volání** (viz L7) — v živém běhu ~15 min
+  timeoutů, 0 užitku. Jedno volání s `list[RedakceVerdikt]` + vzorkované karty (O2)
+  srazí redakci na ~1–2 min.
+- 🟡 **O14 · Duplicitní simulace/validace** (O8) — malé, ale zbytečné.
+- 🟢 **O15 · Vypravěč `num_ctx` 16384** při ~1,5k tokenech promptu — 8192 stačí,
+  rychlejší prefill a méně VRAM (víc místa pro KV cache jiných volání).
+
+### Správnost popisů
+- 🔴 **O16 · Docstring modulu je zastaralý:** „M3 implementuje FÁZE 0 a FÁZE 1 …
+  FÁZE 3–5 doplní M4–M6" — vše je hotové a default cesta jde přes scaffolder, který
+  v docstringu chybí. Přepsat na skutečný tok (FÁZE 1 = koncept LLM + scaffolder;
+  legacy LLM architekt za flagem).
+- 🟡 **O17 · Sekce „FÁZE 1 — ARCHITEKT (koncept + mapa)"** — mapa už defaultně
+  nevzniká u architekta; nadpis sekce a docstring `faze1_architekt` označit „legacy".
+- 🟢 **O18 · Překlep** v komentáři: „balíček nešhodí" (ř. 697) → „neshodí".
+- 🟢 **O19 · `_normalizuj_kartu`** docstring říká „doplní typ/nazev" — doplňuje i
+  `cislo` z `id`; drobně rozšířit.
+
+---
+
+## 3 · honbicka/modely.py
+
+### Mechanismus
+- 🟡 **MD1 · `Hrana.fyzicka_narocnost: str`** — volný string; má být
+  `Literal["low", "high"]` (pydantic pak odmítne překlepy). Souvisí s neimplementovaným
+  dodatkem 3.4-6 (viz V6 níže), který na tomto poli stojí.
+- 🟡 **MD2 · `Pravdivost` enum je mrtvý.** Uzel typu INFORMACE nemá pravdivostní
+  hodnotu (pravda/zavadejici/lez) — proto minima pravdivých stop (§SKÁLOVÁNÍ) nelze
+  strojově ověřit z mapy (je to jen číslo v konceptu) a R1/R2 nemají datovou oporu.
+  Návrh: `Uzel.pravdivost: Pravdivost | None`, scaffolder rozdělí pravda/lež dle
+  koncept-počtů, `skalovani` pak počítá skutečné stopy.
+- 🟡 **MD3 · `Karta.atmosfera` bez min. délky.** Popis říká „300–500 znaků povinný",
+  ale nic to nevynucuje (a ořez smí jít na 200 — viz O10). Přidat validaci nebo
+  aspoň deterministickou kontrolu ve FÁZE 3 s re-promptem.
+- 🟢 **MD4 · `Hra.koncept: str` (markdown)** vedle typované `mapa: Mapa` — asymetrie;
+  strukturovaný `Koncept` se ztrácí (je jen v .md). Uložit i objekt (koncept.json).
+
+### Správnost popisů
+- 🟢 **MD5 ·** Popisy polí OK (po dřívějších opravách). `SCHEMA_*` konstanty
+  odpovídají realitě.
+
+---
+
+## 4 · honbicka/scaffold.py
+
+### Mechanismus
+- 🔴 **SC1 · Chybí POSTAVY dle engine tabulky.** §SKÁLOVÁNÍ: postavy 60min = **5–7**,
+  30min = **3–4**. Skeleton má **1** uzel typu `postava` (a validátor to nekontroluje
+  — viz V1, proto 3600/3600 prošlo). Navíc **chybí `lecitel`** (engine: stavy „vždy
+  léčitelné" — herní list na léčitele odkazuje, ale v mapě není!) a **postava
+  nápovědy** (§SYSTÉM NÁPOVĚDY: 1–2 v mapě; práh počítadla bez ní nemá payoff).
+  Návrh: přetypovat část prechod/informace uzlů na `postava`, přidat `lecitel`
+  do CORE a označit postavu nápovědy. **Největší věcný dluh scaffolderu vůči enginu.**
+- 🟡 **SC2 · Jediný topologický vzor.** Zapsáno v rozhodnuti.md jako kompromis;
+  s parametrem `rng` (dnes nevyužitý!) lze levně variovat: prohodit pořadí větví,
+  posunout gated/strez pozice, střídat 2–3 předpřipravené vzory trunku. Bez toho
+  budou všechny hry strukturálně identické (hráči vzor prokouknou — přesně proti
+  §RITUÁL vs. PŘEKVAPENÍ).
+- 🟡 **SC3 · Generické názvy uzlů prosáknou do průvodce.** Uzly se jmenují
+  „prechod 10", „jednosmer 21" — a průvodce (Rozmístění uzlů!) je tiskne organizátorovi.
+  Vypravěč mezitím vymyslí vlastní názvy karet → mapa a karty se rozjedou (živě
+  ověřeno: karta „Čtyři světla" 3×). Návrh: po FÁZE 3 zpětně propsat názvy karet
+  do `mapa.uzly[].nazev` (deterministická synchronizace) + vypravěči přikázat
+  unikátní název.
+- 🟢 **SC4 · `rng` parametr nevyužit** — buď použít (SC2), nebo z podpisu vyřadit.
+
+### Správnost popisů
+- 🟢 **SC5 ·** Docstring přesný (i adaptivní AHA). Jen doplnit poznámku o SC1 limitu,
+  dokud se nevyřeší.
+
+---
+
+## 5 · honbicka/validatory/
+
+### Mechanismus
+- 🔴 **V1 · `skalovani` nekontroluje POSTAVY (řádek engine tabulky chybí).**
+  `SkalaProfilu` nemá pole pro postavy (3–4 / 5–7) — proto prošel skeleton s 1 postavou.
+  Přidat `postavy: tuple[int, int]` (počítat typy `postava`+`lecitel`; obchodník má
+  vlastní řádek) a rozšířit tabulku. Totéž zvážit pro „Řetězec předmětů (P6)"
+  (60min: 1× ≥3 články) — dnes zcela nekontrolováno a nemodelováno.
+- 🟡 **V2 · Simulace ignoruje `Hrana.podminka` a inventář.** Spec Patro 1 bod 12 chce
+  průchody „s inventářem, komponentami, stavy". BFS agent bere gated hranu jako volnou.
+  Dnes neškodí (scaffolder podmínky na hrany nedává), ale jakmile je dá, délka i AHA %
+  budou podhodnocené. Návrh: agent sbírá komponenty při návštěvě uzlu a hranu
+  s podmínkou smí projít až po jejím splnění.
+- 🟡 **V3 · Totéž v `topologie`:** dosažitelnost/softlock počítá podmíněné hrany jako
+  průchozí — „dosažitelný" uzel může být za nesplnitelnou podmínkou. Minimálně
+  zdokumentovat; correctness fix = dosažitelnost po vrstvách (bez podmínek → s
+  postupně splnitelnými podmínkami).
+- 🟡 **V4 · Nejednotný `pocet_simulaci`** napříč voláními (5 default vs 15 scaffolder)
+  — už způsobil bug (medián se lišil). Návrh: jediná konstanta v `validatory.simulace`
+  (např. `POCET_SIMULACI_DEFAULT = 15`), všude importovat; `scaffold.POCET_SIMULACI`
+  z ní jen aliasovat.
+- 🟡 **V5 · `sazba._weasy_measurer` používá privátní API** `page._page_box.children[0]`
+  — křehké napříč verzemi WeasyPrintu (CI má 69.0, pin v pyproject je jen `>=61`).
+  Návrh: pin horní meze verze, nebo měřit přes veřejné API (render do
+  jednostránkového dokumentu a číst `page.height` obsahového boxu přes descendants).
+- 🔴 **V6 · Dodatek 3.4-6 (přístupnost) neimplementován.** „K postavám s klíčovým
+  svědectvím vždy ≥1 fyzicky nenáročná hrana" — pole `fyzicka_narocnost` existuje,
+  kontrola nikde. Deterministická a triviální: pro každý uzel s
+  `klicove_svedectvi=true` ověřit ≥1 vstupní hranu s `fyzicka_narocnost=="low"`.
+- 🟢 **V7 · `zkontroluj_simulaci` míchá zodpovědnosti** (délka z `odhad_delky_min`,
+  AHA z průchodů, dominátory) — funguje, ale rozpadnout na tři pojmenované kontroly
+  by zlepšilo diagnostiky.
+
+### Rychlost
+- 🟢 **V8 · `povinne_uzly` je O(N·(N+E))** (BFS bez každého uzlu) — pro 21 uzlů
+  irelevantní; kdyby mapy narostly (90min, 35 uzlů), pořád OK. Nic nedělat.
+
+### Správnost popisů
+- 🟡 **V9 · `topologie._minima_pro` docstring** neříká, že minima „větví" počítá jako
+  uzly s ≥2 hranami (tj. včetně střežených apod.), zatímco engine mluví o „≥3 větve"
+  topologicky. Upřesnit definici v docstringu.
+- 🟢 **V10 · `simulace` docstring** slibuje „edge-case scénáře" (chybějící předmět,
+  pokus o falešné řešení, počítadlo pod/nad prahem — spec §VALIDACE Simulace) —
+  neimplementováno. Buď doplnit, nebo z docstringu odstranit a zapsat jako spec-mezeru.
+
+---
+
+## 6 · honbicka/sazba/
+
+### Mechanismus / správnost tisku
+- 🔴 **SZ1 · Duplex instrukce je pro landscape arch pravděpodobně ŠPATNĚ.**
+  Klasická tiskařská past: portrait dokumenty = „otáčet po delší straně", **landscape
+  dokumenty typicky „po kratší straně"** (jinak zadní strany vzhůru nohama). Náš arch
+  je A4 na šířku; průvodce i kalibrační karta instruují „po delší straně" a imposice
+  drží levý slot vlevo — což sedí jen pro jeden režim otočení: při otočení po kratší
+  straně se sloty zrcadlí L↔R (zadní arch by musel mít pořadí B|A). Nelze rozhodnout
+  od stolu — **závisí na ovladači tiskárny**. Návrh: (a) kalibrační značky udělat
+  ASYMETRICKÉ (písmeno/šipka v rohu — dnes je to symetrický čtverec, který neodhalí
+  otočení o 180° ani zrcadlení spolehlivě), (b) do průvodce dát OBĚ varianty
+  („pokud je zadní strana vzhůru nohama, přepni na kratší stranu"), (c) volitelně
+  generovat obě zadní imposice. Ověřit prvním reálným tiskem.
+- 🟡 **SZ2 · Měřicí stránka 4000 mm** v `_weasy_measurer` — obsah delší než 4000 mm
+  by se stránkoval a výška lhala. U karet nehrozí, ale guard (assert 1 stránka) je
+  zadarmo.
+- 🟡 **SZ3 · `spocti_archy` počítá substring `class='arch'`** — svázané s přesnou
+  syntaxí generátoru (jednoduché uvozovky). Křehké při refaktoru CSS/HTML; robustnější
+  je počítat přes významový marker (např. `<!--arch-->` komentář) nebo parsovat.
+- 🟢 **SZ4 · Herní list nemá kostkové tabulky 1–6** (§KOSTKA: na sber/prechod uzlech
+  tabulka šesti mikroúkolů) ani zápis „banka úkolů dle prostředí" — súvisí s O12/V10
+  spec-mezerami; evidovat.
+
+### Správnost popisů
+- 🟢 **SZ5 · `styl.py`:** komentář „Pasti WeasyPrint jako CSS konstanty" přesný;
+  `SYM_*` duplikované v `sazba/__init__.py` i `styl.py` — jeden zdroj pravdy.
+
+---
+
+## 7 · honbicka/registr.py + taxonomie.py
+
+- 🟡 **R1 · Okna zákazů porovnávají přesné řetězce** (`mechanismus.lower()`), takže
+  reálná ochrana proti opakování stojí na kvalitě koncept polí (viz O5 — dnes
+  „prunik_stop" ⇒ všechna budoucí „prunik_stop" zakázána = fakticky blokace, nebo
+  při jiném tokenu nulová ochrana). Po O5 zvážit fuzzy shodu (normalizace, klíčová
+  slova) — jinak okna reálně nefungují.
+- 🟡 **R2 · Kolize slugu v registru** (duplicitní řádky téhož slugu) — viz O7;
+  registr je append-only, ale `nacti_registr` nijak neřeší duplicitní slug
+  (pro okna zákazů to nevadí, pro `honbicka status` a lidské čtení ano).
+- 🟢 **R3 · `zapis_zaznam`** připíše hlavičku jen když je soubor prázdný/neexistuje —
+  soubor s obsahem bez hlavičky (ruční zásah) dostane řádky bez tabulky. Okrajové.
+- 🟢 **R4 · `taxonomie.zatrid_hru`** — kopíruje jen PDF; bez GTK vznikne INDEX.md
+  s „(PDF zatím nevygenerováno)" — správně. INDEX by mohl přiložit i herní listy
+  ze `skiny/` (karty.json pro náhradu ztracené karty zmiňuje spec §7 příloha) — nice-to-have.
+
+---
+
+## 8 · honbicka/davka.py + feedback.py + cli.py
+
+- 🔴 **C1 · `honbicka gen`/`batch` bez GTK spadne UPROSTŘED generace.** CLI nepředává
+  `measurer` → default `_weasy_measurer` → první fit-check ve FÁZE 3 vyhodí
+  `SazbaNedostupna` až PO zaplacení konceptu (+1 karty) na GPU. (Živé běhy to
+  obcházely fake measurerem — CLI cesta je neotestovaná díra.) Návrh: na začátku
+  `vyrob_hru` zavolat `sazba.render.je_dostupne()`; když ne → **fail-fast s jasnou
+  hláškou PŘED prvním LLM voláním**, nebo explicitní `--bez-fitchecku` fallback na
+  odhad znaků se zápisem „fit-check aproximován" do reportu (netisknout!).
+- 🟡 **C2 · Dávka nezapisuje průběžný report na disk.** `spust_davku` drží výsledky
+  v paměti; pád/přerušení přes noc ztratí přehled (hry samotné na disku jsou).
+  Návrh: append `skiny/davka_<timestamp>.jsonl` po každé hře.
+- 🟡 **C3 · `spust_davku` čte feedbacky/registr každou hru** — správně (okna se
+  aktualizují), jen zbytečně načítá feedbacky znovu; cache na úrovni dávky stačí.
+- 🟢 **C4 · `honbicka new` netestované** (interaktivní input) — extrahovat čistou
+  funkci `sestav_zadani(odpovedi) -> Zadani` a testovat tu; CLI zůstane tenké.
+- 🟢 **C5 · `cli._cmd_gen` tiskne jen chyby** — přidat cestu ke skinu a součet
+  fit-check/redakce (už je v reportu).
+
+---
+
+## 9 · tests/ — mezery v pokrytí
+
+- 🔴 **T1 · Chybí test „volby v textu ↔ hrany grafu"** (O1) — nejdřív feature, pak test.
+- 🟡 **T2 · Chybí test CLI `gen` cesty bez GTK** (C1) — dnes by odhalil pád.
+- 🟡 **T3 · Chybí test počtů postav** (V1/SC1) — po doplnění tabulky přidat rozbitý graf
+  s 1 postavou.
+- 🟡 **T4 · `@slow` testy nepokrývají vypravěče ani redaktora** — právě ty dvě role
+  živě selhaly. Přidat 1 slow test: `napis_kartu` na 1 uzlu (≤2 min) a 1 redaktor
+  check. Levné a chytá regresi schémat.
+- 🟢 **T5 · Golden PDF na CI:** CI má GTK — golden test může nově assertovat i reálný
+  render (počet stran vyrenderovaného PDF přes pypdf), ne jen HTML archy. Zpřesní
+  „Sazba: počet stran = f(počet karet)" ze spec §10.
+
+---
+
+## 10 · Souhrn — doporučené pořadí prací
+
+**Vlna 1 — správnost tištěné hry (bez ní nemá smysl tisknout):**
+1. O1+T1: volby v textu karet ↔ hrany grafu (deterministická kontrola + oprava promptu)
+2. SZ1: duplex/kalibrace — asymetrické značky + instrukce obou režimů
+3. SC1+V1+T3: postavy/léčitel/nápověda do scaffolderu + řádek tabulky do škálování
+4. C1+T2: fail-fast bez GTK v CLI
+5. O6: nouzová karta s volbami
+
+**Vlna 2 — kvalita obsahu a rychlost:**
+6. O3: koncept do promptu vypravěče (narativní soudržnost)
+7. O5+R1: plnohodnotný koncept (věty, min_length) → funkční okna zákazů
+8. L7/O13: redaktor jedním voláním + vzorkované karty (O2) + thinking OFF test
+9. L1: `generuj_model` (JSON+pydantic v jedné retry smyčce) — sjednotí L2/L3 řešení
+10. SC3: synchronizace názvů uzlů ↔ karet (průvodce)
+
+**Vlna 3 — robustnost a dluh:**
+11. L2 (per-model think), L3 (retry na timeout), L5 (keep_alive), O9 (širší catch PDF)
+12. O8+V4: jedna validace, jeden počet průchodů
+13. O4: slovník žánru (grep) · V6: přístupnost 3.4-6 · MD2: pravdivost stop
+14. SC2: topologická variabilita (2–3 vzory + rng)
+15. Dokumentační očista: O16–O19, L10–L12, V9–V10, MD5, SZ5
+
+**Stav auditu: DOKONČENO** (všechny moduly projity; tento soubor je průběžný
+zápis — položky odškrtávat při realizaci).
+
+---
