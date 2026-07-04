@@ -2,7 +2,7 @@
 
 import pytest
 
-from honbicka.modely import Archetyp, Koncept, Obtiznost, Profil, VekPasmo, Zadani
+from honbicka.modely import Archetyp, Koncept, Obtiznost, Profil, TypUzlu, VekPasmo, Zadani
 from honbicka.orchestrator import losuj_parametry, pocty_cile
 from honbicka.scaffold import POCET_SIMULACI, postav_skeleton
 from honbicka.validatory.agregace import validuj_par_30_60
@@ -64,6 +64,23 @@ def test_deterministicky():
     a = _skeleton(seed=7)[3]
     b = _skeleton(seed=7)[3]
     assert a.model_dump() == b.model_dump()
+
+
+def test_postavy_a_lecitel_dle_skalovani():
+    # SC1/V1: 30min (CORE) potřebuje 3-4 postav, 60min (celý graf) 5-7
+    # (postava+lecitel dohromady; engine dřív úplně chyběl léčitel v mapě).
+    _, _, _, mapa = _skeleton()
+    core = mapa.core_uzly
+
+    def pocet_postav(uzly):
+        return sum(1 for u in uzly if u.typ in (TypUzlu.POSTAVA, TypUzlu.LECITEL))
+
+    core_postavy = pocet_postav(core)
+    plny_postavy = pocet_postav(mapa.uzly)
+    assert 3 <= core_postavy <= 4, core_postavy
+    assert 5 <= plny_postavy <= 7, plny_postavy
+    # léčitel musí v mapě existovat (engine: stavy „vždy léčitelné")
+    assert any(u.typ == TypUzlu.LECITEL for u in mapa.uzly)
 
 
 def test_komponenty_dle_obtiznosti():

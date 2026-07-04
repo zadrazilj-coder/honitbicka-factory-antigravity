@@ -194,6 +194,13 @@
   nápovědy** (§SYSTÉM NÁPOVĚDY: 1–2 v mapě; práh počítadla bez ní nemá payoff).
   Návrh: přetypovat část prechod/informace uzlů na `postava`, přidat `lecitel`
   do CORE a označit postavu nápovědy. **Největší věcný dluh scaffolderu vůči enginu.**
+  **✅ OPRAVENO 2026-07-04:** uzly 7 a 10 (CORE) přetypovány na `postava`
+  (edge-count „větve" kontrola je na typu nezávislá, takže retyp je bezpečný);
+  uzel 13 (SIDE) na `lecitel`, uzel 14 (SIDE) na `postava`. CORE má nyní 3
+  postavy (7,8,10 → 30min rozsah 3–4 ✓), plný 60min graf 4 postavy + 1 léčitel
+  = 5 (rozsah 5–7 ✓). „Postava nápovědy" nemá vlastní typ v modelu (engine ji
+  neodlišuje strukturně) — dostatek `postava` uzlů stačí, aby ji vypravěč mohl
+  narativně přiřadit jedné z nich; neimplementováno jako samostatné pole.
 - 🟡 **SC2 · Jediný topologický vzor.** Zapsáno v rozhodnuti.md jako kompromis;
   s parametrem `rng` (dnes nevyužitý!) lze levně variovat: prohodit pořadí větví,
   posunout gated/strez pozice, střídat 2–3 předpřipravené vzory trunku. Bez toho
@@ -221,6 +228,25 @@
   Přidat `postavy: tuple[int, int]` (počítat typy `postava`+`lecitel`; obchodník má
   vlastní řádek) a rozšířit tabulku. Totéž zvážit pro „Řetězec předmětů (P6)"
   (60min: 1× ≥3 články) — dnes zcela nekontrolováno a nemodelováno.
+  **✅ OPRAVENO 2026-07-04:** `SkalaProfilu.postavy` (30min=(3,4), 60min=(5,7)),
+  kontrola v `zkontroluj_skalovani` počítá `typ(POSTAVA)+typ(LECITEL)` (obchodník
+  se do součtu nepočítá, viz vlastní `obchodnik_povinny` check). 4 nové testy
+  (`test_skalovani.py`: málo postav, léčitel se počítá, moc postav, obchodník se
+  nepočítá). **Řetězec předmětů (P6) zůstává nemodelován** — mimo rozsah tohoto
+  fixu, ponecháno jako otevřená položka.
+  **Vedlejší nález (NEOPRAVENO, mimo rozsah SC1/V1):** při plné 3600-kombinační
+  validaci scaffolderu (viz SC1) se objevilo **180/3600 (5 %) předem existujících
+  selhání** — archetyp A1, konkrétní seedy (např. seed=3) → pozice AHA padne na
+  82–88 % místo do pásma 65–80/87 %. **Ověřeno diffem se starým scaffolderem
+  (`git stash`): identická množina selhání před i po SC1/V1 změnách** — nejde
+  o regresi, je to dřívější neobjevený okrajový případ v `_vyber_aha_uzel`
+  (pravděpodobně: candidate-uzly mezi sebou nemají dost jemné rozestupy % pro
+  úzké pásmo A1 při určitých seedech). `vyrob_hru` toto zachytí jako FAILED
+  hru (bezpečné selhání, netiskne se nic špatného), ale podkopává slib
+  scaffolderu „vždy uspěje deterministicky". **Kandidát na další opravu**
+  (mimo aktuální dávku): buď rozšířit sadu kandidátních uzlů (víc dominátorů
+  v trunku), nebo při vyčerpání kandidátů zkusit posunout AHA_UZEL_DEFAULT
+  jinam / lehce poupravit tempo uzlů před AHA.
 - 🟡 **V2 · Simulace ignoruje `Hrana.podminka` a inventář.** Spec Patro 1 bod 12 chce
   průchody „s inventářem, komponentami, stavy". BFS agent bere gated hranu jako volnou.
   Dnes neškodí (scaffolder podmínky na hrany nedává), ale jakmile je dá, délka i AHA %
@@ -363,7 +389,7 @@
 **Vlna 1 — správnost tištěné hry (bez ní nemá smysl tisknout):**
 1. ✅ O1+T1: volby v textu karet ↔ hrany grafu (deterministická kontrola + oprava promptu) — OPRAVENO 2026-07-04
 2. ✅ SZ1: duplex/kalibrace — asymetrické značky + instrukce obou režimů — ČÁSTEČNĚ OPRAVENO 2026-07-04 (kód hotový; reálný tisk vyžaduje ruční ověření uživatelem)
-3. SC1+V1+T3: postavy/léčitel/nápověda do scaffolderu + řádek tabulky do škálování
+3. ✅ SC1+V1+T3: postavy/léčitel/nápověda do scaffolderu + řádek tabulky do škálování — OPRAVENO 2026-07-04 (odhalen vedlejší nález: 180/3600 pre-existující AHA edge-case, netýká se této opravy, viz V1)
 4. C1+T2: fail-fast bez GTK v CLI
 5. O6: nouzová karta s volbami
 

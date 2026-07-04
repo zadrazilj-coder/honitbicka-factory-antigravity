@@ -10,6 +10,10 @@ Topologie: CORE trunk (12 uzlů = hratelná 30min hra) + SIDE region (jen 60min)
 který se sbíhá zpět do trunku PŘED AHA uzlem, takže AHA i klíčové svědectví
 zůstávají dominátory obou grafů. AHA uzel se vybírá adaptivně, aby jeho pozice
 (v čase) padla do pásma archetypu pro 30min i 60min profil.
+
+Postavy (SC1/V1): CORE má 3 uzly typu `postava` (7, 8, 10) — dost pro 30min
+škálování (3–4). SIDE přidává `lecitel` (13, engine: stavy „vždy léčitelné")
+a další `postava` (14) — 60min tak má postavy+lecitel = 5 (škálování 5–7).
 """
 
 from __future__ import annotations
@@ -22,7 +26,7 @@ from honbicka.orchestrator import LosovaneParametry
 from honbicka.validatory.simulace import pasmo_aha, povinne_uzly, simuluj
 from honbicka.validatory.skalovani import komponenty_rozsah
 
-AHA_UZEL_DEFAULT = 10  # prechod mezi rozcestím (7) a postavou (8) ~ 70 %
+AHA_UZEL_DEFAULT = 10  # postava mezi uzlem 7 a uzlem 8 (~70 % trunku)
 
 
 def _regiony(zadani: Zadani) -> tuple[str, str]:
@@ -93,21 +97,28 @@ def postav_skeleton(
         ))
 
     # --- CORE trunk (region A), uzly 1..12 = hratelná 30min hra ---------- #
+    # Uzly 7/10 jsou POSTAVA místo generického rozcestí/přechodu (SC1/V1):
+    # typové minima (větve/smyčky/slepé/jednosměrky) se počítají z hran a
+    # jiných typů, ne z těchto dvou, takže retyp je bezpečný a dodá CORE
+    # potřebné 3 postavy (§SKÁLOVÁNÍ „Postavy" 30min = 3–4).
     add(1, T.ONBOARDING, reg_a, [2], C)
     add(2, T.ROZCESTI, reg_a, [3, 4, 13], C, kostka=True)   # 13 = jediný vstup do SIDE
     add(3, T.INFORMACE, reg_a, [5], C)
     add(4, T.INFORMACE, reg_a, [5], C)
     add(5, T.STREZ, reg_a, [6], C, kostka=True)
     add(6, T.GATED, reg_a, [7], C, komp_=[komp[0]])
-    add(7, T.ROZCESTI, reg_a, [10, 9], C, kostka=True)      # větev: trunk (10) / slepá (9)
+    add(7, T.POSTAVA, reg_a, [10, 9], C, kostka=True)       # postava: volba trunk(10)/slepá(9)
     add(8, T.POSTAVA, reg_a, [11], C, komp_=[komp[1]])      # postava (za AHA uzlem)
     add(9, T.SLEPA, reg_a, [7], C)
-    add(10, T.PRECHOD, reg_a, [8], C)                       # dominátor mezi 7 a 8 (~AHA)
+    add(10, T.POSTAVA, reg_a, [8], C)                       # postava = dominátor mezi 7 a 8 (~AHA)
     add(11, T.SMYCKA, reg_a, [12], C, kostka=True)
     add(12, T.CIL, reg_a, [], C)
     # --- SIDE region B (jen 60min), sbíhá se do uzlu 7 před AHA ---------- #
-    add(13, T.ROZCESTI, reg_b, [14, 15], S, kostka=True)
-    add(14, T.SBER, reg_b, [16], S, kostka=True)
+    # Uzel 13 = léčitel (engine: stavy „vždy léčitelné", herní list na něj
+    # odkazuje — v mapě dřív chyběl). Uzel 14 = postava (dřív generický sběr).
+    # Spolu s CORE (7,8,10) dávají 60min postavy=4+lecitel=1=5 (§SKÁLOVÁNÍ 5–7).
+    add(13, T.LECITEL, reg_b, [14, 15], S)
+    add(14, T.POSTAVA, reg_b, [16], S, kostka=True)
     add(15, T.SLEPA, reg_b, [13], S)
     add(16, T.STREZ, reg_b, [17], S, komp_=([komp[2]] if komp_min > 2 else None))
     add(17, T.INFORMACE, reg_b, [18], S, kostka=True)

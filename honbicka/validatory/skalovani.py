@@ -34,6 +34,8 @@ class SkalaProfilu:
     falesne_teorie: tuple[int, int]
     pravdive_stopy_min: int
     konce: tuple[int, int]
+    postavy: tuple[int, int]  # SKILL.md „Postavy (P8)"; počítá postava+lecitel,
+    # obchodník má vlastní řádek/kontrolu (obchodnik_povinny) — viz SC1/V1.
 
 
 # Tabulka §SKÁLOVÁNÍ pro 30 a 60 min.
@@ -42,11 +44,13 @@ SKALA: dict[int, SkalaProfilu] = {
         karty=(8, 12), strezene=(1, 2), gated=(1, 1), informacni_min=2,
         regiony=(1, 2), obchodnik_povinny=False, inventar=3,
         falesne_teorie=(1, 1), pravdive_stopy_min=2, konce=(2, 2),
+        postavy=(3, 4),
     ),
     60: SkalaProfilu(
         karty=(18, 25), strezene=(2, 3), gated=(2, 2), informacni_min=3,
         regiony=(2, 3), obchodnik_povinny=True, inventar=5,
         falesne_teorie=(2, 2), pravdive_stopy_min=3, konce=(2, 3),
+        postavy=(5, 7),
     ),
 }
 
@@ -112,6 +116,11 @@ def zkontroluj_skalovani(
     obchodnik = typ(TypUzlu.OBCHODNIK)
     if s.obchodnik_povinny and obchodnik < 1:
         v.selhani(f"chybí obchodník (povinný u {profil_min}min)")
+
+    # Postavy (P8): postava + lecitel dohromady (SC1/V1); obchodník má vlastní řádek výše.
+    postavy = typ(TypUzlu.POSTAVA) + typ(TypUzlu.LECITEL)
+    if not _v_rozsahu(postavy, s.postavy):
+        v.selhani(f"postav {postavy} mimo {s.postavy}")
 
     # Komponenty artefaktu (distinct napříč uzly).
     komp_rozsah = komponenty_rozsah(profil_min, zadani.obtiznost)
