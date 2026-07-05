@@ -5,7 +5,9 @@ import re
 from honbicka.modely import Archetyp, Koncept, Profil
 from honbicka.orchestrator import (
     MAX_ITERACI_KARTA,
+    _kontext_karty,
     _potrebuje_30_variantu,
+    _prompt_vypravec,
     faze3_vypravec,
     napis_kartu,
 )
@@ -103,3 +105,43 @@ def test_faze3_projde_vsechny_karty(valid_mapa, valid_zadani):
     assert len(karty) == len(valid_mapa.uzly)
     # čísla karet odpovídají uzlům (řízeno grafem)
     assert sorted(k.cislo for k in karty) == sorted(u.cislo for u in valid_mapa.uzly)
+
+
+# ------- O3: koncept (mechanismus/rekvizita, před/po AHA) v promptu -------- #
+def _koncept_bohaty():
+    return Koncept(archetyp=Archetyp.A1, tema="Kapka vody",
+                   mechanismus_reseni="voda teče gravitací, ne kouzlem",
+                   klicova_rekvizita="stříbrné sítko", falesne_teorie=1,
+                   pravdive_stopy=2, konce=2)
+
+
+def test_prompt_obsahuje_mechanismus_a_rekvizitu(valid_mapa, valid_zadani):
+    uzel = valid_mapa.uzel(3)  # obyčejný uzel, ne AHA
+    kontext = _kontext_karty(valid_mapa, uzel)
+    prompt = _prompt_vypravec(valid_zadani, _koncept_bohaty(), uzel, kontext, False, None)
+    assert "voda teče gravitací, ne kouzlem" in prompt
+    assert "stříbrné sítko" in prompt
+    assert "NIKDY neprozraď" in prompt
+
+
+def test_prompt_rozlisuje_pred_a_po_aha(valid_mapa, valid_zadani):
+    # uzel 3 (číslo < 8 = pozice AHA) → „před"; uzel 10 (> 8) → „po"
+    pred = _kontext_karty(valid_mapa, valid_mapa.uzel(3))
+    po = _kontext_karty(valid_mapa, valid_mapa.uzel(10))
+    assert pred["pred_aha"] is True
+    assert po["pred_aha"] is False
+    prompt_pred = _prompt_vypravec(valid_zadani, _koncept_bohaty(), valid_mapa.uzel(3),
+                                   pred, False, None)
+    prompt_po = _prompt_vypravec(valid_zadani, _koncept_bohaty(), valid_mapa.uzel(10),
+                                 po, False, None)
+    assert "PŘED odhalením" in prompt_pred
+    assert "PO odhalení" in prompt_po
+
+
+def test_prompt_aha_karty_nema_pred_ani_po(valid_mapa, valid_zadani):
+    # samotná AHA karta má svou vlastní instrukci (ne „před"/„po")
+    uzel_aha = valid_mapa.uzel(valid_mapa.pozice_aha_uzel)
+    kontext = _kontext_karty(valid_mapa, uzel_aha)
+    prompt = _prompt_vypravec(valid_zadani, _koncept_bohaty(), uzel_aha, kontext, False, None)
+    assert "ZDE padá AHA odhalení" in prompt
+    assert "PŘED odhalením" not in prompt and "PO odhalení" not in prompt

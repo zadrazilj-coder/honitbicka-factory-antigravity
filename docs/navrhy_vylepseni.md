@@ -105,6 +105,17 @@
   promptu přidat 2–3 řádky konceptu (mechanismus, rekvizita, falešná teorie) +
   instrukci, co karta smí/nesmí prozradit vzhledem k pozici před/za AHA.
   **Pravděpodobně největší páka na kvalitu obsahu.**
+  **✅ OPRAVENO 2026-07-04:** `_prompt_vypravec` teď posílá „SKRYTÉ POZADÍ
+  PŘÍBĚHU" (mechanismus řešení + klíčová rekvizita) s explicitním „NIKDY
+  neprozraď přímo" (P0 „pravda se odvozuje"). `_kontext_karty` doplňuje
+  heuristiku `pred_aha` (číslo uzlu < AHA uzel ≈ karta je dřív v trunku —
+  orientační, ne grafově přesné kvůli větvím/SIDE) → karta dostane „PŘED
+  odhalením" (smí jen naznačovat) nebo „PO odhalení" (smí navazovat) instrukci;
+  samotná AHA karta má svou vlastní (nezměněnou) instrukci. 3 nové testy
+  (mechanismus+rekvizita v promptu, před/po rozlišení, AHA karta nemá
+  před/po text), 191/191 (bez slow), ruff čistý. **Zbývá ověřit živě** (na
+  reálném modelu), jestli to skutečně zlepší narativní soudržnost karet —
+  mimo dosah tohoto prostředí bez spuštění dalšího dlouhého živého běhu.
 - 🔴 **O4 · Slovník žánru (Patro 1 bod 10) neimplementován.** `Koncept.slovnik_zakazana`
   existuje, ale žádná kontrola karty negrepuje. Deterministická kontrola je triviální
   (substring přes všechny strany karet) — přidat do FÁZE 3 hned za fit-check
@@ -416,7 +427,7 @@
 čistý. Commity: viz git log (O1, SZ1, SC1+V1+T3, C1+T2, O6).
 
 **Vlna 2 — kvalita obsahu a rychlost:**
-6. O3: koncept do promptu vypravěče (narativní soudržnost)
+6. ✅ O3: koncept do promptu vypravěče (narativní soudržnost) — OPRAVENO 2026-07-04 (živé ověření kvality zatím neprovedeno)
 7. O5+R1: plnohodnotný koncept (věty, min_length) → funkční okna zákazů
 8. L7/O13: redaktor jedním voláním + vzorkované karty (O2) + thinking OFF test
 9. L1: `generuj_model` (JSON+pydantic v jedné retry smyčce) — sjednotí L2/L3 řešení

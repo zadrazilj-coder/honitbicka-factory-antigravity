@@ -354,6 +354,10 @@ def _kontext_karty(mapa: Mapa, uzel: Uzel) -> dict:
         "sousedi": sousedi,
         "je_aha": uzel.cislo == mapa.pozice_aha_uzel,
         "klicove_svedectvi": uzel.klicove_svedectvi,
+        # Heuristika (O3): čísla uzlů zhruba sledují pořadí trunku, takže nižší
+        # číslo než AHA uzel = karta se hraje dřív. Není to grafově přesné
+        # (větve/SIDE smyčky), jen orientační signál pro vypravěče.
+        "pred_aha": uzel.cislo < mapa.pozice_aha_uzel,
     }
 
 
@@ -387,6 +391,25 @@ def _prompt_vypravec(
         "Atmosférický odstavec (300–500 znaků) je POVINNÝ. Fyzický úkol vždy s příběhovým "
         "důvodem (PROČ). Neúspěšná větev ať baví víc než úspěšná.\n"
     )
+    # O3: kontext zápletky pro narativní soudržnost napříč kartami — pravda se
+    # NIKDY neoznamuje přímo (SKILL.md P0), tohle je jen skryté pozadí příběhu,
+    # ať karty ladí (stejné motivy, rekvizity, postavy), ne aby se citovalo.
+    zaklad += (
+        f"\nSKRYTÉ POZADÍ PŘÍBĚHU (pro soudržnost — NIKDY neprozraď přímo, ani "
+        f"náznakem mimo AHA kartu): skutečné řešení je „{koncept.mechanismus_reseni}“; "
+        f"klíčová rekvizita příběhu: „{koncept.klicova_rekvizita or koncept.tema}“.\n"
+    )
+    if not kontext["je_aha"]:
+        if kontext["pred_aha"]:
+            zaklad += (
+                "Tato karta je PŘED odhalením — hráč pravdu ještě nezná, smíš jen "
+                "nenápadně naznačovat (barvy, předměty, chování postav), nikdy potvrdit.\n"
+            )
+        else:
+            zaklad += (
+                "Tato karta je PO odhalení — hráč už pravdu zná, text na ni může "
+                "navazovat (dozvuky, reakce postav), ale nemusí ji opakovat.\n"
+            )
     if cisla:
         zaklad += (
             f"KRITICKÉ: čísla za šipkou (→) v `predni` i `zadni` MUSÍ být PŘESNĚ "

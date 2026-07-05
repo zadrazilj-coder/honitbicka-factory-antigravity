@@ -128,7 +128,7 @@ def test_oprav_volby_deterministicky_vice_cilu_beze_zmeny(valid_mapa):
 def test_prompt_obsahuje_tvrda_cisla(valid_mapa):
     uzel8 = valid_mapa.uzel(8)
     kontext = {"sousedi": [{"cislo": 10, "nazev": "X", "podminka": None, "side": False}],
-               "je_aha": False, "klicove_svedectvi": False}
+               "je_aha": False, "klicove_svedectvi": False, "pred_aha": True}
     from honbicka.modely import Obtiznost, VekPasmo, Zadani
     zadani = Zadani(vek=VekPasmo.V09_12, obtiznost=Obtiznost.LEHKA)
     prompt = _prompt_vypravec(zadani, _koncept(), uzel8, kontext, False, None)
@@ -139,7 +139,7 @@ def test_prompt_obsahuje_tvrda_cisla(valid_mapa):
 def test_prompt_oprava_voleb_pridava_text(valid_mapa):
     uzel8 = valid_mapa.uzel(8)
     kontext = {"sousedi": [{"cislo": 10, "nazev": "X", "podminka": None, "side": False}],
-               "je_aha": False, "klicove_svedectvi": False}
+               "je_aha": False, "klicove_svedectvi": False, "pred_aha": True}
     from honbicka.modely import Obtiznost, VekPasmo, Zadani
     zadani = Zadani(vek=VekPasmo.V09_12, obtiznost=Obtiznost.LEHKA)
     prompt = _prompt_vypravec(zadani, _koncept(), uzel8, kontext, False, None,
