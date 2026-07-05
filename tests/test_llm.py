@@ -3,6 +3,7 @@
 import json
 
 import pytest
+from pydantic import BaseModel, Field
 
 from honbicka.llm import (
     DEFAULT_MODEL,
@@ -11,6 +12,8 @@ from honbicka.llm import (
     HonbickaLLMError,
     OllamaKlient,
     Role,
+    _PrechodnaChyba,
+    _ThinkingNotSupported,
 )
 from honbicka.modely import SCHEMA_ZADANI
 
@@ -95,3 +98,195 @@ def test_generuj_text_bez_schematu():
 
     klient = OllamaKlient(transport=transport)
     assert klient.generuj_text(Role.VYPRAVEC, "napiš úvod").startswith("Byla")
+
+
+# --------------------------------------------------------------------------- #
+# L1 — generuj_model (JSON + pydantic v jedné retry smyčce)
+# --------------------------------------------------------------------------- #
+class _Prosty(BaseModel):
+    jmeno: str = Field(min_length=2)
+    vek: int
+
+
+def test_generuj_model_uspech():
+    def transport(payload, timeout):
+        return _odpoved(json.dumps({"jmeno": "Ana", "vek": 7}))
+
+    klient = OllamaKlient(transport=transport)
+    out = klient.generuj_model(Role.TEMA_GENERATOR, "x", _Prosty)
+    assert isinstance(out, _Prosty)
+    assert out.jmeno == "Ana" and out.vek == 7
+
+
+def test_generuj_model_retry_po_nevalidnim_json():
+    pokusy = {"n": 0}
+
+    def transport(payload, timeout):
+        pokusy["n"] += 1
+        if pokusy["n"] == 1:
+            return _odpoved("tohle není JSON")
+        return _odpoved(json.dumps({"jmeno": "Béďa", "vek": 9}))
+
+    klient = OllamaKlient(transport=transport)
+    out = klient.generuj_model(Role.TEMA_GENERATOR, "x", _Prosty)
+    assert out.vek == 9
+    assert pokusy["n"] == 2
+
+
+def test_generuj_model_retry_po_pydantic_chybe():
+    """Chybějící/nevalidní pole projde JSON parserem, ale spadne na validaci
+    modelu — i to musí odpálit opravný prompt (na rozdíl od `generuj_json`,
+    který pydantic vůbec neřeší)."""
+    pokusy = {"n": 0}
+
+    def transport(payload, timeout):
+        pokusy["n"] += 1
+        if pokusy["n"] == 1:
+            # jmeno krátké, vek špatný typ
+            return _odpoved(json.dumps({"jmeno": "A", "vek": "neco"}))
+        return _odpoved(json.dumps({"jmeno": "Cecilka", "vek": 5}))
+
+    klient = OllamaKlient(transport=transport)
+    out = klient.generuj_model(Role.TEMA_GENERATOR, "x", _Prosty)
+    assert out.jmeno == "Cecilka"
+    assert pokusy["n"] == 2
+
+
+def test_generuj_model_tvrdy_fail_po_vycerpani():
+    def transport(payload, timeout):
+        return _odpoved(json.dumps({"jmeno": "A", "vek": 1}))  # jmeno pořád moc krátké
+
+    klient = OllamaKlient(transport=transport)
+    with pytest.raises(HonbickaLLMError):
+        klient.generuj_model(Role.TEMA_GENERATOR, "x", _Prosty)
+
+
+# --------------------------------------------------------------------------- #
+# L2 — fallback bez thinking, když model HTTP 400 na `think`
+# --------------------------------------------------------------------------- #
+def test_volej_zkusi_bez_thinking_kdyz_model_odmitne():
+    pokusy = []
+
+    def transport(payload, timeout):
+        pokusy.append(payload["think"])
+        if payload["think"]:
+            raise _ThinkingNotSupported("HTTP 400")
+        return _odpoved(json.dumps({"vek": "06-09"}))
+
+    klient = OllamaKlient(transport=transport)
+    # ARCHITEKT má thinking=True v ROLE_CONFIG
+    out = klient.generuj_json(Role.ARCHITEKT, "x", SCHEMA_ZADANI)
+    assert out["vek"] == "06-09"
+    assert pokusy == [True, False]
+
+
+def test_volej_bez_thinking_odmitnuti_je_tvrdy_fail():
+    def transport(payload, timeout):
+        raise _ThinkingNotSupported("HTTP 400")
+
+    klient = OllamaKlient(transport=transport)
+    # VYPRAVEC má thinking=False → není kam ustoupit
+    with pytest.raises(HonbickaLLMError):
+        klient.generuj_json(Role.VYPRAVEC, "x", SCHEMA_ZADANI)
+
+
+def test_volej_odmitnuti_i_bez_thinking_je_tvrdy_fail():
+    def transport(payload, timeout):
+        raise _ThinkingNotSupported("HTTP 400")
+
+    klient = OllamaKlient(transport=transport)
+    with pytest.raises(HonbickaLLMError):
+        klient.generuj_json(Role.ARCHITEKT, "x", SCHEMA_ZADANI)
+
+
+# --------------------------------------------------------------------------- #
+# L3 — jedno opakování na dočasnou transportní chybu
+# --------------------------------------------------------------------------- #
+def test_volej_opakuje_na_prechodnou_chybu():
+    pokusy = {"n": 0}
+
+    def transport(payload, timeout):
+        pokusy["n"] += 1
+        if pokusy["n"] == 1:
+            raise _PrechodnaChyba("timeout")
+        return _odpoved(json.dumps({"vek": "06-09"}))
+
+    klient = OllamaKlient(transport=transport)
+    out = klient.generuj_json(Role.TEMA_GENERATOR, "x", SCHEMA_ZADANI)
+    assert out["vek"] == "06-09"
+    assert pokusy["n"] == 2
+
+
+def test_volej_prechodna_chyba_dvakrat_je_tvrdy_fail():
+    def transport(payload, timeout):
+        raise _PrechodnaChyba("timeout")
+
+    klient = OllamaKlient(transport=transport)
+    with pytest.raises(HonbickaLLMError):
+        klient.generuj_json(Role.TEMA_GENERATOR, "x", SCHEMA_ZADANI)
+
+
+# --------------------------------------------------------------------------- #
+# L2/L3 — mapování HTTP chyb ve výchozím _http_transport
+# --------------------------------------------------------------------------- #
+def test_http_transport_400_s_think_je_thinking_not_supported(monkeypatch):
+    import requests
+
+    from honbicka.llm import _http_transport
+
+    class FakeResp:
+        status_code = 400
+
+        def raise_for_status(self):
+            raise requests.exceptions.HTTPError(response=self)
+
+    monkeypatch.setattr(requests, "post", lambda *a, **k: FakeResp())
+    with pytest.raises(_ThinkingNotSupported):
+        _http_transport({"think": True, "_base_url": "http://x"}, 1.0)
+
+
+def test_http_transport_5xx_je_prechodna_chyba(monkeypatch):
+    import requests
+
+    from honbicka.llm import _http_transport
+
+    class FakeResp:
+        status_code = 503
+
+        def raise_for_status(self):
+            raise requests.exceptions.HTTPError(response=self)
+
+    monkeypatch.setattr(requests, "post", lambda *a, **k: FakeResp())
+    with pytest.raises(_PrechodnaChyba):
+        _http_transport({"think": False, "_base_url": "http://x"}, 1.0)
+
+
+def test_http_transport_timeout_je_prechodna_chyba(monkeypatch):
+    import requests
+
+    from honbicka.llm import _http_transport
+
+    def raiser(*a, **k):
+        raise requests.exceptions.Timeout("pomalé")
+
+    monkeypatch.setattr(requests, "post", raiser)
+    with pytest.raises(_PrechodnaChyba):
+        _http_transport({"think": False, "_base_url": "http://x"}, 1.0)
+
+
+def test_http_transport_400_bez_think_neni_zvlastni_chyba(monkeypatch):
+    """400 bez `think` v payloadu je trvalá chyba (např. špatné schéma) —
+    nemá se plést s L2 fallbackem."""
+    import requests
+
+    from honbicka.llm import _http_transport
+
+    class FakeResp:
+        status_code = 400
+
+        def raise_for_status(self):
+            raise requests.exceptions.HTTPError(response=self)
+
+    monkeypatch.setattr(requests, "post", lambda *a, **k: FakeResp())
+    with pytest.raises(requests.exceptions.HTTPError):
+        _http_transport({"think": False, "_base_url": "http://x"}, 1.0)

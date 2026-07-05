@@ -78,12 +78,6 @@ ARCHETYP_VAHY: dict[Archetyp, int] = {
 # --------------------------------------------------------------------------- #
 # TÉMA-GENERÁTOR (auto režim, spec §3.1) — thinking OFF, temp 1.0
 # --------------------------------------------------------------------------- #
-def _normalizuj_obtiznost(hodnota: object) -> str:
-    """Model občas vrátí diakritiku ('lehká') místo enum hodnoty ('lehka')."""
-    text = unicodedata.normalize("NFKD", str(hodnota)).encode("ascii", "ignore").decode().lower()
-    return text if text in {"lehka", "stredni", "tezka"} else "lehka"
-
-
 def vygeneruj_tema(
     klient: OllamaKlient,
     vek: VekPasmo,
@@ -94,8 +88,12 @@ def vygeneruj_tema(
     """Navrhne téma/žánr/prostředí/tón lišící se od posledních 10 her (spec §3.1).
 
     Věk a formát řídí plán (ne LLM) — vloží se PŘED validací, protože model je
-    nemusí vrátit správně (i se structured outputem). Enum obtížnosti se
-    normalizuje (model vrací i diakritiku)."""
+    nemusí vrátit vůbec (`vek` je na `Zadani` povinné pole) nebo správně (i se
+    structured outputem). Nepoužívá se tu `generuj_model` (L1): to by validovalo
+    RAW odpověď modelu ještě před přepsáním vek/format_hracu, takže by chybějící
+    `vek` shodil retry smyčku zbytečně — potřebujeme nejdřív dict opravit, pak
+    validovat. Enum obtížnosti normalizuje přímo `Zadani` (model vrací i
+    diakritiku — viz `_normalizuj_obtiznost` validator na modelu)."""
     posl = zaznamy[-10:]
     kontext = "; ".join(
         f"{z.zanr_publikum}·{z.archetyp}·{z.rekvizity}" for z in posl
@@ -110,11 +108,9 @@ def vygeneruj_tema(
         "Vrať zadání: tema, prostredi (seznam), obtiznost, ton."
     )
     data = klient.generuj_json(Role.TEMA_GENERATOR, prompt, SCHEMA_ZADANI)
-    # Plán je autoritativní pro věk/formát; normalizuj enum obtížnosti.
+    # Plán je autoritativní pro věk/formát bez ohledu na to, co (ne)vrátil model.
     data["vek"] = vek.value
     data["format_hracu"] = format_hracu
-    if "obtiznost" in data:
-        data["obtiznost"] = _normalizuj_obtiznost(data["obtiznost"])
     return Zadani.model_validate(data)
 
 

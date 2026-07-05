@@ -30,14 +30,52 @@
   `generuj_model(role, prompt, Model) -> Model`, které v JEDNÉ retry smyčce řeší
   json.loads + `Model.model_validate` + opravný prompt s výpisem pydantic chyb.
   Volající místa by se zjednodušila a chování sjednotilo.
+  **✅ OPRAVENO 2026-07-05.** `OllamaKlient.generuj_model(role, uzivatel, model_cls,
+  schema=None, extra_system=None) -> ModelT` přidán do `honbicka/llm.py` — jedna
+  `MAX_RETRY`-smyčka: `json.loads` selže → opravný prompt s chybou parseru;
+  `model_cls.model_validate` selže → opravný prompt s `ValidationError`
+  (počet chyb + detail). Testováno v `tests/test_llm.py`
+  (`test_generuj_model_uspech`, `_retry_po_nevalidnim_json`,
+  `_retry_po_pydantic_chybe`, `_tvrdy_fail_po_vycerpani`).
+  **Zapojeno jen do `vygeneruj_tema`** — NE do `faze1a_koncept`, architekta ani
+  vypravěče. Důvod (viz `docs/rozhodnuti.md`): tyto tři mají vlastní
+  role-specifickou opravnou logiku (mechanická normalizace, game-validity
+  feedback přes relosování, O1 fit-check), která se do jedné generické
+  JSON+pydantic smyčky nedá bezeztrátově sbalit — a `vygeneruj_tema` navíc
+  narazilo na jinou past: `Zadani.vek` je povinné pole, které model nespolehlivě
+  vrací, ale plán ho musí přepsat PŘED validací (ne po ní) — `generuj_model`
+  validuje hned, takže chybějící `vek` by zbytečně spotřeboval retries a nakonec
+  spadl, i když má triviální opravu. `vygeneruj_tema` tedy zůstává na
+  `generuj_json` + ruční patch dictu před `Zadani.model_validate`; normalizace
+  diakritiky u `obtiznost` se ale přesunula z volající funkce do
+  `field_validator(mode="before")` na `Zadani` samotném (čistší, funguje i pro
+  budoucí volající místa). `generuj_model` je tak zatím jen jeden hotový,
+  otestovaný call site + reusable primitive pro příště.
 - 🔴 **L2 · Per-model `think` handling.** Ollama vrací HTTP 400 pro `think:true` na
   ne-thinking modelu (ověřeno sondou qwen3-coder). Klient s `model=` overridem se rozbije.
   Návrh: parametr `OllamaKlient(thinking_podporovano=True)` nebo detekce přes
   `/api/show` při prvním volání; při 400 s "think" jednorázově zopakovat bez něj.
+  **✅ OPRAVENO 2026-07-05.** `_http_transport` rozliší HTTP 400 s `think:true`
+  v payloadu a vyhodí `_ThinkingNotSupported`. `OllamaKlient._volej` na ni
+  zareaguje jedním pokusem bez thinking (`think=False`); pokud role už
+  `thinking=False` měla, nebo selže i podruhé → `HonbickaLLMError` (nekonečná
+  smyčka vyloučena, max 2 pokusy). Žádná detekce přes `/api/show` předem —
+  jednodušší je reagovat až na skutečné 400, ne modelovat schopnosti dopředu.
+  Testy: `test_volej_zkusi_bez_thinking_kdyz_model_odmitne`,
+  `_bez_thinking_odmitnuti_je_tvrdy_fail`, `_odmitnuti_i_bez_thinking_je_tvrdy_fail`,
+  `test_http_transport_400_s_think_je_thinking_not_supported`,
+  `_400_bez_think_neni_zvlastni_chyba` (obyčejné 400 beze změny chování).
 - 🟡 **L3 · Retry na transientní chyby transportu.** ReadTimeout/5xx = okamžitý tvrdý fail.
   Redaktor tak ztratil 7/7 posudků. Návrh: 1 opakování na timeout/5xx (s logem), teprve
   pak `HonbickaLLMError`. (Spec §1 předepisuje 3× retry jen pro nevalidní JSON — retry na
   síťovou chybu je doplněk, ne obcházení.)
+  **✅ OPRAVENO 2026-07-05.** `_http_transport` mapuje 5xx a
+  `Timeout`/`ConnectionError` na `_PrechodnaChyba`; `OllamaKlient._volej_pokus`
+  na ni zkusí 1× zopakovat (bez logu — TODO, viz níže), pak tvrdý fail.
+  Testy: `test_volej_opakuje_na_prechodnou_chybu`,
+  `_prechodna_chyba_dvakrat_je_tvrdy_fail`, `test_http_transport_5xx_je_prechodna_chyba`,
+  `_timeout_je_prechodna_chyba`. **Log při opakování NEimplementován** — zůstává
+  drobný dluh pro pozorovatelnost (spec nevyžaduje, jen doporučeno v návrhu).
 - 🟡 **L4 · `_base_url` pašované v payloadu.** `payload["_base_url"]` + `pop()` v transportu
   je křehké (mock transporty klíč vidí a musí ho ignorovat). Čistší: `Transport =
   Callable[[str, dict, float], dict]` (base_url jako argument).
@@ -468,11 +506,14 @@
 6. ✅ O3: koncept do promptu vypravěče (narativní soudržnost) — OPRAVENO 2026-07-04 (živé ověření kvality zatím neprovedeno)
 7. ✅ O5+R1: plnohodnotný koncept (věty, min_length) → funkční okna zákazů — OPRAVENO 2026-07-04 (R1 fuzzy shoda vědomě NEimplementována, viz sekce 7)
 8. ✅ L7/O13: redaktor jedním voláním + vzorkované karty (O2) — OPRAVENO 2026-07-04 (thinking OFF test odloženo, živé měření času neprovedeno)
-9. L1: `generuj_model` (JSON+pydantic v jedné retry smyčce) — sjednotí L2/L3 řešení
+9. ✅ L1+L2+L3: `generuj_model` (JSON+pydantic v jedné retry smyčce) + per-model
+   think fallback + retry na přechodnou transportní chybu — OPRAVENO 2026-07-05
+   (`generuj_model` zapojen jen do `vygeneruj_tema`; architekt/vypravěč/koncept
+   záměrně ponechány na vlastní logice — viz zdůvodnění u L1 výše)
 10. SC3: synchronizace názvů uzlů ↔ karet (průvodce)
 
 **Vlna 3 — robustnost a dluh:**
-11. L2 (per-model think), L3 (retry na timeout), L5 (keep_alive), O9 (širší catch PDF)
+11. ~~L2 (per-model think), L3 (retry na timeout)~~ hotovo v bodě 9 výše. L5 (keep_alive), O9 (širší catch PDF)
 12. O8+V4: jedna validace, jeden počet průchodů
 13. O4: slovník žánru (grep) · V6: přístupnost 3.4-6 · MD2: pravdivost stop
 14. SC2: topologická variabilita (2–3 vzory + rng)

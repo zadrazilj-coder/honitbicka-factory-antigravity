@@ -17,7 +17,9 @@ import json
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import Any, TypeVar
+
+from pydantic import BaseModel, ValidationError
 
 # requests importujeme líně v _http_transport, aby balíček šel importovat
 # (a testovat s mockem) i bez nainstalovaného requests.
@@ -27,9 +29,21 @@ DEFAULT_MODEL = "qwen3.6:27b"
 DEFAULT_TIMEOUT_S = 600
 MAX_RETRY = 3  # spec §1: 3× retry s opravným promptem, pak tvrdý fail
 
+ModelT = TypeVar("ModelT", bound=BaseModel)
+
 
 class HonbickaLLMError(RuntimeError):
     """Tvrdý fail volání LLM (po vyčerpání retry nebo transportní chyba)."""
+
+
+class _ThinkingNotSupported(Exception):
+    """L2: server odmítl `think` (HTTP 400) — model thinking nepodporuje
+    (živě ověřeno sondou `qwen3-coder:30b`, viz docs/rozhodnuti.md)."""
+
+
+class _PrechodnaChyba(Exception):
+    """L3: dočasná transportní chyba (timeout/5xx), kde 1 opakování má smysl —
+    na rozdíl od trvalé chyby (4xx krom 400-thinking, DNS, …)."""
 
 
 class Role(StrEnum):
@@ -104,12 +118,23 @@ Transport = Callable[[dict[str, Any], float], dict[str, Any]]
 
 def _http_transport(payload: dict[str, Any], timeout_s: float) -> dict[str, Any]:
     """Výchozí transport: POST na Ollama /api/chat (jediná síťová závislost,
-    localhost — spec §12)."""
+    localhost — spec §12). Rozlišuje trvalou chybu od dočasné (L3) a detekuje
+    HTTP 400 na `think` u modelu bez podpory thinking (L2)."""
     import requests  # lokální import: balíček jde importovat i bez requests
 
     base = payload.pop("_base_url", DEFAULT_BASE_URL)
-    resp = requests.post(f"{base}/api/chat", json=payload, timeout=timeout_s)
-    resp.raise_for_status()
+    try:
+        resp = requests.post(f"{base}/api/chat", json=payload, timeout=timeout_s)
+        resp.raise_for_status()
+    except requests.exceptions.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else None
+        if status == 400 and payload.get("think"):
+            raise _ThinkingNotSupported(str(exc)) from exc
+        if status is not None and status >= 500:
+            raise _PrechodnaChyba(str(exc)) from exc
+        raise
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as exc:
+        raise _PrechodnaChyba(str(exc)) from exc
     return resp.json()
 
 
@@ -175,6 +200,61 @@ class OllamaKlient:
             f"role {role.value}: nevalidní JSON po {MAX_RETRY} pokusech ({posledni_chyba})"
         )
 
+    def generuj_model(
+        self,
+        role: Role,
+        uzivatel: str,
+        model_cls: type[ModelT],
+        schema: dict[str, Any] | None = None,
+        extra_system: str | None = None,
+    ) -> ModelT:
+        """Sjednocené volání: JSON + pydantic validace v JEDNÉ retry smyčce (L1).
+
+        Dřív každé volající místo řešilo pydantic chyby jinak (architekt vracel
+        error-tuple, vypravěč měl vlastní retry, koncept/téma tvrdě padaly —
+        oba živé pády generace, „čtyři světla" #1 i téma-generátor, by se
+        stejnou logikou vyřešily jednotně). 3× zkusí; při nevalidním JSONu NEBO
+        neprošlé pydantic validaci přidá cílený opravný prompt s konkrétními
+        chybami. Po vyčerpání retry vyhodí `HonbickaLLMError`.
+
+        `schema` default = `model_cls.model_json_schema()`. Nové/legacy volající
+        místa s vlastní sémantikou opravy (architekt, vypravěč, koncept —
+        game-validity feedback, mechanická poslední záchrana) tuto metodu
+        nepoužívají záměrně; viz docs/rozhodnuti.md."""
+        cfg = ROLE_CONFIG[role]
+        schema = schema if schema is not None else model_cls.model_json_schema()
+        system = cfg.system if not extra_system else f"{cfg.system}\n\n{extra_system}"
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": uzivatel},
+        ]
+        posledni_chyba = ""
+        for _pokus in range(1, MAX_RETRY + 1):
+            odpoved = self._volej(cfg, messages, schema)
+            obsah = odpoved.get("message", {}).get("content", "")
+            try:
+                data = json.loads(obsah)
+            except (json.JSONDecodeError, TypeError) as exc:
+                posledni_chyba = f"nevalidní JSON: {exc}"
+            else:
+                try:
+                    return model_cls.model_validate(data)
+                except ValidationError as exc:
+                    posledni_chyba = f"neprošlo validací ({exc.error_count()} chyb): {exc}"
+            messages.append({"role": "assistant", "content": obsah})
+            messages.append(
+                {
+                    "role": "user",
+                    "content": (
+                        f"Předchozí odpověď nevyhověla ({posledni_chyba}). Vrať POUZE "
+                        "opravený validní JSON dle schématu, nic víc."
+                    ),
+                }
+            )
+        raise HonbickaLLMError(
+            f"role {role.value}: nevalidní i po {MAX_RETRY} pokusech ({posledni_chyba})"
+        )
+
     def generuj_text(self, role: Role, uzivatel: str, extra_system: str | None = None) -> str:
         """Volné textové volání (bez schématu) — pro role, jejichž výstupem
         jsou volné texty karet, kde nemá smysl structured output."""
@@ -194,19 +274,53 @@ class OllamaKlient:
         messages: list[dict[str, str]],
         schema: dict[str, Any] | None,
     ) -> dict[str, Any]:
+        """L2: pokud model odmítne `think` (HTTP 400), zkusí to jednou znovu
+        bez thinking — role s `thinking=False` už tudy neprochází podruhé."""
+        try:
+            return self._volej_pokus(cfg, messages, schema, cfg.thinking)
+        except _ThinkingNotSupported as exc:
+            if not cfg.thinking:
+                raise HonbickaLLMError(
+                    f"transport selhal: model odmítl i volání bez thinking ({exc})"
+                ) from exc
+            try:
+                return self._volej_pokus(cfg, messages, schema, False)
+            except _ThinkingNotSupported as exc2:
+                raise HonbickaLLMError(
+                    f"transport selhal i bez thinking: {exc2}"
+                ) from exc2
+
+    def _volej_pokus(
+        self,
+        cfg: RoleConfig,
+        messages: list[dict[str, str]],
+        schema: dict[str, Any] | None,
+        thinking: bool,
+    ) -> dict[str, Any]:
+        """L3: jedno opakování na dočasnou transportní chybu (timeout/5xx)."""
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
             "stream": False,
-            "think": cfg.thinking,
+            "think": thinking,
             "options": {"temperature": cfg.temperature, "num_ctx": cfg.num_ctx},
             "_base_url": self.base_url,
         }
         if schema is not None:
             payload["format"] = schema
-        try:
-            return self.transport(payload, self.timeout_s)
-        except HonbickaLLMError:
-            raise
-        except Exception as exc:  # transportní/HTTP chyba → tvrdý fail
-            raise HonbickaLLMError(f"transport selhal: {exc}") from exc
+        for pokus in range(2):
+            try:
+                return self.transport(dict(payload), self.timeout_s)
+            except _PrechodnaChyba as exc:
+                if pokus == 1:
+                    raise HonbickaLLMError(
+                        f"transport selhal opakovaně (přechodná chyba): {exc}"
+                    ) from exc
+                continue
+            except _ThinkingNotSupported:
+                raise
+            except HonbickaLLMError:
+                raise
+            except Exception as exc:  # ostatní transportní/HTTP chyba → tvrdý fail
+                raise HonbickaLLMError(f"transport selhal: {exc}") from exc
+        raise AssertionError("nedosažitelné")  # pragma: no cover

@@ -11,6 +11,7 @@ nekódují herní pravidla (od toho jsou validátory), jen jejich datový tvar.
 from __future__ import annotations
 
 import re
+import unicodedata
 from enum import StrEnum
 from typing import Any
 
@@ -108,6 +109,15 @@ class Zadani(BaseModel):
     obtiznost: Obtiznost = Obtiznost.LEHKA
     ton: str | None = None
     jazyk: str = "cs"
+
+    @field_validator("obtiznost", mode="before")
+    @classmethod
+    def _normalizuj_obtiznost(cls, v: object) -> object:
+        """Model občas vrátí diakritiku ('lehká') místo enum hodnoty ('lehka')."""
+        if not isinstance(v, str):
+            return v
+        text = unicodedata.normalize("NFKD", v).encode("ascii", "ignore").decode().lower()
+        return text if text in {"lehka", "stredni", "tezka"} else v
 
     @field_validator("format_hracu")
     @classmethod

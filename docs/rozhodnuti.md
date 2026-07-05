@@ -317,3 +317,71 @@ pokud modul má funkce importované jinam přes `from X import Y` — sdílejí
 a mutace (na rozdíl od `monkeypatch`) se sama nevrátí. Řešení „čti stav za
 běhu, ne jednou při importu" je obecně bezpečnější pattern pro cokoliv,
 co testy potřebují měnit.
+
+---
+
+## 2026-07-05 — L1: `generuj_model` zapojen jen do `vygeneruj_tema`
+
+Úkol L1 žádal sjednocené `generuj_model(role, prompt, Model) -> Model` v
+`honbicka/llm.py`, které v JEDNÉ retry smyčce řeší `json.loads` +
+`Model.model_validate` + opravný prompt s pydantic chybami (dřív každé
+volající místo řešilo pydantic validaci jinak: architekt error-tuple,
+vypravěč vlastní retry, koncept/téma tvrdě padaly).
+
+**Rozhodnutí: `generuj_model` se NEzapojuje do `faze1a_koncept`,
+`_zavolej_architekta` ani `napis_kartu`.** Jejich retry smyčky nesou
+sémantiku specifickou pro danou roli, kterou generická JSON+pydantic
+smyčka nepokryje beze ztráty:
+- architekt: retry řeší i game-validity feedback (topologie/škálování),
+  ne jen tvar JSONu — a při vyčerpání iterací jde o RELOSOVÁNÍ seedu, ne
+  jen o chybovou hlášku;
+- vypravěč: retry řeší O1 fit-check (rozpočet znaků) a platnost čísel
+  voleb vůči grafu — obojí vyžaduje `mapa`/`uzel` v kontextu, který
+  `generuj_model` nezná;
+- koncept: má vlastní mechanickou poslední záchranu
+  (`_normalizuj_koncept_data`) PŘED tvrdým selháním — jiný tvar smyčky
+  než „oprav prompt a zkus znovu".
+
+**`vygeneruj_tema` — druhá překážka, ne jen jednodušší call site.**
+Očekávalo se, že jde o „ten jeden čistý call site", ale narazilo se na
+past: `Zadani.vek` je POVINNÉ pole, které model nespolehlivě vrací (viz
+`test_vygeneruj_tema_robustni_vuci_nedokonalemu_modelu` — živý model
+`vek` občas vůbec nevrátí). Plán (`vek`, `format_hracu`) je autoritativní
+a musí se do dat propsat PŘED validací — `generuj_model` ale validuje
+HNED, takže chybějící `vek` by u živého modelu zbytečně vyčerpal retries
+a nakonec spadl, přestože oprava je triviální (přepsat, ne dohledávat).
+Proto `vygeneruj_tema` zůstává na `generuj_json` + ruční patch dictu →
+`Zadani.model_validate`. Normalizace diakritiky u `obtiznost`
+(`'lehká'` → `'lehka'`) se ale přesunula z volající funkce do
+`field_validator(mode="before")` přímo na `Zadani` — nezávislé vylepšení,
+funguje bez ohledu na to, kudy se model validuje.
+
+**Závěr:** `generuj_model` existuje jako hotová, otestovaná primitiva
+(`tests/test_llm.py`) pro budoucí call sites, kde požadavek „over přes
+LLM → pydantic model" sedí 1:1 bez business-logiky mezi tím. Žádné
+současné volající místo v `orchestrator.py` ten tvar splňuje kromě
+(s výhradou výše) téma-generátoru — a ani ten napřímo, proto zůstal na
+staré cestě.
+
+## 2026-07-05 — L2/L3: fallback bez thinking + retry na přechodnou chybu
+
+`_http_transport` teď rozlišuje tři případy HTTP/transportní chyby:
+- HTTP 400 **s `think:true`** v payloadu → `_ThinkingNotSupported` (model
+  neumí thinking — živě ověřeno sondou `qwen3-coder:30b`, vrací 400 na
+  `think`, funguje bez něj).
+- HTTP 5xx nebo `Timeout`/`ConnectionError` → `_PrechodnaChyba` (dočasná,
+  1 opakování má smysl).
+- cokoliv jiného (jiné 4xx, DNS, …) → normální `HonbickaLLMError` beze
+  změny chování.
+
+`OllamaKlient._volej` na `_ThinkingNotSupported` reaguje JEDNÍM pokusem
+bez thinking; pokud role už `thinking=False` měla, nebo selže i podruhé,
+je to tvrdý fail (max 2 HTTP pokusy, žádná nekonečná smyčka). `_volej_pokus`
+na `_PrechodnaChyba` zkusí 1× zopakovat, pak tvrdý fail — bez logování
+(vědomě odloženo, drobný dluh pro pozorovatelnost, viz `docs/navrhy_vylepseni.md`
+L3).
+
+Nebyla implementována detekce schopností modelu předem přes `/api/show` —
+jednodušší a méně křehké je reagovat až na skutečné HTTP 400, ne
+modelovat/cachovat schopnosti modelu dopředu (a riskovat, že cache
+zestárne, když se model v Ollamě přehraje).
