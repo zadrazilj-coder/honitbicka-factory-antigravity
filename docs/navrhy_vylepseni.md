@@ -55,6 +55,14 @@
   (b) thinking OFF pro redaktora (temp 0.3 zůstává) — thinking je u klasifikační úlohy
   s citacemi pravděpodobně zbytný; ověřit živě;
   (c) menší `num_ctx` (viz L8).
+  **✅ OPRAVENO 2026-07-04 (varianta a).** `faze4_redaktor` nově volá LLM
+  JEDNOU se schématem `RedakceVsechnyVerdikty` (pole `verdikty`, 7 položek).
+  Selže-li (timeout/schema chyba/cokoliv) → `_faze4_redaktor_po_jednom`
+  (stará logika, teď záložní cesta). Chybějící checky v odpovědi (model
+  nevrátil přesně 7) se doplní jako FAILED, ne že by se tiše ztratily.
+  **(b) thinking OFF NEvyzkoušeno** — jedno volání už řeší hlavní příčinu
+  (počet volání, ne thinking samotné); vypínat thinking bez živého ověření
+  je zbytečné riziko. **(c) menší `num_ctx` NEudělalo** — viz L8 níže.
 - 🟡 **L8 · `num_ctx` 32768 pro redaktora je předimenzované** — vstup je ~4000 znaků
   (≈1500 tokenů). 8192–16384 stačí a šetří VRAM/prefill. U architekta je 32768 oprávněné
   jen pro legacy cestu s přiloženou předchozí mapou; scaffolder architekta nevolá.
@@ -98,6 +106,12 @@
   (průnik stop) nelze poctivě posoudit. Návrh: místo prefixu **vzorkovat celé karty**
   (AHA karta + klíčové svědectví + 3–4 náhodné dle seedu) a pro R1/R2 přidat
   koncept (mechanismus řešení) do promptu.
+  **✅ OPRAVENO 2026-07-04:** `_vzorkuj_karty_pro_redakci()` — AHA karta +
+  všechny karty s `klicove_svedectvi` + 4 náhodné (seed = `mapa.seed`,
+  deterministické), CELÝ obsah karet (žádné oříznutí uprostřed). Prompt
+  jednoho sloučeného volání (viz L7) navíc posílá `koncept.mechanismus_reseni`
+  jako kontext pro R1/R2. Bez `mapa` (staré/testovací volání) se použijí
+  všechny karty beze změny.
 - 🔴 **O3 · Vypravěč nezná zápletku.** Prompt karty předává jen téma+typ+sousedy —
   ne mechanismus řešení, falešné teorie, rekvizitu. Každá karta si proto vymýšlí
   vlastní příběhové prvky (v „čtyřech světlech" viditelné: karty jsou atmosférické,
@@ -174,6 +188,12 @@
 - 🔴 **O13 · FÁZE 4 = 7 × thinking-ON volání** (viz L7) — v živém běhu ~15 min
   timeoutů, 0 užitku. Jedno volání s `list[RedakceVerdikt]` + vzorkované karty (O2)
   srazí redakci na ~1–2 min.
+  **✅ OPRAVENO 2026-07-04** — viz L7 (implementace) a O2 (vzorkování). 9
+  nových testů (jedno volání stačí, chybějící check se doplní, fallback po
+  jednom, vzorkování AHA/klíč. svědectví/determinismus/řazení), 206/206
+  (bez slow), ruff čistý. **Živé ověření skutečné časové úspory
+  neprovedeno** — vyžadovalo by další dlouhý živý běh; teoreticky 7×
+  méně prefillu+thinking, ale reálný dopad na wall-clock čas nebyl změřen.
 - 🟡 **O14 · Duplicitní simulace/validace** (O8) — malé, ale zbytečné.
 - 🟢 **O15 · Vypravěč `num_ctx` 16384** při ~1,5k tokenech promptu — 8192 stačí,
   rychlejší prefill a méně VRAM (víc místa pro KV cache jiných volání).
@@ -447,7 +467,7 @@
 **Vlna 2 — kvalita obsahu a rychlost:**
 6. ✅ O3: koncept do promptu vypravěče (narativní soudržnost) — OPRAVENO 2026-07-04 (živé ověření kvality zatím neprovedeno)
 7. ✅ O5+R1: plnohodnotný koncept (věty, min_length) → funkční okna zákazů — OPRAVENO 2026-07-04 (R1 fuzzy shoda vědomě NEimplementována, viz sekce 7)
-8. L7/O13: redaktor jedním voláním + vzorkované karty (O2) + thinking OFF test
+8. ✅ L7/O13: redaktor jedním voláním + vzorkované karty (O2) — OPRAVENO 2026-07-04 (thinking OFF test odloženo, živé měření času neprovedeno)
 9. L1: `generuj_model` (JSON+pydantic v jedné retry smyčce) — sjednotí L2/L3 řešení
 10. SC3: synchronizace názvů uzlů ↔ karet (průvodce)
 

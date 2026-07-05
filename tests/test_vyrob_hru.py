@@ -3,8 +3,14 @@ Mock klienta rozlišuje roli podle schématu; measurer je fake (bez GTK)."""
 
 import re
 
-from honbicka.modely import Archetyp, Koncept, StavHry, VekPasmo, Zadani
-from honbicka.orchestrator import faze4_redaktor, vyrob_hru
+from honbicka.modely import Archetyp, Karta, Koncept, StavHry, TypUzlu, VekPasmo, Zadani
+from honbicka.orchestrator import (
+    REDAKCE_CHECKY,
+    _faze4_redaktor_po_jednom,
+    _vzorkuj_karty_pro_redakci,
+    faze4_redaktor,
+    vyrob_hru,
+)
 from tests.conftest import build_valid_mapa_60
 
 
@@ -260,3 +266,113 @@ def test_vyrob_hru_vlastni_measurer_obejde_failfast(tmp_path, monkeypatch):
                     skiny_dir=str(tmp_path / "skiny"),
                     registr_cesta=str(tmp_path / "skiny" / "registr.md"), zatridit=False)
     assert hra.report.stav == StavHry.OK
+
+
+# ------- L7/O13: jedno sloučené volání + fallback po jednom -------------- #
+def _koncept_l7():
+    return Koncept(archetyp=Archetyp.A1, tema="Kapka vody",
+                   mechanismus_reseni="Průnik nezávislých stop odhalí pravdu.",
+                   falesne_teorie=1, pravdive_stopy=2, konce=2)
+
+
+class JednoVolaniKlient:
+    """Vrací všech 7 verdiktů v JEDNOM volání (nové schéma `verdikty`)."""
+
+    def __init__(self, karty_text: str):
+        self.pocet_volani = 0
+        self.karty_text = karty_text
+
+    def generuj_json(self, role, uzivatel, schema, extra_system=None):
+        self.pocet_volani += 1
+        props = schema.get("properties", {})
+        if "verdikty" not in props:
+            raise AssertionError("očekávalo se sloučené schéma s poli 'verdikty'")
+        return {"verdikty": [
+            {"check": kod, "verdikt": True, "citace_karet": [self.karty_text],
+             "zduvodneni": "ok"}
+            for kod in REDAKCE_CHECKY
+        ]}
+
+
+def test_faze4_jedno_volani_uspesne_stacilo_jednou():
+    karty = [_karta(1, "Na kartě je slovo klíč a stopa.")]
+    klient = JednoVolaniKlient("stopa")
+    verdikty = faze4_redaktor(klient, karty, _koncept_l7(), Zadani(vek=VekPasmo.V09_12))
+    assert klient.pocet_volani == 1  # jedno volání pro všech 7 checků
+    assert len(verdikty) == 7
+    assert {v.check for v in verdikty} == set(REDAKCE_CHECKY)
+    assert all(v.verdikt for v in verdikty)
+
+
+def test_faze4_chybejici_check_v_odpovedi_se_doplni_jako_failed():
+    karty = [_karta(1, "Na kartě je slovo klíč a stopa.")]
+
+    class NeuplnyKlient:
+        def generuj_json(self, role, uzivatel, schema, extra_system=None):
+            # vrátí jen 5 z 7 (chybí R6, R7)
+            return {"verdikty": [
+                {"check": kod, "verdikt": True, "citace_karet": ["stopa"], "zduvodneni": "ok"}
+                for kod in list(REDAKCE_CHECKY)[:5]
+            ]}
+
+    verdikty = faze4_redaktor(NeuplnyKlient(), karty, _koncept_l7(), Zadani(vek=VekPasmo.V09_12))
+    assert len(verdikty) == 7
+    chybejici = [v for v in verdikty if v.check in ("R6", "R7")]
+    assert len(chybejici) == 2
+    assert all(not v.verdikt for v in chybejici)
+    assert all("chybí v odpovědi" in v.zduvodneni for v in chybejici)
+
+
+def test_faze4_selhani_slouceneho_volani_spadne_na_po_jednom():
+    # DispatchKlient (starý mock) neumí nové schéma → AssertionError → fallback
+    karty = [_karta(1, "Na kartě je slovo klíč a stopa.")]
+    klient = DispatchKlient({}, verdikt={"check": "R1", "verdikt": True,
+                                         "citace_karet": ["stopa"], "zduvodneni": "ok"})
+    verdikty = faze4_redaktor(klient, karty, _koncept_l7(), Zadani(vek=VekPasmo.V09_12))
+    assert len(verdikty) == 7
+    assert all(v.verdikt for v in verdikty)  # fallback per-check taky ověří citaci
+
+
+def test_faze4_redaktor_po_jednom_prime_volani():
+    # přímý test záložní funkce (bez projití hlavní cesty)
+    karty = [_karta(1, "Text s frází pravda.")]
+    klient = DispatchKlient({}, verdikt={"check": "R1", "verdikt": True,
+                                         "citace_karet": ["pravda"], "zduvodneni": "ok"})
+    from honbicka.orchestrator import _karty_blob
+    blob = _karty_blob(karty)
+    verdikty = _faze4_redaktor_po_jednom(klient, blob, _koncept_l7(), Zadani(vek=VekPasmo.V09_12))
+    assert len(verdikty) == 7
+
+
+# ------- O2: vzorkování karet pro redakci --------------------------------- #
+def test_vzorkuj_karty_bez_mapy_vraci_vse():
+    karty = [Karta(cislo=i, nazev="X", typ=TypUzlu.INFORMACE, atmosfera="A" * 320,
+                   predni="p", zadni="z") for i in range(1, 22)]
+    assert _vzorkuj_karty_pro_redakci(karty, None) == karty
+
+
+def test_vzorkuj_karty_vzdy_obsahuje_aha_a_klicove_svedectvi(valid_mapa_60):
+    karty = [Karta(cislo=u.cislo, nazev="X", typ=u.typ, atmosfera="A" * 320,
+                   predni="p", zadni="z") for u in valid_mapa_60.uzly]
+    vzorek = _vzorkuj_karty_pro_redakci(karty, valid_mapa_60, pocet_nahodnych=2)
+    cisla_vzorku = {k.cislo for k in vzorek}
+    assert valid_mapa_60.pozice_aha_uzel in cisla_vzorku
+    for u in valid_mapa_60.uzly:
+        if u.klicove_svedectvi:
+            assert u.cislo in cisla_vzorku
+
+
+def test_vzorkuj_karty_je_deterministicky(valid_mapa_60):
+    karty = [Karta(cislo=u.cislo, nazev="X", typ=u.typ, atmosfera="A" * 320,
+                   predni="p", zadni="z") for u in valid_mapa_60.uzly]
+    a = _vzorkuj_karty_pro_redakci(karty, valid_mapa_60, pocet_nahodnych=3)
+    b = _vzorkuj_karty_pro_redakci(karty, valid_mapa_60, pocet_nahodnych=3)
+    assert [k.cislo for k in a] == [k.cislo for k in b]
+
+
+def test_vzorkuj_karty_je_serazeny_podle_cisla(valid_mapa_60):
+    karty = [Karta(cislo=u.cislo, nazev="X", typ=u.typ, atmosfera="A" * 320,
+                   predni="p", zadni="z") for u in valid_mapa_60.uzly]
+    vzorek = _vzorkuj_karty_pro_redakci(karty, valid_mapa_60, pocet_nahodnych=3)
+    cisla = [k.cislo for k in vzorek]
+    assert cisla == sorted(cisla)

@@ -28,6 +28,7 @@ from honbicka.modely import (
     SCHEMA_KONCEPT,
     SCHEMA_MAPA,
     SCHEMA_REDAKCE,
+    SCHEMA_REDAKCE_VSECHNY,
     SCHEMA_ZADANI,
     Archetyp,
     FitCheck,
@@ -38,6 +39,7 @@ from honbicka.modely import (
     Mapa,
     Profil,
     RedakceVerdikt,
+    RedakceVsechnyVerdikty,
     Report,
     StavHry,
     Uzel,
@@ -744,36 +746,94 @@ def _citace_je_dolozena(citace: str, blob: str) -> bool:
     return len(fragmenty) >= 2 and all(f in blob for f in fragmenty)
 
 
-def faze4_redaktor(
-    klient: OllamaKlient, karty: list[Karta], koncept: Koncept, zadani: Zadani
+def _vzorkuj_karty_pro_redakci(
+    karty: list[Karta], mapa: Mapa | None, *, pocet_nahodnych: int = 4
+) -> list[Karta]:
+    """O2: redaktor dřív viděl jen `blob[:4000]` (~4 z 21 karet, slepě
+    oříznuté uprostřed karty). Místo prefixu vzorkuje CELÉ karty: AHA kartu +
+    karty s klíčovým svědectvím + N náhodných (seedováno `mapa.seed` —
+    deterministické). Bez `mapa` (test/legacy volání) vrátí všechny karty."""
+    if mapa is None:
+        return karty
+    dulezita_cisla = {mapa.pozice_aha_uzel} | {u.cislo for u in mapa.uzly if u.klicove_svedectvi}
+    vybrane = [k for k in karty if k.cislo in dulezita_cisla]
+    zbyle = [k for k in karty if k.cislo not in dulezita_cisla]
+    rng = random.Random(mapa.seed)
+    nahodne = rng.sample(zbyle, min(pocet_nahodnych, len(zbyle)))
+    vysledek = vybrane + nahodne
+    vysledek.sort(key=lambda k: k.cislo)
+    return vysledek
+
+
+def _faze4_redaktor_po_jednom(
+    klient: OllamaKlient, blob: str, koncept: Koncept, zadani: Zadani
 ) -> list[RedakceVerdikt]:
-    """Projde checky R1–R7. Každý verdikt MUSÍ citovat doslovné úryvky z karet;
-    orchestrátor je ověří (grep, po očištění uvozovek/prefixu) — bez existující
-    citace je verdikt neplatný (spec §3/§12)."""
-    blob = _karty_blob(karty)
+    """Záložní cesta (L7): 7 sekvenčních volání, jedno na check — použije se,
+    jen když jedno sloučené volání (`faze4_redaktor`) selže."""
     verdikty: list[RedakceVerdikt] = []
     for kod, popis in REDAKCE_CHECKY.items():
         prompt = (
-            f"Check {kod}: {popis}\nVěk {zadani.vek.value}, téma „{koncept.tema}“.\n"
-            "Posuď karty a doslovně cituj úryvky jako důkaz.\n\n" + blob[:4000]
+            f"Check {kod}: {popis}\nVěk {zadani.vek.value}, téma „{koncept.tema}“. "
+            f"Skutečné řešení: „{koncept.mechanismus_reseni}“.\n"
+            "Posuď karty a doslovně cituj úryvky jako důkaz.\n\n" + blob
         )
         try:
             data = klient.generuj_json(Role.REDAKTOR, prompt, SCHEMA_REDAKCE)
             v = RedakceVerdikt.model_validate(data)
+            v.check = kod
         except (HonbickaLLMError, ValidationError) as exc:
             # Posudek je sekundární — chyba/timeout jednoho checku neshodí hru.
-            verdikty.append(RedakceVerdikt(
-                check=kod, verdikt=False,
-                zduvodneni=f"[posudek nedostupný: {type(exc).__name__}]"))
-            continue
-        v.check = kod
+            v = RedakceVerdikt(check=kod, verdikt=False,
+                               zduvodneni=f"[posudek nedostupný: {type(exc).__name__}]")
+        verdikty.append(v)
+    return verdikty
+
+
+def faze4_redaktor(
+    klient: OllamaKlient, karty: list[Karta], koncept: Koncept, zadani: Zadani,
+    mapa: Mapa | None = None,
+) -> list[RedakceVerdikt]:
+    """FÁZE 4: JEDNO volání se všemi checky R1–R7 najednou (L7/O13 — dřív 7
+    sekvenčních thinking-ON volání trvalo v živém běhu ~15 min a často
+    timeoutovalo). Vzorkuje celé karty místo oříznutého prefixu (O2, viz
+    `_vzorkuj_karty_pro_redakci`). Selže-li sloučené volání, spadne na
+    záložní cestu po jednom checku (`_faze4_redaktor_po_jednom`). Každý
+    verdikt MUSÍ citovat doslovné úryvky z karet; orchestrátor je ověří
+    (grep, po očištění uvozovek/prefixu) — bez existující citace je verdikt
+    neplatný (spec §3/§12)."""
+    vzorek = _vzorkuj_karty_pro_redakci(karty, mapa)
+    blob = _karty_blob(vzorek)
+    checky_popis = "\n".join(f"{kod}: {popis}" for kod, popis in REDAKCE_CHECKY.items())
+    prompt = (
+        f"Posuď VŠECH 7 checků najednou pro tuto hru. Téma „{koncept.tema}“, "
+        f"věk {zadani.vek.value}. Skutečné řešení: „{koncept.mechanismus_reseni}“.\n\n"
+        f"{checky_popis}\n\n"
+        f"Karty (vzorek {len(vzorek)} z {len(karty)}):\n{blob}\n\n"
+        "Vrať pole `verdikty` s PŘESNĚ 7 položkami (check R1 až R7), každá s "
+        "doslovnou citací z karet jako důkaz."
+    )
+    try:
+        data = klient.generuj_json(Role.REDAKTOR, prompt, SCHEMA_REDAKCE_VSECHNY)
+        verdikty = RedakceVsechnyVerdikty.model_validate(data).verdikty
+    except Exception:  # noqa: BLE001 — jedno volání selhává celé; nikdy nespadnout na FÁZI 4
+        verdikty = _faze4_redaktor_po_jednom(klient, blob, koncept, zadani)
+
+    # Model nemusí vrátit přesně 7 položek — chybějící checky = FAILED.
+    ziskane = {v.check for v in verdikty}
+    for kod in REDAKCE_CHECKY:
+        if kod not in ziskane:
+            verdikty.append(RedakceVerdikt(check=kod, verdikt=False,
+                                           zduvodneni="[chybí v odpovědi redaktora]"))
+
+    vysledek: list[RedakceVerdikt] = []
+    for v in verdikty:
         # Ověření citací: každý úryvek musí být v kartách doslova (příp. jako
         # dva fragmenty spojené elipsou — viz _citace_je_dolozena).
         if not v.citace_karet or not all(_citace_je_dolozena(c, blob) for c in v.citace_karet):
             v.verdikt = False
             v.zduvodneni = (v.zduvodneni + " [citace neověřena]").strip()
-        verdikty.append(v)
-    return verdikty
+        vysledek.append(v)
+    return vysledek
 
 
 # --------------------------------------------------------------------------- #
@@ -939,7 +999,7 @@ def vyrob_hru(
     _zapis_skin(hra_dir, _koncept_md(koncept, params), mapa, karty, predbezny, log)
 
     # FÁZE 4 — redaktor R1–R7 s ověřenými citacemi (resilientní: chyba neshodí hru)
-    editorial = faze4_redaktor(klient, karty, koncept, zadani)
+    editorial = faze4_redaktor(klient, karty, koncept, zadani, mapa)
 
     # simulace pro report
     _, sim_mapa = validuj_par_30_60(mapa, zadani, koncept)

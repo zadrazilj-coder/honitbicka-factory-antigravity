@@ -280,6 +280,16 @@ class RedakceVerdikt(BaseModel):
     zduvodneni: str = ""
 
 
+class RedakceVsechnyVerdikty(BaseModel):
+    """Všech 7 verdiktů R1–R7 v JEDNOM volání (L7/O13): dřív 7 sekvenčních
+    thinking-ON volání redaktora trvalo v živém běhu ~15 min a často
+    timeoutovalo. Jeden strukturovaný výstup se všemi checky najednou."""
+
+    verdikty: list[RedakceVerdikt] = Field(
+        description="Přesně 7 verdiktů, jeden pro každý check R1 až R7"
+    )
+
+
 # --------------------------------------------------------------------------- #
 # Reporty (deterministické výstupy)
 # --------------------------------------------------------------------------- #
@@ -346,3 +356,4 @@ SCHEMA_KONCEPT = _llm_schema(Koncept)
 SCHEMA_MAPA = _llm_schema(Mapa)
 SCHEMA_KARTA = _llm_schema(Karta)
 SCHEMA_REDAKCE = _llm_schema(RedakceVerdikt)
+SCHEMA_REDAKCE_VSECHNY = _llm_schema(RedakceVsechnyVerdikty)
