@@ -23,7 +23,7 @@ import statistics
 
 from honbicka.modely import Hrana, Koncept, Mapa, Profil, TypUzlu, Uzel, Zadani
 from honbicka.orchestrator import LosovaneParametry
-from honbicka.validatory.simulace import pasmo_aha, povinne_uzly, simuluj
+from honbicka.validatory.simulace import POCET_SIMULACI_DEFAULT, pasmo_aha, povinne_uzly, simuluj
 from honbicka.validatory.skalovani import komponenty_rozsah
 
 AHA_UZEL_DEFAULT = 10  # postava mezi uzlem 7 a uzlem 8 (~70 % trunku)
@@ -37,9 +37,10 @@ def _regiony(zadani: Zadani) -> tuple[str, str]:
 
 
 # Počet simulačních průchodů (spec „≥5"). 15 dává stabilní medián pozice AHA
-# (5 průchodů je pro výběr uzlu příliš šumivé). Pipeline musí validovat stejným
-# počtem — viz orchestrator.vyrob_hru (pouzij_scaffolder).
-POCET_SIMULACI = 15
+# (5 průchodů je pro výběr uzlu příliš šumivé). V4: alias na jediný zdroj
+# (validatory.simulace), ať se scaffolder a vyrob_hru validace neliší počtem
+# průchodů (dřív způsobilo bug — jiný medián podle toho, které volání se použilo).
+POCET_SIMULACI = POCET_SIMULACI_DEFAULT
 
 
 def _median_aha(mapa: Mapa, zadani: Zadani, profil: int, uzel: int) -> float | None:

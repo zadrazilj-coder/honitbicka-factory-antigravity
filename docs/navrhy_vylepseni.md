@@ -213,6 +213,19 @@
   (default 5) jen kvůli `sim_reports` — výsledky první validace se zahazují (`_`).
   Návrh: použít reporty z první validace (funkce je už vrací) a smazat třetí běh.
   Zároveň sjednotit počet průchodů (15 vs 5 dává jiný medián — zdroj dřívějšího bugu).
+  **✅ OPRAVENO 2026-07-05.** `vyrob_hru` teď drží `sim_mapa_faze1` z validace
+  ve FÁZI 1b (scaffolder cesta) a znovu ji použije jako `sim_reports` v
+  závěrečném reportu — místo TŘETÍHO běhu `validuj_par_30_60` nad stejnou
+  mapou. Bezpečné, protože simulace je deterministická (seed = `mapa.seed`)
+  a graf se po FÁZI 1 nemění (FÁZE 3/SC3 mění jen `Uzel.nazev`, ne
+  hrany/podmínky). Legacy architekt cesta (`pouzij_scaffolder=False`) svou
+  validaci ve FÁZI 1b nevrací ven, takže tam zůstává jeden dopočet na konci
+  (`sim_mapa_faze1 is None` → fallback) — beze změny oproti dřívějšímu chování,
+  jen teď se jmenovaným defaultem. Scaffolderovo VLASTNÍ interní simulování
+  (výběr AHA uzlu v `_vyber_aha_uzel`) je samostatný účel (hledá NEJLEPŠÍ
+  pozici AHA, ne ověřuje HOTOVOU mapu) a nedá se s touhle validací sloučit —
+  zůstává tak, jak bylo. Test `test_vyrob_hru_scaffolder_validuje_mapu_jen_jednou`
+  (počítá volání `validuj_par_30_60` přes monkeypatch wrapper, ověřuje `n==1`).
 - 🟡 **O9 · `_pdf_sady` chytá jen `SazbaNedostupna`.** Jiná výjimka WeasyPrintu
   (chyba fontu, interní chyba na konkrétní kartě) shodí celou hru PO drahé generaci.
   Chytat `Exception` → zapsat do `report.chyby` (skin už je uložený, měkký fail).
@@ -375,6 +388,12 @@
   — už způsobil bug (medián se lišil). Návrh: jediná konstanta v `validatory.simulace`
   (např. `POCET_SIMULACI_DEFAULT = 15`), všude importovat; `scaffold.POCET_SIMULACI`
   z ní jen aliasovat.
+  **✅ OPRAVENO 2026-07-05.** `POCET_SIMULACI_DEFAULT = 15` přidán do
+  `honbicka/validatory/simulace.py` — jediný zdroj. `simuluj()`,
+  `validuj_mapu()`, `validuj_par_30_60()` (agregace.py) na něj teď defaultují
+  místo hardcoded `5`; `scaffold.POCET_SIMULACI` je čistý alias
+  (`POCET_SIMULACI = POCET_SIMULACI_DEFAULT`). Test
+  `test_pocet_simulaci_je_sjednoceny_s_validatorem` v `test_scaffold.py`.
 - 🟡 **V5 · `sazba._weasy_measurer` používá privátní API** `page._page_box.children[0]`
   — křehké napříč verzemi WeasyPrintu (CI má 69.0, pin v pyproject je jen `>=61`).
   Návrh: pin horní meze verze, nebo měřit přes veřejné API (render do
@@ -545,7 +564,7 @@
 **Vlna 3 — robustnost a dluh:**
 11. ~~L2 (per-model think), L3 (retry na timeout)~~ hotovo v bodě 9 výše.
     ✅ L5 (keep_alive) + O9 (širší catch PDF) — OPRAVENO 2026-07-05
-12. O8+V4: jedna validace, jeden počet průchodů
+12. ✅ O8+V4: jedna validace, jeden počet průchodů — OPRAVENO 2026-07-05
 13. O4: slovník žánru (grep) · V6: přístupnost 3.4-6 · MD2: pravdivost stop
 14. SC2: topologická variabilita (2–3 vzory + rng)
 15. Dokumentační očista: O16–O19, L10–L12, V9–V10, MD5, SZ5

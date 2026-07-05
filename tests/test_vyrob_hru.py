@@ -289,6 +289,29 @@ def test_vyrob_hru_pdf_jina_vyjimka_nez_sazbanedostupna_je_mekky_fail(tmp_path, 
     assert any("RuntimeError" in c and "font se nenačetl" in c for c in hra.report.chyby)
 
 
+# ------- O8: scaffolder cesta validuje mapu jen JEDNOU (ne třikrát) -------- #
+def test_vyrob_hru_scaffolder_validuje_mapu_jen_jednou(tmp_path, monkeypatch):
+    import honbicka.orchestrator as orch
+
+    volani = {"n": 0}
+    puvodni = orch.validuj_par_30_60
+
+    def pocitany(*a, **k):
+        volani["n"] += 1
+        return puvodni(*a, **k)
+
+    monkeypatch.setattr(orch, "validuj_par_30_60", pocitany)
+    mapa_dump = build_valid_mapa_60().model_dump(mode="json")
+    klient = DispatchKlient(mapa_dump)
+    zadani = Zadani(vek=VekPasmo.V09_12, format_hracu="dvojice", tema="Kapka vody")
+    hra = vyrob_hru(zadani, klient, seed=1, measurer=measurer_dle_delky,
+                    skiny_dir=str(tmp_path / "skiny"),
+                    registr_cesta=str(tmp_path / "skiny" / "registr.md"), zatridit=False)
+    assert hra.report.stav == StavHry.OK
+    assert volani["n"] == 1  # dřív 2× (FÁZE 1b + „simulace pro report")
+    assert hra.report.simulation_reports  # výsledek první validace se reálně použije
+
+
 # ------- L7/O13: jedno sloučené volání + fallback po jednom -------------- #
 def _koncept_l7():
     return Koncept(archetyp=Archetyp.A1, tema="Kapka vody",

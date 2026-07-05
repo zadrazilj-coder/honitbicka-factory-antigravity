@@ -988,10 +988,17 @@ def vyrob_hru(
     hra_dir = os.path.join(skiny_dir, slug)
 
     # FÁZE 1b — mapa: deterministický scaffolder (default) nebo LLM architekt
+    # O8: `sim_mapa_faze1` z téhle validace se dál používá pro report.simulation_reports
+    # místo TŘETÍ validace téhož grafu na konci (scaffolder interně simuluje taky, pro
+    # výběr AHA uzlu — to je nezávislý účel a nedá se sloučit). Simulace je deterministická
+    # (seed = mapa.seed, viz validatory/simulace.py) a graf se po FÁZI 1 už nemění
+    # (FÁZE 3 mění jen `Uzel.nazev` — SC3 — ne hrany/podmínky), takže výsledek zůstává platný.
+    sim_mapa_faze1: dict[str, list] | None = None
     if pouzij_scaffolder:
         from honbicka.scaffold import POCET_SIMULACI, postav_skeleton
         mapa = postav_skeleton(zadani, koncept, params)
-        v_mapa, _ = validuj_par_30_60(mapa, zadani, koncept, pocet_simulaci=POCET_SIMULACI)
+        v_mapa, sim_mapa_faze1 = validuj_par_30_60(mapa, zadani, koncept,
+                                                    pocet_simulaci=POCET_SIMULACI)
         log.append({"faze": 1, "scaffolder": True, "ok": v_mapa.ok, "chyby": v_mapa.chyby,
                     "aha_uzel": mapa.pozice_aha_uzel})
         if not v_mapa.ok:  # nemělo by nastat (validní z konstrukce)
@@ -1025,8 +1032,11 @@ def vyrob_hru(
     # FÁZE 4 — redaktor R1–R7 s ověřenými citacemi (resilientní: chyba neshodí hru)
     editorial = faze4_redaktor(klient, karty, koncept, zadani, mapa)
 
-    # simulace pro report
-    _, sim_mapa = validuj_par_30_60(mapa, zadani, koncept)
+    # simulace pro report (O8: scaffolder cestu jsme validovali už ve FÁZI 1b —
+    # znovupoužij ty výsledky místo TŘETÍHO běhu nad stejným grafem; legacy
+    # architekt cestu takhle nevalidovala, dopočítá se tu poprvé).
+    sim_mapa = sim_mapa_faze1 if sim_mapa_faze1 is not None else validuj_par_30_60(
+        mapa, zadani, koncept)[1]
     sim_reports = sim_mapa["60"] + sim_mapa["30"]
 
     chyby: list[str] = []

@@ -16,6 +16,12 @@ from honbicka.modely import Archetyp, Mapa, SimulaceReport, TypUzlu, Zadani
 from honbicka.validatory import VysledekValidace
 from honbicka.validatory.topologie import _start_uzel
 
+# V4: jediný zdroj počtu simulačních průchodů — dřív se lišilo 5 (default
+# `validuj_par_30_60`) vs. 15 (scaffolder), což jednou způsobilo bug (jiný
+# medián AHA pozice podle toho, které volání report použil). Vše importuje
+# odsud (validatory/agregace.py i scaffold.py).
+POCET_SIMULACI_DEFAULT = 15
+
 # Tempo (min/kartu) dle prostředí uzlu (SKILL.md §SKÁLOVÁNÍ Odhad tempa).
 TEMPO_VENKU = 2.5
 TEMPO_UVNITR = 1.75  # střed 1,5–2
@@ -155,7 +161,8 @@ def _jeden_pruchod(mapa: Mapa, rng: random.Random, volny_format: bool) -> Simula
 
 
 def simuluj(
-    mapa: Mapa, zadani: Zadani, profil_min: int, pocet: int = 5, seed: int | None = None
+    mapa: Mapa, zadani: Zadani, profil_min: int, pocet: int = POCET_SIMULACI_DEFAULT,
+    seed: int | None = None,
 ) -> list[SimulaceReport]:
     """≥5 průchodů. Pro 30min předej CORE podgraf (spec §5).
 

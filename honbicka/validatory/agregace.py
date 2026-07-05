@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from honbicka.modely import Koncept, Mapa, SimulaceReport, Zadani
 from honbicka.validatory import VysledekValidace
-from honbicka.validatory.simulace import simuluj, zkontroluj_simulaci
+from honbicka.validatory.simulace import POCET_SIMULACI_DEFAULT, simuluj, zkontroluj_simulaci
 from honbicka.validatory.skalovani import zkontroluj_skalovani
 from honbicka.validatory.topologie import zkontroluj_topologii
 
@@ -27,7 +27,7 @@ def validuj_mapu(
     profil_min: int,
     koncept: Koncept | None = None,
     *,
-    pocet_simulaci: int = 5,
+    pocet_simulaci: int = POCET_SIMULACI_DEFAULT,
     stitek: str = "",
 ) -> tuple[VysledekValidace, list[SimulaceReport]]:
     """Topologie + škálování + simulace nad jedním grafem/profilem."""
@@ -49,7 +49,8 @@ def validuj_mapu(
 
 
 def validuj_par_30_60(
-    mapa: Mapa, zadani: Zadani, koncept: Koncept | None = None, *, pocet_simulaci: int = 5
+    mapa: Mapa, zadani: Zadani, koncept: Koncept | None = None, *,
+    pocet_simulaci: int = POCET_SIMULACI_DEFAULT,
 ) -> tuple[VysledekValidace, dict[str, list[SimulaceReport]]]:
     """Validuje 60min (plný graf) i 30min (CORE podgraf) nezávisle (spec §5).
 

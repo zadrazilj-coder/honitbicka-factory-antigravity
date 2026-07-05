@@ -6,7 +6,12 @@ from honbicka.modely import Archetyp, Koncept, Obtiznost, Profil, TypUzlu, VekPa
 from honbicka.orchestrator import losuj_parametry, pocty_cile
 from honbicka.scaffold import POCET_SIMULACI, postav_skeleton
 from honbicka.validatory.agregace import validuj_par_30_60
-from honbicka.validatory.simulace import povinne_uzly
+from honbicka.validatory.simulace import POCET_SIMULACI_DEFAULT, povinne_uzly
+
+
+# ------- V4: scaffolder a validátor default sdílí JEDEN zdroj počtu simulací #
+def test_pocet_simulaci_je_sjednoceny_s_validatorem():
+    assert POCET_SIMULACI == POCET_SIMULACI_DEFAULT
 
 
 def _koncept(zadani, params):
