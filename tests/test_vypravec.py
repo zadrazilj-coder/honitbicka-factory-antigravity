@@ -2,12 +2,13 @@
 
 import re
 
-from honbicka.modely import Archetyp, Koncept, Profil
+from honbicka.modely import Archetyp, Karta, Koncept, Profil, TypUzlu
 from honbicka.orchestrator import (
     MAX_ITERACI_KARTA,
     _kontext_karty,
     _potrebuje_30_variantu,
     _prompt_vypravec,
+    _synchronizuj_nazvy_uzlu,
     faze3_vypravec,
     napis_kartu,
 )
@@ -146,3 +147,42 @@ def test_prompt_aha_karty_nema_pred_ani_po(valid_mapa, valid_zadani):
     prompt = _prompt_vypravec(valid_zadani, _koncept_bohaty(), uzel_aha, kontext, False, None)
     assert "ZDE padá AHA odhalení" in prompt
     assert "PŘED odhalením" not in prompt and "PO odhalení" not in prompt
+
+
+# ------- SC3: synchronizace názvů uzlů ↔ karet ----------------------------- #
+def _karta(cislo, nazev):
+    return Karta(cislo=cislo, nazev=nazev, typ=TypUzlu.PRECHOD,
+                 atmosfera="A" * 320, predni="p", zadni="z")
+
+
+def test_synchronizuj_nazvy_uzlu_prepise_genericky_nazev(valid_mapa):
+    assert valid_mapa.uzel(8).nazev != "Kraj lesa"  # scaffolder dal generický název
+    _synchronizuj_nazvy_uzlu(valid_mapa, [_karta(8, "Kraj lesa")])
+    assert valid_mapa.uzel(8).nazev == "Kraj lesa"
+
+
+def test_synchronizuj_nazvy_uzlu_rozlisi_duplicity(valid_mapa):
+    karty = [_karta(u.cislo, "Stejný název") for u in valid_mapa.uzly]
+    _synchronizuj_nazvy_uzlu(valid_mapa, karty)
+    nazvy = [u.nazev for u in valid_mapa.uzly]
+    assert len(nazvy) == len(set(nazvy))  # žádné dva uzly nemají stejné jméno
+    # první karta v pořadí čísel si název ponechá beze změny
+    prvni = min(valid_mapa.uzly, key=lambda u: u.cislo)
+    assert prvni.nazev == "Stejný název"
+
+
+def test_synchronizuj_nazvy_uzlu_ignoruje_kartu_bez_uzlu(valid_mapa):
+    # karta na neexistující číslo (obranné chování, nemělo by nastat) nespadne
+    _synchronizuj_nazvy_uzlu(valid_mapa, [_karta(99999, "Duch")])
+
+
+def test_faze3_propise_nazvy_karet_do_mapy(valid_mapa, valid_zadani):
+    """Integrace: po FÁZE 3 odpovídá mapa.uzel(n).nazev názvu vytištěné karty č. n
+    (živě ověřený nesoulad — SC3)."""
+    klient = FakeKlient(cyklus=_karta_dict("A" * 300))
+    karty, _, _ = faze3_vypravec(klient, valid_zadani, _koncept(), valid_mapa,
+                                 measurer=measurer_dle_delky)
+    karty_dle_cisla = {k.cislo: k.nazev for k in karty}
+    for uzel in valid_mapa.uzly:
+        ocekavany = karty_dle_cisla[uzel.cislo]
+        assert uzel.nazev == ocekavany or uzel.nazev == f"{ocekavany} ({uzel.cislo})"

@@ -300,6 +300,19 @@
   ověřeno: karta „Čtyři světla" 3×). Návrh: po FÁZE 3 zpětně propsat názvy karet
   do `mapa.uzly[].nazev` (deterministická synchronizace) + vypravěči přikázat
   unikátní název.
+  **✅ OPRAVENO 2026-07-05.** `_synchronizuj_nazvy_uzlu(mapa, karty)` v
+  `honbicka/orchestrator.py` — po vygenerování všech karet (na konci
+  `faze3_vypravec`, PŘED `_zapis_skin`/sazbou) projde karty dle čísla uzlu a
+  přepíše `mapa.uzel(karta.cislo).nazev = karta.nazev`. Žádné nové LLM volání
+  (deterministické, spec §3 „Python rozhoduje"). Duplicitní jména (dva uzly se
+  stejným nápadem vypravěče) se rozliší suffixem `" (<číslo uzlu>)"`, aby
+  signage na uzlech zůstalo jednoznačné. `pruvodce.py` (řádek 76, „Rozmístění
+  uzlů") i karty (řádek 117) tak po opravě tisknou STEJNÝ název pro stejné
+  číslo. **Vypravěči NEbyla přidána instrukce „unikátní název"** — dedupe řeší
+  Python deterministicky po faktu, což je spolehlivější než spoléhat na model;
+  promptová instrukce by byla jen kosmetická nadstavba bez záruky. 4 nové testy
+  v `tests/test_vypravec.py` (`_synchronizuj_nazvy_uzlu` přepis/dedupe/obranné
+  chování + integrace přes `faze3_vypravec`), 223/223 (bez slow), ruff čistý.
 - 🟢 **SC4 · `rng` parametr nevyužit** — buď použít (SC2), nebo z podpisu vyřadit.
 
 ### Správnost popisů
@@ -510,7 +523,10 @@
    think fallback + retry na přechodnou transportní chybu — OPRAVENO 2026-07-05
    (`generuj_model` zapojen jen do `vygeneruj_tema`; architekt/vypravěč/koncept
    záměrně ponechány na vlastní logice — viz zdůvodnění u L1 výše)
-10. SC3: synchronizace názvů uzlů ↔ karet (průvodce)
+10. ✅ SC3: synchronizace názvů uzlů ↔ karet (průvodce) — OPRAVENO 2026-07-05
+
+**VLNA 2 DOKONČENA 2026-07-05** (body 6–10 výše). 223 testů (bez slow), ruff
+čistý.
 
 **Vlna 3 — robustnost a dluh:**
 11. ~~L2 (per-model think), L3 (retry na timeout)~~ hotovo v bodě 9 výše. L5 (keep_alive), O9 (širší catch PDF)

@@ -673,6 +673,27 @@ def napis_kartu(
     return karta, fits, log
 
 
+def _synchronizuj_nazvy_uzlu(mapa: Mapa, karty: list[Karta]) -> None:
+    """SC3: vypravěč si pro každou kartu vymyslí vlastní název (žádoucí —
+    scaffolder dává jen generické 'prechod 10'). Beze změny by ale tenhle
+    generický název skončil v průvodci (Rozmístění uzlů) a organizátor by na
+    značce viděl jiný název, než je na kartě, kterou tam najde (živě ověřeno:
+    karta „Čtyři světla" 3×). Propíše `karta.nazev` zpět do `mapa.uzly[].nazev`
+    — deterministicky, žádné nové LLM volání. Duplicitní názvy (dva uzly se
+    stejným nápadem vypravěče) rozliší číslem uzlu, ať zůstanou jedinečné pro
+    signage."""
+    videne: set[str] = set()
+    for karta in sorted(karty, key=lambda k: k.cislo):
+        uzel = mapa.uzel(karta.cislo)
+        if uzel is None:
+            continue
+        nazev = karta.nazev
+        if nazev in videne:
+            nazev = f"{nazev} ({karta.cislo})"
+        videne.add(nazev)
+        uzel.nazev = nazev
+
+
 def faze3_vypravec(
     klient: OllamaKlient, zadani: Zadani, koncept: Koncept, mapa: Mapa,
     *, measurer: Measurer, log: list[dict] | None = None,
@@ -686,6 +707,7 @@ def faze3_vypravec(
                                        measurer=measurer, log=log)
         karty.append(karta)
         fit.extend(fits)
+    _synchronizuj_nazvy_uzlu(mapa, karty)
     return karty, fit, log
 
 
