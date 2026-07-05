@@ -422,3 +422,50 @@ touto hodnotou, dokud topologie nemá prostor ji bezpečně unést. Kandidát na
 Vlnu 4/budoucí session — spolu se SC2 (topologická variabilita), protože obě
 řeší stejný kořen: pevná 21-uzlová kostra je jeden strukturální kompromis a
 další zpřesnění nad ní (víc INFORMACE uzlů, víc vzorů trunku) patří dohromady.
+
+---
+
+## 2026-07-05 — SC2: topologická variabilita analyzována, implementace odložena
+
+Audit SC2 žádá strukturální variabilitu scaffolderu (dnes jeden pevný
+21-uzlový vzor pro každou hru) — jinak si opakovaní hráči vzor zapamatují.
+Navržené cesty: (a) prohodit pořadí hran u forků, (b) posunout GATED/STREZ
+pozice, (c) střídat 2–3 předpřipravené vzory trunku.
+
+**Rozhodnutí: neimplementovat v této dávce.** Důvody:
+
+1. **(a) je kosmetické nanic.** Uzly 3 a 4 (fork z uzlu 2) jsou už teď
+   strukturálně identické (stejný typ INFORMACE, stejný fork/rejoin bod) —
+   prohození jejich pořadí v `hrany` listu nic nezmění, protože jsou
+   vzájemně zaměnitelné. Skutečnou „jinou strukturu" by hráč nepoznal.
+
+2. **(b)/(c) jsou rizikové.** `_vyber_aha_uzel` (honbicka/scaffold.py) hledá
+   kandidáty na AHA uzel VÝHRADNĚ v CORE podgrafu (`core_cisla` filtr) a
+   vybírá ten, jehož mediánová simulovaná pozice AHA (napříč 30min i 60min
+   profilem) je nejblíž středu pásma archetypu. Tahle volba byla ověřena
+   simulací přes celou seed×věk×obtížnost×formát mřížku (3600 kombinací,
+   viz M8 zjištění a dřívější záznamy v tomto souboru) — jakákoli změna CORE
+   topologie (jiné větvení, jiné pozice STREZ/GATED) by tohle ověření musela
+   zopakovat celé, jinak riskuje TICHÉ porušení AHA-banding u okrajových
+   archetypů/seedů (chyba, kterou `test_skeleton_projde_validaci` — pokrývá
+   jen `range(14)` seedů — nemusí odhalit).
+
+3. **Nalezena bezpečnější podmnožina, ale i ta vyžaduje novou práci.** SIDE
+   region (uzly 13–21, jen 60min) NENÍ součástí AHA-kandidátního hledání
+   (to je čistě `core_cisla`), takže alternativní SIDE topologie (zachovávající
+   stejný multiset typů kvůli `skalovani`, jiné pořadí fork/rejoin uvnitř)
+   by nesla podstatně nižší riziko. Pořád by ale vyžadovala ručně navrženou
+   DRUHOU kostru a její ověření přes existující topologické/škálovací/
+   simulační kontroly — ne jen náhodné zamíchání parametru `rng` (ten dnes
+   zůstává nevyužitý, jak audit správně poznamenává).
+
+**Pro budoucí session:** začít u SIDE regionu (nižší riziko), NE u CORE
+trunku. Návrh postupu: (1) navrhnout druhou SIDE topologii se stejným
+type-multisetem (1× LECITEL, 2× POSTAVA-ish, 1× SLEPA, 1× STREZ, 1×
+INFORMACE, 1× GATED, 1× OBCHODNIK, 1× SMYCKA, 1× JEDNOSMER — dnešní
+rozložení uzlů 13–21), (2) `postav_skeleton` losuje mezi oběma přes `rng`
+(default `random.Random(params.seed)` pro reprodukovatelnost), (3) ověřit
+oba vzory přes STEJNOU parametrizovanou sadu seedů/věků/obtížností/formátů
+jako `test_skeleton_projde_validaci`, včetně nového vzoru v maticích.
+Viz také zápis „MD2: pravdivost stop" výše — obě položky sdílí kořen (pevná
+kostra jako záměrný kompromis) a patří spolu do stejné budoucí revize topologie.

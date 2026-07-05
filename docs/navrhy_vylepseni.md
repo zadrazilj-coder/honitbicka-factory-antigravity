@@ -349,6 +349,27 @@
   posunout gated/strez pozice, střídat 2–3 předpřipravené vzory trunku. Bez toho
   budou všechny hry strukturálně identické (hráči vzor prokouknou — přesně proti
   §RITUÁL vs. PŘEKVAPENÍ).
+  **⏸️ ZÁMĚRNĚ ODLOŽENO 2026-07-05** (analýza provedena, implementace ne —
+  viz docs/rozhodnuti.md). Prohození pořadí hran u fork uzlů (2→[3,4,13],
+  7→[10,9]) by bylo kosmetické nanic: uzly 3/4 jsou už teď strukturálně
+  symetrické (stejný typ, stejný fork/rejoin), takže „prohození" nic nemění.
+  Skutečná variabilita CORE trunku (jiný počet větví, jiné pořadí
+  STREZ/GATED) je riskantní — `_vyber_aha_uzel` hledá AHA kandidáty
+  VÝHRADNĚ v CORE podgrafu (`kandidati = [... if d in core_cisla ...]`),
+  takže jakákoli změna CORE topologie vyžaduje stejně důkladné ověření
+  (simulace přes celou seed×věk×obtížnost×formát mřížku), jaké si vyžádala
+  PŮVODNÍ kostra (viz M8 zjištění výše v tomto souboru). Bez opakování téhle
+  validace by změna mohla potichu porušit AHA-banding u okrajových
+  archetypů/seedů — chyba, kterou testy nemusí odhalit (protože nový vzor
+  by potřeboval VLASTNÍ pokrytí, ne jen spolehnutí na existující
+  `test_skeleton_projde_validaci`).
+  **Bezpečnější podmnožina identifikována pro budoucí session:** SIDE region
+  (uzly 13–21, jen 60min) NENÍ součástí AHA-kandidátního hledání (to je
+  čistě `core_cisla`), takže alternativní SIDE topologie (stejný multiset
+  typů kvůli skalovani, jiné pořadí fork/rejoin uvnitř) by nesla podstatně
+  nižší riziko — pořád ale vyžaduje ručně navrženou a ověřenou druhou
+  kostru, ne jen náhodné zamíchání. Nedělalo se v této dávce kvůli
+  časové/ověřovací náročnosti odpovídající původnímu tuningu.
 - 🟡 **SC3 · Generické názvy uzlů prosáknou do průvodce.** Uzly se jmenují
   „prechod 10", „jednosmer 21" — a průvodce (Rozmístění uzlů!) je tiskne organizátorovi.
   Vypravěč mezitím vymyslí vlastní názvy karet → mapa a karty se rozjedou (živě
@@ -604,7 +625,8 @@
 12. ✅ O8+V4: jedna validace, jeden počet průchodů — OPRAVENO 2026-07-05
 13. ✅ O4: slovník žánru (grep) · V6: přístupnost 3.4-6 · MD2: pravdivost stop
     (částečně) — OPRAVENO 2026-07-05
-14. SC2: topologická variabilita (2–3 vzory + rng)
+14. ⏸️ SC2: topologická variabilita (2–3 vzory + rng) — ANALYZOVÁNO, ZÁMĚRNĚ
+    ODLOŽENO 2026-07-05 (rizikové bez nové validační mřížky, viz rozhodnuti.md)
 15. Dokumentační očista: O16–O19, L10–L12, V9–V10, MD5, SZ5
 
 **Stav auditu: DOKONČENO** (všechny moduly projity; tento soubor je průběžný
