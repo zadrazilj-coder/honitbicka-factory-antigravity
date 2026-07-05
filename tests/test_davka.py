@@ -18,7 +18,8 @@ def measurer_dle_delky(html: str, sirka: float) -> float:
 ZADANI_DICT = {"tema": "Ledová jeskyně", "vek": "04-06", "format_hracu": "jednotlivci",
                "prostredi": ["les"], "obtiznost": "lehka", "ton": "humor", "jazyk": "cs"}
 KONCEPT_DICT = {"archetyp": "A1", "tema": "Kapka vody", "zanr": "humor",
-                "mechanismus_reseni": "průnik stop", "klicova_rekvizita": "sítko",
+                "mechanismus_reseni": "Průnik nezávislých stop odhalí pravdu.",
+                "klicova_rekvizita": "sítko",
                 "falesne_teorie": 2, "pravdive_stopy": 3, "konce": 2, "slovnik_zakazana": []}
 KARTA_DICT = {"cislo": 1, "nazev": "K", "typ": "postava", "atmosfera": "A" * 300,
               "predni": "U potoka je stopa.", "zadni": "Výsledek."}

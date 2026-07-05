@@ -126,6 +126,18 @@
   deduplikaci bezcennou (každá hra „prunik_stop" = kolize navždy). Návrh: prompt
   konceptu s příkladem plných vět („Drak kýchá kvůli pylu květiny — hráč to odvodí
   z…"), min. délka pole validovaná pydantic (`min_length`).
+  **✅ OPRAVENO 2026-07-04:** `Koncept.mechanismus_reseni` má `min_length=15` +
+  `field_validator` odmítající snake_case (musí obsahovat mezeru, ne podtržítko);
+  `klicova_rekvizita` odmítá podtržítko (smí být i jedno slovo — rekvizita
+  není celá věta). `faze1a_koncept` má nový příklad DOBŘE/ŠPATNĚ v base
+  promptu + opravnou smyčku (`MAX_ITERACI_KONCEPT=3`, cílený re-prompt s
+  počtem chyb) + mechanickou poslední záchranu (`_normalizuj_koncept_data`:
+  podtržítka→mezery, prázdné/krátké doplní obecnou frází) — hra nikdy nespadne
+  jen na kosmetickém poli. 8 nových testů (příklad v promptu, retry po
+  snake_case, mechanická oprava po vyčerpání, normalizace prázdného/rekvizity,
+  validátor odmítá krátký i dost dlouhý snake_case). **Zbývá:** pokud po
+  mechanické opravě selže i JINÉ pole (schéma jinak vadné), `faze1a_koncept`
+  vyhodí `RuntimeError` nezachycený ve `vyrob_hru` — sjednotí až L1 (úkol 9).
 - 🟡 **O6 · Nouzová karta nemá volby.** `_nouzova_karta` negeneruje „→ karta X" —
   vytištěná by rozbila navigaci. Doplnit hrany uzlu jako generické volby
   („A) Pokračuj → karta {cil}").
@@ -355,6 +367,12 @@
   „prunik_stop" ⇒ všechna budoucí „prunik_stop" zakázána = fakticky blokace, nebo
   při jiném tokenu nulová ochrana). Po O5 zvážit fuzzy shodu (normalizace, klíčová
   slova) — jinak okna reálně nefungují.
+  **ROZHODNUTO 2026-07-04 (NEimplementovat fuzzy shodu):** po opravě O5 nese
+  `mechanismus_reseni` plnou větu (min. 15 znaků, ne token) → přesné porovnání
+  je teď smysluplné (různé hry s odlišnou zápletkou mají odlišné věty; fuzzy
+  shoda by hrozila falešně blokovat podobně znějící, ale reálně odlišné hry).
+  Audit sám tuto položku formuloval jako „zvážit", ne požadavek — ponecháno
+  jako budoucí vylepšení, ne bug.
 - 🟡 **R2 · Kolize slugu v registru** (duplicitní řádky téhož slugu) — viz O7;
   registr je append-only, ale `nacti_registr` nijak neřeší duplicitní slug
   (pro okna zákazů to nevadí, pro `honbicka status` a lidské čtení ano).
@@ -428,7 +446,7 @@
 
 **Vlna 2 — kvalita obsahu a rychlost:**
 6. ✅ O3: koncept do promptu vypravěče (narativní soudržnost) — OPRAVENO 2026-07-04 (živé ověření kvality zatím neprovedeno)
-7. O5+R1: plnohodnotný koncept (věty, min_length) → funkční okna zákazů
+7. ✅ O5+R1: plnohodnotný koncept (věty, min_length) → funkční okna zákazů — OPRAVENO 2026-07-04 (R1 fuzzy shoda vědomě NEimplementována, viz sekce 7)
 8. L7/O13: redaktor jedním voláním + vzorkované karty (O2) + thinking OFF test
 9. L1: `generuj_model` (JSON+pydantic v jedné retry smyčce) — sjednotí L2/L3 řešení
 10. SC3: synchronizace názvů uzlů ↔ karet (průvodce)

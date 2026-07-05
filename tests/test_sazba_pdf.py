@@ -117,7 +117,8 @@ def test_herni_list_pocitadlo_po_petkach():
 # ------- průvodce ---------------------------------------------------------- #
 def _pruvodce_html():
     koncept = Koncept(archetyp=Archetyp.A1, tema="Kapka vody",
-                      mechanismus_reseni="průnik tří stop", klicova_rekvizita="sítko",
+                      mechanismus_reseni="Průnik tří nezávislých stop odhalí pravdu.",
+                      klicova_rekvizita="sítko",
                       falesne_teorie=1, pravdive_stopy=3, konce=2)
     zadani = Zadani(vek=VekPasmo.V06_09, format_hracu="tymy_4x4")
     from tests.conftest import build_valid_mapa

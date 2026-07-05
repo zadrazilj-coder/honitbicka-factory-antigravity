@@ -18,10 +18,9 @@ from __future__ import annotations
 import os
 import sys
 
-# Kandidátní adresáře se sdílenými GTK/Pango knihovnami na Windows (WeasyPrint
-# potřebuje jen tyto .dll, ne celý GTK toolkit/GUI). Pořadí = priorita hledání.
-_GTK_KANDIDATI_WIN = [
-    os.environ.get("HONBICKA_GTK_DIR", ""),
+# Statické kandidátní adresáře se sdílenými GTK/Pango knihovnami na Windows
+# (WeasyPrint potřebuje jen tyto .dll, ne celý GTK toolkit/GUI).
+_GTK_KANDIDATI_STATICKE = [
     r"C:\msys64\ucrt64\bin",
     r"C:\msys64\mingw64\bin",
     r"C:\Program Files\GTK3-Runtime Win64\bin",
@@ -31,6 +30,15 @@ _GTK_ZNACKOVA_DLL = "libgobject-2.0-0.dll"  # přítomnost = adresář obsahuje 
 _gtk_dll_pripojeno = False
 
 
+def _gtk_kandidati() -> list[str]:
+    """Sestaví seznam kandidátů ČERSTVĚ při každém volání — `HONBICKA_GTK_DIR`
+    se čte za běhu, ne jednou při importu. (Dřív byl seznam modulová konstanta
+    zamrzlá při importu; testování env var vyžadovalo `importlib.reload()`,
+    což ale mutuje sdílený stav modulu i pro jiné testy/moduly — viz
+    docs/rozhodnuti.md.)"""
+    return [os.environ.get("HONBICKA_GTK_DIR", ""), *_GTK_KANDIDATI_STATICKE]
+
+
 def _zajisti_gtk_dll_cestu(kandidati: list[str] | None = None) -> str | None:
     """Připojí adresář s GTK knihovnami přes `os.add_dll_directory()` (viz past
     výše). Idempotentní (nic neudělá podruhé); no-op mimo Windows nebo na staré
@@ -38,7 +46,7 @@ def _zajisti_gtk_dll_cestu(kandidati: list[str] | None = None) -> str | None:
     global _gtk_dll_pripojeno
     if _gtk_dll_pripojeno or sys.platform != "win32" or not hasattr(os, "add_dll_directory"):
         return None
-    for adresar in (kandidati if kandidati is not None else _GTK_KANDIDATI_WIN):
+    for adresar in (kandidati if kandidati is not None else _gtk_kandidati()):
         if adresar and os.path.isfile(os.path.join(adresar, _GTK_ZNACKOVA_DLL)):
             try:
                 os.add_dll_directory(adresar)

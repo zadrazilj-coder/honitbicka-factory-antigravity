@@ -57,7 +57,8 @@ def test_redaktor_overi_existujici_citaci():
     karty = [_karta(1, "Na kartě je slovo klíč a stopa.")]
     klient = DispatchKlient({}, verdikt={"check": "R1", "verdikt": True,
                                          "citace_karet": ["stopa"], "zduvodneni": "ok"})
-    koncept = Koncept(archetyp=Archetyp.A1, tema="X", mechanismus_reseni="m",
+    koncept = Koncept(archetyp=Archetyp.A1, tema="X", 
+        mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
                       falesne_teorie=1, pravdive_stopy=2, konce=2)
     verdikty = faze4_redaktor(klient, karty, koncept, Zadani(vek=VekPasmo.V09_12))
     assert len(verdikty) == 7  # R1..R7
@@ -68,7 +69,8 @@ def test_redaktor_zneplatni_neexistujici_citaci():
     karty = [_karta(1, "Text bez oné fráze.")]
     klient = DispatchKlient({}, verdikt={"check": "R1", "verdikt": True,
                                          "citace_karet": ["NEEXISTUJE"], "zduvodneni": "ok"})
-    koncept = Koncept(archetyp=Archetyp.A1, tema="X", mechanismus_reseni="m",
+    koncept = Koncept(archetyp=Archetyp.A1, tema="X", 
+        mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
                       falesne_teorie=1, pravdive_stopy=2, konce=2)
     verdikty = faze4_redaktor(klient, karty, koncept, Zadani(vek=VekPasmo.V09_12))
     assert all(not v.verdikt for v in verdikty)
@@ -82,7 +84,8 @@ def test_redaktor_overi_citaci_v_uvozovkach():
         "check": "R2", "verdikt": True,
         "citace_karet": ['"Rudé světlo zahřeje tvou dlaň, ale mapa ztmavne."'],
         "zduvodneni": "ok"})
-    koncept = Koncept(archetyp=Archetyp.A1, tema="X", mechanismus_reseni="m",
+    koncept = Koncept(archetyp=Archetyp.A1, tema="X", 
+        mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
                       falesne_teorie=1, pravdive_stopy=2, konce=2)
     verdikty = faze4_redaktor(klient, karty, koncept, Zadani(vek=VekPasmo.V09_12))
     assert all(v.verdikt for v in verdikty)
@@ -95,7 +98,8 @@ def test_redaktor_overi_citaci_s_prefixem_cisla_karty():
         "check": "R6", "verdikt": True,
         "citace_karet": ['#1 onboarding 1: "Před tebou se vznášejí čtyři zářivé koule."'],
         "zduvodneni": "ok"})
-    koncept = Koncept(archetyp=Archetyp.A1, tema="X", mechanismus_reseni="m",
+    koncept = Koncept(archetyp=Archetyp.A1, tema="X", 
+        mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
                       falesne_teorie=1, pravdive_stopy=2, konce=2)
     verdikty = faze4_redaktor(klient, karty, koncept, Zadani(vek=VekPasmo.V09_12))
     assert all(v.verdikt for v in verdikty)
@@ -108,7 +112,8 @@ def test_redaktor_overi_citaci_se_suffixem_za_uvozovkami():
         "check": "R3", "verdikt": True,
         "citace_karet": ['"Čtyři světla nad tebou čekají na příkaz." (#1)'],
         "zduvodneni": "ok"})
-    koncept = Koncept(archetyp=Archetyp.A1, tema="X", mechanismus_reseni="m",
+    koncept = Koncept(archetyp=Archetyp.A1, tema="X", 
+        mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
                       falesne_teorie=1, pravdive_stopy=2, konce=2)
     verdikty = faze4_redaktor(klient, karty, koncept, Zadani(vek=VekPasmo.V09_12))
     assert all(v.verdikt for v in verdikty)
@@ -124,7 +129,8 @@ def test_redaktor_overi_citaci_s_legitimni_elipsou():
         "citace_karet": ['"Rudá jako krev, modrá jako hluboké moře. ... '
                          'Každý paprsek nese příběh a varování."'],
         "zduvodneni": "ok"})
-    koncept = Koncept(archetyp=Archetyp.A1, tema="X", mechanismus_reseni="m",
+    koncept = Koncept(archetyp=Archetyp.A1, tema="X", 
+        mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
                       falesne_teorie=1, pravdive_stopy=2, konce=2)
     verdikty = faze4_redaktor(klient, karty, koncept, Zadani(vek=VekPasmo.V09_12))
     assert all(v.verdikt for v in verdikty)
@@ -139,7 +145,8 @@ def test_redaktor_elipsa_s_fabrikovanym_fragmentem_neprojde():
         "citace_karet": ['"Rudá jako krev, modrá jako hluboké moře. ... '
                          'toto ve hře vůbec není."'],
         "zduvodneni": "ok"})
-    koncept = Koncept(archetyp=Archetyp.A1, tema="X", mechanismus_reseni="m",
+    koncept = Koncept(archetyp=Archetyp.A1, tema="X", 
+        mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
                       falesne_teorie=1, pravdive_stopy=2, konce=2)
     verdikty = faze4_redaktor(klient, karty, koncept, Zadani(vek=VekPasmo.V09_12))
     assert all(not v.verdikt for v in verdikty)
@@ -150,7 +157,8 @@ def test_redaktor_prazdna_citace_je_stale_neplatna():
     karty = [_karta(1, "Cokoliv.")]
     klient = DispatchKlient({}, verdikt={"check": "R4", "verdikt": True,
                                          "citace_karet": [], "zduvodneni": "ok"})
-    koncept = Koncept(archetyp=Archetyp.A1, tema="X", mechanismus_reseni="m",
+    koncept = Koncept(archetyp=Archetyp.A1, tema="X", 
+        mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
                       falesne_teorie=1, pravdive_stopy=2, konce=2)
     verdikty = faze4_redaktor(klient, karty, koncept, Zadani(vek=VekPasmo.V09_12))
     assert all(not v.verdikt for v in verdikty)

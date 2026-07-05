@@ -1,11 +1,14 @@
 """Testy FÁZE 1 — architekt + opravná smyčka (M3), s mockovaným klientem."""
 
 import pytest
+from pydantic import ValidationError
 
 from honbicka.modely import Archetyp, Koncept, Mapa
 from honbicka.orchestrator import (
     MAX_ITERACI_ARCHITEKT,
+    MAX_ITERACI_KONCEPT,
     MAX_RELOSOVANI,
+    _normalizuj_koncept_data,
     faze1_architekt,
     faze1a_koncept,
     losuj_parametry,
@@ -32,7 +35,8 @@ class FakeKlient:
 
 @pytest.fixture
 def koncept():
-    return Koncept(archetyp=Archetyp.A1, tema="Kapka vody", mechanismus_reseni="průnik stop",
+    return Koncept(archetyp=Archetyp.A1, tema="Kapka vody", 
+        mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
                    falesne_teorie=1, pravdive_stopy=2, konce=2)
 
 
@@ -106,3 +110,65 @@ def test_faze1a_koncept(valid_zadani, params):
     assert isinstance(k, Koncept)
     assert k.tema == "Kapka vody"
     assert k.falesne_teorie == 2
+
+
+# ------- O5: plnohodnotný koncept (věty, ne snake_case tokeny) ------------- #
+def _data_koncept(mechanismus="Průnik tří stop odhalí pravdu.", rekvizita="sítko"):
+    return {
+        "archetyp": "A1", "tema": "Kapka vody", "zanr": "přírodní humor",
+        "mechanismus_reseni": mechanismus, "klicova_rekvizita": rekvizita,
+        "falesne_teorie": 2, "pravdive_stopy": 3, "konce": 3, "slovnik_zakazana": [],
+    }
+
+
+def test_prompt_obsahuje_priklad_vety(valid_zadani, params):
+    klient = FakeKlient(odpovedi=[_data_koncept()])
+    faze1a_koncept(klient, valid_zadani, params)
+    assert "KRITICKÉ" in klient.prompty[0]
+    assert "Příklad DOBŘE" in klient.prompty[0]
+    assert "drak_kyha_pyl" in klient.prompty[0]  # ukázka ŠPATNĚ pro kontrast
+
+
+def test_koncept_zopakuje_po_snake_case_tokenu(valid_zadani, params):
+    # 1. pokus: snake_case token (živě pozorováno) → 2. pokus: plná věta → OK
+    klient = FakeKlient(odpovedi=[
+        _data_koncept(mechanismus="prunik_stop"),
+        _data_koncept(mechanismus="Průnik nezávislých stop odhalí pravdu."),
+    ])
+    k = faze1a_koncept(klient, valid_zadani, params)
+    assert k.mechanismus_reseni == "Průnik nezávislých stop odhalí pravdu."
+    assert len(klient.prompty) == 2
+    assert "nevyhověla" in klient.prompty[1]
+
+
+def test_koncept_mechanicka_oprava_po_vycerpani_pokusu(valid_zadani, params):
+    # model vždy vrátí snake_case → po MAX_ITERACI_KONCEPT pokusech mechanická oprava
+    klient = FakeKlient(cyklus=_data_koncept(mechanismus="prunik_stop_bez_vety"))
+    k = faze1a_koncept(klient, valid_zadani, params)
+    assert len(klient.prompty) == MAX_ITERACI_KONCEPT
+    assert "_" not in k.mechanismus_reseni
+    assert " " in k.mechanismus_reseni
+
+
+def test_normalizuj_koncept_data_prazdny_mechanismus():
+    opraveno = _normalizuj_koncept_data({"mechanismus_reseni": "", "klicova_rekvizita": ""})
+    assert opraveno["mechanismus_reseni"]  # neprázdné, obecná fráze
+    assert " " in opraveno["mechanismus_reseni"]
+
+
+def test_normalizuj_koncept_data_odstrani_podtrzitko_z_rekvizity():
+    opraveno = _normalizuj_koncept_data({"klicova_rekvizita": "vzacna_kvetina"})
+    assert opraveno["klicova_rekvizita"] == "vzacna kvetina"
+
+
+def test_koncept_odmitne_prilis_kratky_mechanismus():
+    with pytest.raises(ValidationError):  # min_length
+        Koncept(archetyp=Archetyp.A1, tema="X", mechanismus_reseni="krátce",
+                falesne_teorie=1, pravdive_stopy=2, konce=2)
+
+
+def test_koncept_odmitne_snake_case_i_kdyz_dost_dlouhy():
+    with pytest.raises(ValidationError):
+        Koncept(archetyp=Archetyp.A1, tema="X",
+                mechanismus_reseni="toto_je_dost_dlouhy_snake_case_token",
+                falesne_teorie=1, pravdive_stopy=2, konce=2)

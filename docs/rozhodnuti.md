@@ -290,3 +290,30 @@ přesně odpovídá `pocet_stran()`. **Důvod:** centralizace v jednom místě
 je únikový poklop pro netypická umístění GTK. Testováno v `tests/
 test_render_gtk.py` s injektovaným seznamem kandidátů (deterministické,
 nezávislé na tom, jestli testovací stroj GTK skutečně má).
+
+## 2026-07-04 · OPRAVENO: `importlib.reload()` v testu trvale poškozoval GTK detekci
+Při práci na Vlně 2 auditu se plná testovací sada náhodně rozpadla na
+`SazbaNedostupna` v testech, které dřív spolehlivě renderovaly reálné PDF.
+Příčina: `tests/test_render_gtk.py::test_env_var_je_prvni_kandidat` testoval
+prioritu `HONBICKA_GTK_DIR` přes `importlib.reload(honbicka.sazba.render)`.
+`importlib.reload()` ale NEVYTVOŘÍ nový modul — přepíše jména VE STEJNÉM
+namespace dictu, který sdílejí i funkce importované jinam přes `from render
+import X` (jejich `__globals__` ukazuje na TENTÝŽ dict). Reload proto
+znovu-vyhodnotil `_GTK_KANDIDATI_WIN = [os.environ.get(...), ...]` — a
+protože se to stalo v okamžiku, kdy testovací fixtura dočasně nastavovala
+`HONBICKA_GTK_DIR` na dočasný (mizející) adresář, tahle FALEŠNÁ cesta se
+natrvalo zapekla do modulové konstanty pro **zbytek celého test procesu** —
+`monkeypatch` to nemohlo vrátit zpět, protože reload není monkeypatch.
+Následné testy pak nacházely jen tento neplatný adresář a nikdy se
+nedostaly k reálné MSYS2 cestě → `SazbaNedostupna`.
+
+**Oprava:** `_GTK_KANDIDATI_WIN` (modulová konstanta zamrzlá při importu)
+nahrazena funkcí `_gtk_kandidati()`, která `HONBICKA_GTK_DIR` čte ČERSTVĚ
+při každém volání `_zajisti_gtk_dll_cestu()`. Test env-var priority teď jen
+`monkeypatch.setenv(...)` + přímé volání — žádný `importlib.reload()`
+nikde v testech. **Poučení:** `importlib.reload()` v testu je nebezpečný,
+pokud modul má funkce importované jinam přes `from X import Y` — sdílejí
+`__globals__`, takže reload ovlivní i STARÉ reference v jiných modulech,
+a mutace (na rozdíl od `monkeypatch`) se sama nevrátí. Řešení „čti stav za
+běhu, ne jednou při importu" je obecně bezpečnější pattern pro cokoliv,
+co testy potřebují měnit.

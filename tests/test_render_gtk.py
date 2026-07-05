@@ -79,14 +79,14 @@ def test_bez_add_dll_directory_je_noop(tmp_path, monkeypatch):
 
 
 def test_env_var_je_prvni_kandidat(tmp_path, monkeypatch):
+    # `_gtk_kandidati()` čte HONBICKA_GTK_DIR ČERSTVĚ při každém volání (ne
+    # jednou při importu) — žádný `importlib.reload()` potřeba. Reload by
+    # navíc natrvalo pošpinil sdílený stav modulu pro JINÉ testy v procesu
+    # (funkce z jiných modulů dřív importované přes `from render import X`
+    # sdílejí __globals__ se stejným modulem — reload je nečekaně ovlivní).
     monkeypatch.setattr(os, "add_dll_directory", lambda p: None, raising=False)
     gtk_dir = _fake_gtk_dir(tmp_path)
     monkeypatch.setenv("HONBICKA_GTK_DIR", gtk_dir)
-    # výchozí seznam (bez explicitních kandidátů) musí env var respektovat
-    import importlib
-    importlib.reload(render)
-    monkeypatch.setattr(render, "_gtk_dll_pripojeno", False)
-    monkeypatch.setattr(os, "add_dll_directory", lambda p: None, raising=False)
-    vysledek = render._zajisti_gtk_dll_cestu()
+    assert render._gtk_kandidati()[0] == gtk_dir
+    vysledek = render._zajisti_gtk_dll_cestu()  # bez explicitních kandidátů
     assert vysledek == gtk_dir
-    importlib.reload(render)  # ať test neovlivní zbytek běhu

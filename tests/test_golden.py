@@ -28,7 +28,8 @@ def _golden_karty(mapa):
 def test_golden_validace_prochazi():
     mapa = build_valid_mapa_60()
     zadani = Zadani(vek=VekPasmo.V09_12, format_hracu="dvojice", obtiznost=Obtiznost.LEHKA)
-    koncept = Koncept(archetyp=Archetyp.A1, tema="Kapka", mechanismus_reseni="průnik stop",
+    koncept = Koncept(archetyp=Archetyp.A1, tema="Kapka", 
+        mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
                       falesne_teorie=2, pravdive_stopy=3, konce=2)
     v, _ = validuj_par_30_60(mapa, zadani, koncept)
     assert v.ok, v.chyby

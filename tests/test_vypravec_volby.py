@@ -28,7 +28,8 @@ def measurer_dle_delky(html: str, sirka: float) -> float:
 
 
 def _koncept():
-    return Koncept(archetyp=Archetyp.A1, tema="Kapka vody", mechanismus_reseni="průnik stop",
+    return Koncept(archetyp=Archetyp.A1, tema="Kapka vody", 
+        mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
                    falesne_teorie=1, pravdive_stopy=2, konce=2)
 
 

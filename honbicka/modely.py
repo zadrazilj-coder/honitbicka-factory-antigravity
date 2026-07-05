@@ -219,12 +219,34 @@ class Koncept(BaseModel):
     archetyp: Archetyp
     tema: str
     zanr: str = ""
-    mechanismus_reseni: str = Field(description="Jak se pravda odvodí (1 věta, pro registr)")
+    mechanismus_reseni: str = Field(
+        min_length=15, description="Jak se pravda odvodí (celá věta, pro registr)"
+    )
     klicova_rekvizita: str = Field(default="", description="Hlavní rekvizita řešení (pro registr)")
     falesne_teorie: int = Field(description="Počet konkurenčních falešných teorií (P7)")
     pravdive_stopy: int = Field(description="Počet pravdivých stop (min dle §SKÁLOVÁNÍ)")
     konce: int = Field(description="Počet vrstev vítězství (P11)")
     slovnik_zakazana: list[str] = Field(default_factory=list, description="forbidden_terms žánru")
+
+    @field_validator("mechanismus_reseni")
+    @classmethod
+    def _zkontroluj_vetu(cls, v: str) -> str:
+        # O5: model občas vrátí snake_case token ("prunik_stop") místo věty —
+        # takové tokeny dělají okna zákazů v registru bezcenná (R1). Vyžaduj
+        # skutečnou větu (obsahuje mezeru, ne podtržítko).
+        if "_" in v or " " not in v.strip():
+            raise ValueError(
+                "mechanismus_reseni musí být celá věta se slovy oddělenými mezerou "
+                "(ne snake_case token jako 'prunik_stop')"
+            )
+        return v
+
+    @field_validator("klicova_rekvizita")
+    @classmethod
+    def _zkontroluj_rekvizitu(cls, v: str) -> str:
+        if "_" in v:
+            raise ValueError("klicova_rekvizita nesmí obsahovat podtržítko (snake_case token)")
+        return v
 
 
 # --------------------------------------------------------------------------- #

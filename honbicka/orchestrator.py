@@ -64,6 +64,7 @@ from honbicka.validatory.skalovani import SKALA, VEK_STROP, komponenty_rozsah
 MAX_ITERACI_ARCHITEKT = 4  # spec §4 FÁZE 1
 MAX_RELOSOVANI = 2  # spec §4 FÁZE 1
 MAX_ITERACI_KARTA = 3  # spec §4 FÁZE 3
+MAX_ITERACI_KONCEPT = 3  # O5: opravný pokus, když mechanismus_reseni/rekvizita nevyhoví
 
 # Váhy archetypů (SKILL.md §P0b). Losuje Python.
 ARCHETYP_VAHY: dict[Archetyp, int] = {
@@ -175,8 +176,32 @@ class VysledekFaze1:
     chyby: list[str] = field(default_factory=list)
 
 
+def _normalizuj_koncept_data(data: dict) -> dict:
+    """Mechanická poslední záchrana (O5), když model po vyčerpání opravných
+    pokusů pořád vrací snake_case token místo věty: nahradí podtržítka
+    mezerami a doplní generický zbytek, ať `Koncept.model_validate` neselže
+    na kosmeticky vadném poli. Hru to nikdy nemá shodit."""
+    m = data.get("mechanismus_reseni")
+    if isinstance(m, str):
+        t = m.replace("_", " ").strip()
+        if not t:
+            t = "Pravda se skládá z nezávislých stop, ne z jednoho zdroje."
+        elif " " not in t or len(t) < 15:
+            t = f"{t} — vysvětlí se během hraní."
+        data["mechanismus_reseni"] = t
+    r = data.get("klicova_rekvizita")
+    if isinstance(r, str):
+        data["klicova_rekvizita"] = r.replace("_", " ").strip()
+    return data
+
+
 def faze1a_koncept(klient: OllamaKlient, zadani: Zadani, params: LosovaneParametry) -> Koncept:
-    """Architekt navrhne narativní koncept (teorie, řešení, konce) dle archetypu."""
+    """Architekt navrhne narativní koncept (teorie, řešení, konce) dle archetypu.
+
+    O5: `mechanismus_reseni`/`klicova_rekvizita` musí být plné věty/fráze
+    (viz `Koncept` validátory), ne snake_case tokeny — jinak jsou okna zákazů
+    v registru bezcenná (R1). Při nevalidním poli se zopakuje s cíleným
+    opravným promptem; po vyčerpání pokusů mechanická oprava (O5)."""
     cile = pocty_cile(zadani)
     prompt = (
         f"Téma: {zadani.tema or '(navrhni sám)'}\n"
@@ -185,15 +210,46 @@ def faze1a_koncept(klient: OllamaKlient, zadani: Zadani, params: LosovaneParamet
         f"Archetyp zvratu: {params.archetyp.value}.\n"
         f"Vyrob koncept: falešných teorií={cile['falesne_teorie']}, "
         f"pravdivých stop≥{cile['pravdive_stopy']}, konců={cile['konce']}. "
-        "Pravda se odvozuje průnikem stop, žádný zdroj ji neprozradí."
+        "Pravda se odvozuje průnikem stop, žádný zdroj ji neprozradí.\n"
+        "KRITICKÉ: `mechanismus_reseni` MUSÍ být celá věta popisující, jak se "
+        "pravda doopravdy odvodí (ne jednoslovný token spojený podtržítky). "
+        "`klicova_rekvizita` je krátká fráze (smí být i jedno slovo), ale bez "
+        "podtržítek.\n"
+        'Příklad DOBŘE: {"mechanismus_reseni":"Drak kýchá kvůli pylu z jediné '
+        'vzácné květiny na louce","klicova_rekvizita":"vzácná květina"}\n'
+        'Příklad ŠPATNĚ (NEDĚLAT): {"mechanismus_reseni":"drak_kyha_pyl",'
+        '"klicova_rekvizita":"kvetina_louka"}'
     )
-    data = klient.generuj_json(Role.ARCHITEKT, prompt, SCHEMA_KONCEPT)
-    # Počty teorií/stop/konců jsou strukturální omezení (§SKÁLOVÁNÍ) → vlastní je
-    # Python, ne LLM: přepiš je na cílové hodnoty (model je občas netrefí).
-    data["falesne_teorie"] = cile["falesne_teorie"]
-    data["pravdive_stopy"] = cile["pravdive_stopy"]
-    data["konce"] = cile["konce"]
-    return Koncept.model_validate(data)
+    data: dict = {}
+    posledni_chyba = ""
+    for pokus in range(1, MAX_ITERACI_KONCEPT + 1):
+        data = klient.generuj_json(Role.ARCHITEKT, prompt, SCHEMA_KONCEPT)
+        # Počty teorií/stop/konců jsou strukturální omezení (§SKÁLOVÁNÍ) → vlastní
+        # je Python, ne LLM: přepiš je na cílové hodnoty (model je občas netrefí).
+        data["falesne_teorie"] = cile["falesne_teorie"]
+        data["pravdive_stopy"] = cile["pravdive_stopy"]
+        data["konce"] = cile["konce"]
+        try:
+            return Koncept.model_validate(data)
+        except ValidationError as exc:
+            posledni_chyba = str(exc)
+            if pokus < MAX_ITERACI_KONCEPT:
+                prompt += (
+                    f"\nPŘEDCHOZÍ odpověď nevyhověla ({exc.error_count()} chyb): "
+                    "mechanismus_reseni MUSÍ být celá věta se slovy oddělenými "
+                    "mezerou (ne token spojený podtržítky), klicova_rekvizita bez "
+                    "podtržítek. Zkus to znovu."
+                )
+    # Vyčerpáno → mechanická oprava (nikdy nespadnout jen na kosmetickém poli).
+    try:
+        return Koncept.model_validate(_normalizuj_koncept_data(data))
+    except ValidationError as exc:
+        # Selhalo i jiné pole než mechanismus/rekvizita (schéma je jinak vadné) —
+        # to mechanická oprava neřeší, hra to zachytí jako FAILED FÁZE 1.
+        raise RuntimeError(
+            f"koncept: nevalidní i po {MAX_ITERACI_KONCEPT} pokusech a mechanické "
+            f"opravě ({posledni_chyba})"
+        ) from exc
 
 
 def _prompt_architekt(

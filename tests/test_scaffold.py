@@ -11,7 +11,8 @@ from honbicka.validatory.simulace import povinne_uzly
 
 def _koncept(zadani, params):
     c = pocty_cile(zadani)
-    return Koncept(archetyp=params.archetyp, tema="Kapka vody", mechanismus_reseni="m",
+    return Koncept(archetyp=params.archetyp, tema="Kapka vody", 
+        mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
                    falesne_teorie=c["falesne_teorie"], pravdive_stopy=c["pravdive_stopy"],
                    konce=c["konce"])
 
