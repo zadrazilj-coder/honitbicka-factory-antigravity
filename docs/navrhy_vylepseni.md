@@ -177,6 +177,17 @@
   existuje, ale žádná kontrola karty negrepuje. Deterministická kontrola je triviální
   (substring přes všechny strany karet) — přidat do FÁZE 3 hned za fit-check
   (s cíleným opravným promptem „nahraď slovo X").
+  **✅ OPRAVENO 2026-07-05.** `_najdi_zakazane_slovo(karta, zakazana)` — case-
+  insensitive substring přes `atmosfera+predni+zadni+zadni_30`. `napis_kartu`
+  ho volá hned po fit-checku (gate na `return`, i kdyby fit prošel); najde-li
+  se zakázané slovo, retry smyčka pokračuje s cíleným opravným promptem
+  (`_prompt_vypravec(..., oprava_slovnik="zabít")` cituje konkrétní slovo).
+  Base prompt navíc VŽDY vypíše celý `koncept.slovnik_zakazana` seznam
+  upfront (proaktivní prevence, ne jen reaktivní oprava). Po vyčerpání
+  `MAX_ITERACI_KARTA` pokusů Python NEPŘEPISUJE text (riziko rozbité
+  gramatiky) — jen zaznamená `slovnik_neopravitelne` do logu, `vyrob_hru`
+  to promítne do `report.chyby` (stejný vzor jako O1 `volby_neopravitelne`).
+  7 nových testů v `test_vypravec.py`.
 - 🟡 **O5 · Koncept je hubený a kazí okna zákazů.** Živě: `mechanismus_reseni=
   "prunik_stop"`, rekvizita `"denik_detektiva"` (snake_case tokeny). Tyto řetězce se
   zapisují do registru a porovnávají v oknech zákazů — generické tokeny učiní
@@ -287,6 +298,23 @@
   strojově ověřit z mapy (je to jen číslo v konceptu) a R1/R2 nemají datovou oporu.
   Návrh: `Uzel.pravdivost: Pravdivost | None`, scaffolder rozdělí pravda/lež dle
   koncept-počtů, `skalovani` pak počítá skutečné stopy.
+  **✅ ČÁSTEČNĚ OPRAVENO 2026-07-05.** `Uzel.pravdivost: Pravdivost | None`
+  přidán do modelu. `postav_skeleton` teď přiřadí INFORMACE uzlům (3, 4, 17)
+  reálnou pravdivostní hodnotu podle `koncept.pravdive_stopy` — první N uzlů
+  (dle čísla) dostane PRAVDA, zbytek střídavě LEZ/ZAVADEJICI. **Záměrně
+  NEudělané:** `skalovani` NEPOČÍTÁ skutečné stopy z mapy jako náhradu za
+  koncept-číslo. Důvod: pevná kostra má jen 2 (30min) / 3 (60min) INFORMACE
+  uzlů TOTAL, a `pravdive_stopy_min` je 2/3 — přesně na hraně. Při
+  `pravdive_stopy >= počet uzlů` (typický/minimální případ) vyjdou VŠECHNY
+  INFORMACE uzly jako PRAVDA a nezbyde žádný pro LEZ/ZAVADEJICI, takže striktní
+  `count(PRAVDA) == pravdive_stopy` kontrola by scaffolder-mapy protrhla přesně
+  v běžném případě. Skutečná oprava potřebuje buď víc INFORMACE uzlů v pevné
+  kostře, nebo rozšíření `pravdivost` i na svědectví z POSTAVA/LECITEL uzlů
+  (`klicove_svedectvi=True`) — obojí je větší topologická změna mimo rozsah
+  této položky. R1/R2 tak MAJÍ nově aspoň částečnou datovou oporu (INFORMACE
+  uzly nesou reálnou hodnotu), ale plná číselná shoda s konceptem zůstává
+  neřešená (zapsáno v docs/rozhodnuti.md). 4 nové testy (`test_modely.py`,
+  `test_scaffold.py`).
 - 🟡 **MD3 · `Karta.atmosfera` bez min. délky.** Popis říká „300–500 znaků povinný",
   ale nic to nevynucuje (a ořez smí jít na 200 — viz O10). Přidat validaci nebo
   aspoň deterministickou kontrolu ve FÁZE 3 s re-promptem.
@@ -402,6 +430,15 @@
   svědectvím vždy ≥1 fyzicky nenáročná hrana" — pole `fyzicka_narocnost` existuje,
   kontrola nikde. Deterministická a triviální: pro každý uzel s
   `klicove_svedectvi=true` ověřit ≥1 vstupní hranu s `fyzicka_narocnost=="low"`.
+  **✅ OPRAVENO 2026-07-05.** Nová kontrola v `zkontroluj_topologii`
+  (`honbicka/validatory/topologie.py`): pro každý uzel s `klicove_svedectvi=True`
+  sesbírá VŠECHNY vstupní hrany (přes celou mapu, ne jen z jednoho uzlu) a
+  ověří, že aspoň jedna má `fyzicka_narocnost=="low"`; uzel bez jakékoli
+  vstupní hrany se přeskočí (topologie jinde už vynucuje dosažitelnost, takže
+  to nemá nastat). Neškodí scaffolderu — `Hrana.fyzicka_narocnost` defaultuje
+  na `"low"`, takže dosavadní scaffolder-built mapy projdou beze změny; kontrola
+  chytí jen budoucí/legacy architekt mapy, které by `"high"` nastavily na
+  JEDINOU cestu ke svědectví. 3 nové testy v `test_topologie.py`.
 - 🟢 **V7 · `zkontroluj_simulaci` míchá zodpovědnosti** (délka z `odhad_delky_min`,
   AHA z průchodů, dominátory) — funguje, ale rozpadnout na tři pojmenované kontroly
   by zlepšilo diagnostiky.
@@ -565,7 +602,8 @@
 11. ~~L2 (per-model think), L3 (retry na timeout)~~ hotovo v bodě 9 výše.
     ✅ L5 (keep_alive) + O9 (širší catch PDF) — OPRAVENO 2026-07-05
 12. ✅ O8+V4: jedna validace, jeden počet průchodů — OPRAVENO 2026-07-05
-13. O4: slovník žánru (grep) · V6: přístupnost 3.4-6 · MD2: pravdivost stop
+13. ✅ O4: slovník žánru (grep) · V6: přístupnost 3.4-6 · MD2: pravdivost stop
+    (částečně) — OPRAVENO 2026-07-05
 14. SC2: topologická variabilita (2–3 vzory + rng)
 15. Dokumentační očista: O16–O19, L10–L12, V9–V10, MD5, SZ5
 

@@ -64,6 +64,30 @@ def test_chybi_cil(valid_mapa):
     assert any("cil" in c.lower() for c in v.chyby)
 
 
+# ------- V6: dodatek 3.4-6 (přístupnost) ----------------------------------- #
+def test_klicove_svedectvi_bez_nenarocne_vstupni_hrany(valid_mapa):
+    # uzel 8 nese klíčové svědectví; jediná vstupní hrana je 7→8 — udělej ji "high"
+    hrana_do_8 = next(h for h in valid_mapa.uzel(7).hrany if h.cil == 8)
+    hrana_do_8.fyzicka_narocnost = "high"
+    v = zkontroluj_topologii(valid_mapa)
+    assert not v.ok
+    assert any("klíčové svědectví" in c and "8" in c for c in v.chyby)
+
+
+def test_klicove_svedectvi_s_nenarocnou_vstupni_hranou_projde(valid_mapa):
+    # výchozí fixtura: hrana 7→8 je defaultně "low" → V6 neshledá problém
+    v = zkontroluj_topologii(valid_mapa)
+    assert v.ok, v.chyby
+
+
+def test_klicove_svedectvi_staci_jedna_nenarocna_z_vice_vstupnich(valid_mapa):
+    # 2. vstupní hrana do 8 (9→8, vedle existující 7→8) je "high" — pořád OK,
+    # protože 7→8 zůstává "low"
+    valid_mapa.uzel(9).hrany.append(Hrana(cil=8, fyzicka_narocnost="high"))
+    v = zkontroluj_topologii(valid_mapa)
+    assert v.ok, v.chyby
+
+
 def test_topologicka_minima_linearni_mapa(valid_mapa):
     # zrušíme smyčku/slepou/jednosměrku → nesplní minima
     valid_mapa.uzel(9).typ = TypUzlu.PRECHOD   # zruší slepou

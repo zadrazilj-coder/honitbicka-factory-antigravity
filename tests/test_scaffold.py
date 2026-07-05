@@ -2,7 +2,16 @@
 
 import pytest
 
-from honbicka.modely import Archetyp, Koncept, Obtiznost, Profil, TypUzlu, VekPasmo, Zadani
+from honbicka.modely import (
+    Archetyp,
+    Koncept,
+    Obtiznost,
+    Pravdivost,
+    Profil,
+    TypUzlu,
+    VekPasmo,
+    Zadani,
+)
 from honbicka.orchestrator import losuj_parametry, pocty_cile
 from honbicka.scaffold import POCET_SIMULACI, postav_skeleton
 from honbicka.validatory.agregace import validuj_par_30_60
@@ -97,3 +106,28 @@ def test_komponenty_dle_obtiznosti():
         komp_core = {k for u in mapa.uzly if u.profil == Profil.CORE for k in u.komponenty}
         assert len(komp_all) == ocek
         assert len(komp_core) == 2
+
+
+# ------- MD2: pravdivost INFORMACE uzlů dle koncept-počtu -------------------- #
+def test_informacni_uzly_dostanou_pravdivost_podle_konceptu():
+    # výchozí _koncept() dává pravdive_stopy = pravdive_stopy_min(60min) = 3,
+    # přesně tolik, kolik má pevná kostra INFORMACE uzlů (3, 4, 17) → všechny PRAVDA
+    _, _, _, mapa = _skeleton()
+    informacni = [u for u in mapa.uzly if u.typ == TypUzlu.INFORMACE]
+    assert len(informacni) == 3
+    assert all(u.pravdivost == Pravdivost.PRAVDA for u in informacni)
+
+
+def test_informacni_uzly_zbytek_je_lez_nebo_zavadejici_kdyz_nestaci_pravda():
+    zad = Zadani(vek=VekPasmo.V09_12, format_hracu="dvojice", tema="Kapka vody",
+                 prostredi=["les", "potok"])
+    params = losuj_parametry(zad, 0)
+    kon = Koncept(archetyp=params.archetyp, tema="Kapka vody",
+                  mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
+                  falesne_teorie=2, pravdive_stopy=1, konce=2)
+    mapa = postav_skeleton(zad, kon, params)
+    informacni = sorted((u for u in mapa.uzly if u.typ == TypUzlu.INFORMACE),
+                        key=lambda u: u.cislo)
+    assert [u.pravdivost for u in informacni].count(Pravdivost.PRAVDA) == 1
+    assert all(u.pravdivost in (Pravdivost.LEZ, Pravdivost.ZAVADEJICI)
+              for u in informacni if u.pravdivost != Pravdivost.PRAVDA)

@@ -172,6 +172,10 @@ class Uzel(BaseModel):
     body_aktivity: int = 0
     kostka: bool = False
     klicove_svedectvi: bool = Field(default=False, description="Nese stopu nutnou k pravdě (3.4-4)")
+    pravdivost: Pravdivost | None = Field(
+        default=None,
+        description="MD2: pravda/zavadejici/lez u uzlu INFORMACE (§INFORMACE JSOU ODMĚNA)",
+    )
     hrany: list[Hrana] = Field(default_factory=list)
 
 

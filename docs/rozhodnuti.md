@@ -385,3 +385,40 @@ Nebyla implementována detekce schopností modelu předem přes `/api/show` —
 jednodušší a méně křehké je reagovat až na skutečné HTTP 400, ne
 modelovat/cachovat schopnosti modelu dopředu (a riskovat, že cache
 zestárne, když se model v Ollamě přehraje).
+
+---
+
+## 2026-07-05 — MD2: pravdivost stop implementována jen částečně
+
+`Uzel.pravdivost: Pravdivost | None` (pravda/zavadejici/lez) přidán do modelu
+a scaffolder ho teď reálně přiřazuje INFORMACE uzlům dle `koncept.pravdive_stopy`
+(první N uzlů dle čísla → PRAVDA, zbytek střídavě LEZ/ZAVADEJICI). Audit MD2
+navrhoval jít o krok dál: nechat `skalovani.zkontroluj_skalovani` počítat
+SKUTEČNÝ počet pravdivých stop z mapy a nahradit jím (nebo zkřížit s) číslo
+`koncept.pravdive_stopy`.
+
+**To se záměrně NEudělalo.** Pevná scaffolder kostra má jen 2 INFORMACE uzly
+v CORE (30min) a 3 celkem (60min) — a `pravdive_stopy_min` je přesně 2/3.
+Na hranici (typický/minimální případ) tak vyjdou VŠECHNY INFORMACE uzly jako
+PRAVDA a nezbyde žádný pro LEZ/ZAVADEJICI. Striktní kontrola
+`count(uzel.pravdivost==PRAVDA) == koncept.pravdive_stopy` by proto scaffolder-
+mapy protrhla přesně v běžném, ne okrajovém případě — false positive na
+každé hře na spodní hranici škálování.
+
+Skutečná oprava vyžaduje jedno z:
+1. Rozšířit pevnou kostru o další INFORMACE uzly (topologická změna — riziko
+   pro už vyladěné AHA-timing/topologická minima, viz SC1/V1/AHA sekce výše).
+2. Rozšířit `pravdivost` i na svědectví z POSTAVA/LECITEL uzlů
+   (`klicove_svedectvi=True`) — SKILL.md §INFORMACE JSOU ODMĚNA mluví
+   primárně o uzlu `informace`, ale zmiňuje i vazbu na motivace postav (P8),
+   takže rozšíření by nebylo mimo ducha spec, jen vyžaduje další modelovací
+   rozhodnutí (kde přesně na POSTAVA/LECITEL kartě se pravdivost projeví).
+
+Obojí je větší zásah než jedna 🟡 položka auditu unese bez živého ověření.
+Rozhodnutí: nechat `pravdivost` jako METADATA na INFORMACE uzlech (R1/R2 teď
+mají aspoň částečnou datovou oporu — hodnota reálně existuje a je
+deterministicky odvozená), ale NEpřidávat tvrdou skalovani kontrolu nad
+touto hodnotou, dokud topologie nemá prostor ji bezpečně unést. Kandidát na
+Vlnu 4/budoucí session — spolu se SC2 (topologická variabilita), protože obě
+řeší stejný kořen: pevná 21-uzlová kostra je jeden strukturální kompromis a
+další zpřesnění nad ní (víc INFORMACE uzlů, víc vzorů trunku) patří dohromady.

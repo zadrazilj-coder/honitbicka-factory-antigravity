@@ -418,7 +418,7 @@ def _kontext_karty(mapa: Mapa, uzel: Uzel) -> dict:
 def _prompt_vypravec(
     zadani: Zadani, koncept: Koncept, uzel: Uzel, kontext: dict,
     dve_varianty: bool, zkrat_o_pct: int | None, oprava_schematu: bool = False,
-    oprava_voleb: bool = False,
+    oprava_voleb: bool = False, oprava_slovnik: str | None = None,
 ) -> str:
     volby = "; ".join(
         f"→{s['cislo']} {s['nazev']}" + (f" [podmínka: {s['podminka']}]" if s["podminka"] else "")
@@ -445,6 +445,12 @@ def _prompt_vypravec(
         "Atmosférický odstavec (300–500 znaků) je POVINNÝ. Fyzický úkol vždy s příběhovým "
         "důvodem (PROČ). Neúspěšná větev ať baví víc než úspěšná.\n"
     )
+    if koncept.slovnik_zakazana:
+        # O4: slovník žánru (SKILL.md §SLOVNÍK ŽÁNRU / bod 10 — „žádné forbidden_terms").
+        zaklad += (
+            f"\nZAKÁZANÁ SLOVA pro tento žánr/věk (nikdy nepoužij, ani v jiném "
+            f"tvaru): {', '.join(koncept.slovnik_zakazana)}.\n"
+        )
     # O3: kontext zápletky pro narativní soudržnost napříč kartami — pravda se
     # NIKDY neoznamuje přímo (SKILL.md P0), tohle je jen skryté pozadí příběhu,
     # ať karty ladí (stejné motivy, rekvizity, postavy), ne aby se citovalo.
@@ -490,6 +496,12 @@ def _prompt_vypravec(
         zaklad += (
             f"\nPŘEDCHOZÍ karta odkazovala na ŠPATNÁ čísla za šipkou (→). Volby MUSÍ "
             f"vést PŘESNĚ na čísla {cisla} — zkontroluj a oprav VŠECHNY šipky."
+        )
+    if oprava_slovnik:
+        zaklad += (
+            f"\nPŘEDCHOZÍ karta obsahovala zakázané slovo „{oprava_slovnik}“. "
+            "Přepiš dotčenou větu tak, aby se toto slovo (ani žádný jeho tvar) "
+            "v textu VŮBEC neobjevilo — nahraď ho jiným, žánru/věku odpovídajícím výrazem."
         )
     return zaklad
 
@@ -545,6 +557,22 @@ def _oprav_volby_deterministicky(karta: Karta, uzel: Uzel, mapa: Mapa) -> Karta:
         if karta.zadni_30:
             karta.zadni_30 = _SIPKA_CISLO.sub(nahrada, karta.zadni_30)
     return karta
+
+
+def _najdi_zakazane_slovo(karta: Karta, zakazana: list[str]) -> str | None:
+    """O4: deterministická kontrola SLOVNÍKU ŽÁNRU (SKILL.md §SLOVNÍK ŽÁNRU /
+    Patro 1 bod 10 — „žádné forbidden_terms"). Prohledá všechny textové strany
+    karty (case-insensitive substring); vrátí PRVNÍ nalezené zakázané slovo,
+    nebo None. Substring, ne exact-match — chytí i skloněné tvary obsahující
+    kmen zakázaného slova."""
+    if not zakazana:
+        return None
+    texty = " ".join(filter(None, [karta.atmosfera, karta.predni, karta.zadni, karta.zadni_30]))
+    texty = texty.lower()
+    for slovo in zakazana:
+        if slovo and slovo.strip().lower() in texty:
+            return slovo
+    return None
 
 
 def _normalizuj_kartu(data: dict, uzel: Uzel) -> dict:
@@ -622,17 +650,19 @@ def napis_kartu(
     zkrat: int | None = None
     oprava_schematu = False
     oprava_voleb = False
+    oprava_slovnik: str | None = None
     karta: Karta | None = None
     fits: list[FitCheck] = []
     for pokus in range(1, MAX_ITERACI_KARTA + 1):
         prompt = _prompt_vypravec(zadani, koncept, uzel, kontext, dve, zkrat,
-                                  oprava_schematu, oprava_voleb)
+                                  oprava_schematu, oprava_voleb, oprava_slovnik)
         data = _normalizuj_kartu(klient.generuj_json(Role.VYPRAVEC, prompt, SCHEMA_KARTA), uzel)
         try:
             karta = Karta.model_validate(data)
         except ValidationError as exc:
             oprava_schematu = True  # model nevrátil správná pole → oprav a zkus znovu
             oprava_voleb = False
+            oprava_slovnik = None
             log.append({"faze": 3, "karta": uzel.cislo, "pokus": pokus,
                         "schema_chyba": exc.error_count()})
             continue
@@ -643,6 +673,7 @@ def napis_kartu(
 
         if not _volby_v_karte_platne(karta, uzel, mapa):
             oprava_voleb = True  # „→N" v textu neodpovídá hranám grafu (O1) → oprav
+            oprava_slovnik = None
             log.append({"faze": 3, "karta": uzel.cislo, "pokus": pokus, "volby_chyba": True})
             continue
         oprava_voleb = False
@@ -650,6 +681,14 @@ def napis_kartu(
         fits = fit_check_karty(karta, measurer=measurer)
         log.append({"faze": 3, "karta": uzel.cislo, "pokus": pokus,
                     "ok": all(f.verdikt for f in fits)})
+        # O4: zakázané slovo musí pryč, i kdyby fit-check prošel — gate na return.
+        zakazane_slovo = _najdi_zakazane_slovo(karta, koncept.slovnik_zakazana)
+        if zakazane_slovo:
+            oprava_slovnik = zakazane_slovo
+            log.append({"faze": 3, "karta": uzel.cislo, "pokus": pokus,
+                        "zakazane_slovo": zakazane_slovo})
+            continue
+        oprava_slovnik = None
         if all(f.verdikt for f in fits):
             return karta, fits, log
         prekroceni = max(
@@ -667,6 +706,11 @@ def napis_kartu(
         else:
             # Víc než 1 platný cíl = nejednoznačná oprava; zaznamenat pro report.chyby.
             log.append({"faze": 3, "karta": uzel.cislo, "volby_neopravitelne": True})
+    # O4: LLM 3× nevyřešilo zakázané slovo — Python nemá bezpečnou náhradu (hrozí
+    # rozbitá gramatika), tak jen zaznamená pro report.chyby (jako výše u voleb).
+    zbyle_zakazane = _najdi_zakazane_slovo(karta, koncept.slovnik_zakazana)
+    if zbyle_zakazane:
+        log.append({"faze": 3, "karta": uzel.cislo, "slovnik_neopravitelne": zbyle_zakazane})
     fits = _orez_atmosfery(karta, measurer)  # deterministický fallback
     log.append({"faze": 3, "karta": uzel.cislo, "orez": "atmosfera",
                 "ok": all(f.verdikt for f in fits)})
@@ -1047,6 +1091,10 @@ def vyrob_hru(
     neopravitelne = sorted({e["karta"] for e in log if e.get("volby_neopravitelne")})
     if neopravitelne:
         chyby.append(f"volby na kartách {neopravitelne} neodpovídají grafu (O1, viz log)")
+    zakazana_slova = {e["karta"]: e["slovnik_neopravitelne"] for e in log
+                      if e.get("slovnik_neopravitelne")}
+    if zakazana_slova:
+        chyby.append(f"zakázaná slova zůstala na kartách {zakazana_slova} (O4, viz log)")
 
     report = Report(
         slug=slug, seed=seed, archetyp=params.archetyp, iterace=iterace_faze1,

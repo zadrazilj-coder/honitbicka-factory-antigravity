@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from collections import deque
 
-from honbicka.modely import Mapa, TypUzlu, Uzel
+from honbicka.modely import Hrana, Mapa, TypUzlu, Uzel
 from honbicka.validatory import VysledekValidace
 
 # Plná topologická minima platí od ~20 karet (SKILL.md §MAPA); menší hry
@@ -170,5 +170,24 @@ def zkontroluj_topologii(mapa: Mapa) -> VysledekValidace:
         v.selhani(f"málo slepých uliček: {slepe} < {min_slepe}")
     if jednosmer < min_jednosmer:
         v.selhani(f"málo jednosměrek: {jednosmer} < {min_jednosmer}")
+
+    # V6/dodatek 3.4-6 (přístupnost): uzel s klíčovým svědectvím musí mít ≥1
+    # fyzicky nenáročnou VSTUPNÍ hranu, ať se k němu dostanou i hráči s
+    # omezenou pohyblivostí — nesmí být podmíněné jen náročnou (`high`) cestou.
+    vstupni: dict[int, list[Hrana]] = {u.cislo: [] for u in mapa.uzly}
+    for u in mapa.uzly:
+        for h in u.hrany:
+            if h.cil in vstupni:
+                vstupni[h.cil].append(h)
+    for u in mapa.uzly:
+        if not u.klicove_svedectvi:
+            continue
+        hrany_do = vstupni.get(u.cislo, [])
+        if hrany_do and not any(h.fyzicka_narocnost == "low" for h in hrany_do):
+            v.selhani(
+                f"uzel {u.cislo} ({u.nazev}) nese klíčové svědectví, ale žádná "
+                "vstupní hrana není fyzicky nenáročná (dodatek 3.4-6)",
+                f"nastav fyzicka_narocnost='low' aspoň jedné hraně vedoucí do uzlu {u.cislo}",
+            )
 
     return v

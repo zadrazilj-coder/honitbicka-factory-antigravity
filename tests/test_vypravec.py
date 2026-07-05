@@ -186,3 +186,73 @@ def test_faze3_propise_nazvy_karet_do_mapy(valid_mapa, valid_zadani):
     for uzel in valid_mapa.uzly:
         ocekavany = karty_dle_cisla[uzel.cislo]
         assert uzel.nazev == ocekavany or uzel.nazev == f"{ocekavany} ({uzel.cislo})"
+
+
+# ------- O4: slovník žánru (forbidden_terms) -------------------------------- #
+def _koncept_zakazana(slova):
+    return Koncept(archetyp=Archetyp.A1, tema="Kapka vody",
+                   mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
+                   falesne_teorie=1, pravdive_stopy=2, konce=2, slovnik_zakazana=slova)
+
+
+def test_najdi_zakazane_slovo_najde_substring():
+    from honbicka.orchestrator import _najdi_zakazane_slovo
+    karta = Karta(cislo=1, nazev="X", typ=TypUzlu.PRECHOD, atmosfera="A" * 300,
+                 predni="Tady někdo chtěl zabít draka.", zadni="Konec.")
+    assert _najdi_zakazane_slovo(karta, ["zabít"]) == "zabít"
+
+
+def test_najdi_zakazane_slovo_case_insensitive_a_prazdny_seznam():
+    from honbicka.orchestrator import _najdi_zakazane_slovo
+    karta = Karta(cislo=1, nazev="X", typ=TypUzlu.PRECHOD, atmosfera="A" * 300,
+                 predni="ZABÍT draka.", zadni="Konec.")
+    assert _najdi_zakazane_slovo(karta, ["zabít"]) == "zabít"
+    assert _najdi_zakazane_slovo(karta, []) is None
+    assert _najdi_zakazane_slovo(karta, ["krev"]) is None
+
+
+def test_prompt_obsahuje_zakazana_slova(valid_mapa, valid_zadani):
+    uzel = valid_mapa.uzel(3)
+    kontext = _kontext_karty(valid_mapa, uzel)
+    prompt = _prompt_vypravec(valid_zadani, _koncept_zakazana(["zabít", "krev"]), uzel,
+                              kontext, False, None)
+    assert "zabít" in prompt and "krev" in prompt
+    assert "ZAKÁZANÁ SLOVA" in prompt
+
+
+def test_prompt_bez_zakazanych_slov_nema_sekci(valid_mapa, valid_zadani):
+    uzel = valid_mapa.uzel(3)
+    kontext = _kontext_karty(valid_mapa, uzel)
+    prompt = _prompt_vypravec(valid_zadani, _koncept(), uzel, kontext, False, None)
+    assert "ZAKÁZANÁ SLOVA" not in prompt
+
+
+def test_prompt_oprava_slovnik_zminuje_konkretni_slovo(valid_mapa, valid_zadani):
+    uzel = valid_mapa.uzel(3)
+    kontext = _kontext_karty(valid_mapa, uzel)
+    prompt = _prompt_vypravec(valid_zadani, _koncept_zakazana(["zabít"]), uzel, kontext,
+                              False, None, oprava_slovnik="zabít")
+    assert "zakázané slovo „zabít“" in prompt
+
+
+def test_napis_kartu_opravi_zakazane_slovo_pres_retry(valid_mapa, valid_zadani):
+    spatna = _karta_dict("A" * 320, predni="Tady chtěl někdo draka zabít. →10")
+    dobra = _karta_dict("A" * 320)
+    klient = FakeKlient(odpovedi=[spatna, dobra])
+    uzel = valid_mapa.uzel(8)
+    karta, fits, log = napis_kartu(klient, valid_zadani, _koncept_zakazana(["zabít"]),
+                                   valid_mapa, uzel, measurer=measurer_dle_delky)
+    assert "zabít" not in karta.predni.lower()
+    assert any(e.get("zakazane_slovo") == "zabít" for e in log)
+    assert len(klient.prompty) == 2
+    assert "zabít" in klient.prompty[1]  # opravný prompt cituje konkrétní slovo
+
+
+def test_napis_kartu_zaznamena_neopravitelne_zakazane_slovo(valid_mapa, valid_zadani):
+    # model 3× vrátí totéž zakázané slovo → Python to nepřepisuje, jen zaznamená
+    spatna = _karta_dict("A" * 320, predni="Tady chtěl někdo draka zabít. →10")
+    klient = FakeKlient(cyklus=spatna)
+    uzel = valid_mapa.uzel(8)
+    karta, fits, log = napis_kartu(klient, valid_zadani, _koncept_zakazana(["zabít"]),
+                                   valid_mapa, uzel, measurer=measurer_dle_delky)
+    assert any(e.get("slovnik_neopravitelne") == "zabít" for e in log)

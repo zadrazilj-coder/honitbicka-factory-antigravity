@@ -11,6 +11,7 @@ from honbicka.modely import (
     Archetyp,
     Hrana,
     Mapa,
+    Pravdivost,
     Profil,
     TypUzlu,
     Uzel,
@@ -60,6 +61,20 @@ def test_mapa_helpery():
     assert mapa.uzel(99) is None
     # 30min podgraf = jen CORE
     assert {u.cislo for u in mapa.core_uzly} == {1, 3}
+
+
+# ------- MD2: Uzel.pravdivost ----------------------------------------------- #
+def test_uzel_pravdivost_default_je_none():
+    u = Uzel(cislo=1, nazev="X", typ=TypUzlu.INFORMACE, region="les", prostredi="les",
+             profil=Profil.CORE)
+    assert u.pravdivost is None
+
+
+@pytest.mark.parametrize("hodnota", list(Pravdivost))
+def test_uzel_pravdivost_prijima_enum(hodnota):
+    u = Uzel(cislo=1, nazev="X", typ=TypUzlu.INFORMACE, region="les", prostredi="les",
+             profil=Profil.CORE, pravdivost=hodnota)
+    assert u.pravdivost == hodnota
 
 
 def test_schemata_jsou_json_schema():

@@ -21,7 +21,7 @@ from __future__ import annotations
 import random
 import statistics
 
-from honbicka.modely import Hrana, Koncept, Mapa, Profil, TypUzlu, Uzel, Zadani
+from honbicka.modely import Hrana, Koncept, Mapa, Pravdivost, Profil, TypUzlu, Uzel, Zadani
 from honbicka.orchestrator import LosovaneParametry
 from honbicka.validatory.simulace import POCET_SIMULACI_DEFAULT, pasmo_aha, povinne_uzly, simuluj
 from honbicka.validatory.skalovani import komponenty_rozsah
@@ -127,6 +127,21 @@ def postav_skeleton(
     add(19, T.OBCHODNIK, reg_b, [20], S)
     add(20, T.SMYCKA, reg_b, [21], S)
     add(21, T.JEDNOSMER, reg_b, [7], S)                     # návrat do CORE (uzel 7)
+
+    # MD2: přiřaď pravdivostní hodnotu INFORMACE uzlům dle koncept-počtu
+    # pravdivých stop (SKILL.md §INFORMACE JSOU ODMĚNA) — dřív šlo jen o číslo
+    # v konceptu bez opory v mapě, teď R1/R2 mají co ověřovat. Pevná kostra má
+    # jen 2 (CORE) / 3 (CORE+SIDE) INFORMACE uzly; když `pravdive_stopy` sahá na
+    # (nebo přes) tenhle počet, všechny vyjdou jako PRAVDA a nezbyde místo na
+    # zavádějící/lež — známé zjednodušení pevné topologie (viz docs/rozhodnuti.md).
+    informacni = sorted((u for u in uzly if u.typ == T.INFORMACE), key=lambda u: u.cislo)
+    zbyva_pravda = koncept.pravdive_stopy
+    for i, u in enumerate(informacni):
+        if zbyva_pravda > 0:
+            u.pravdivost = Pravdivost.PRAVDA
+            zbyva_pravda -= 1
+        else:
+            u.pravdivost = Pravdivost.LEZ if i % 2 == 0 else Pravdivost.ZAVADEJICI
 
     mapa = Mapa(archetyp=params.archetyp, seed=params.seed,
                 prah_aktivity=params.prah_aktivity, pozice_aha_uzel=AHA_UZEL_DEFAULT,
