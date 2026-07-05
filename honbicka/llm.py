@@ -1,8 +1,8 @@
 """Ollama klient a role LLM pro HONBIČKA FACTORY.
 
-Jeden model (`qwen3.6:27b`), tři pracovní role + téma-generátor — liší se
-system promptem, teplotou, thinking režimem a `num_ctx` (spec §1, §3). Žádné
-swapování modelů.
+Jeden model (`qwen3.6:27b`), čtyři role (`Role` enum: téma-generátor,
+architekt, vypravěč, redaktor) — liší se system promptem, teplotou, thinking
+režimem a `num_ctx` (spec §1, §3). Žádné swapování modelů.
 
 Zásada spec §3: **LLM tvoří, Python rozhoduje.** Tento modul jen volá model;
 veškerá herní validace je v `honbicka.validatory`.
@@ -55,8 +55,10 @@ class Role(StrEnum):
 
 @dataclass(frozen=True)
 class RoleConfig:
-    """Parametry role dle spec §1/§3. `system` je základ system promptu
-    (plné prompt-inženýrství doplňují M3/M4/M7)."""
+    """Parametry role dle spec §1/§3. `system` je jen základ system promptu —
+    plné prompt-inženýrství (kontext, opravné instrukce, příklady) skládají
+    volající role-specifické funkce v `orchestrator.py` (`_prompt_vypravec`,
+    `_zavolej_architekta`, `faze1a_koncept`)."""
 
     temperature: float
     thinking: bool
@@ -264,8 +266,12 @@ class OllamaKlient:
         )
 
     def generuj_text(self, role: Role, uzivatel: str, extra_system: str | None = None) -> str:
-        """Volné textové volání (bez schématu) — pro role, jejichž výstupem
-        jsou volné texty karet, kde nemá smysl structured output."""
+        """Volné textové volání (bez schématu, bez `format`).
+
+        Karty i koncept jdou přes `generuj_json`/`generuj_model` (structured
+        output) — tahle metoda dnes nemá volající místo v `orchestrator.py`
+        (L6: připravené API pro budoucí volně-textovou roli, ne mrtvý kód
+        k odstranění — ponecháno záměrně)."""
         cfg = ROLE_CONFIG[role]
         system = cfg.system if not extra_system else f"{cfg.system}\n\n{extra_system}"
         messages = [

@@ -285,7 +285,7 @@ def test_vyrob_hru_pdf_jina_vyjimka_nez_sazbanedostupna_je_mekky_fail(tmp_path, 
     hra = vyrob_hru(zadani, klient, seed=1, measurer=measurer_dle_delky,
                     skiny_dir=str(tmp_path / "skiny"),
                     registr_cesta=str(tmp_path / "skiny" / "registr.md"), zatridit=False)
-    assert hra.report.stav == StavHry.OK  # jedna vada balíček nešhodí (spec §4)
+    assert hra.report.stav == StavHry.OK  # jedna vada balíček neshodí (spec §4)
     assert any("RuntimeError" in c and "font se nenačetl" in c for c in hra.report.chyby)
 
 

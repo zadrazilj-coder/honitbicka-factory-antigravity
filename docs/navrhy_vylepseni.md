@@ -117,10 +117,18 @@
 - 🟡 **L10 · Docstringy lžou o počtu rolí:** modul říká „tři pracovní role + téma-generátor",
   třída `OllamaKlient` „k jednomu modelu se třemi rolemi" — enum má ČTYŘI role a klient
   slouží všem. Sjednotit na „čtyři role".
+  **✅ OPRAVENO 2026-07-05.** Modulový docstring i `OllamaKlient` docstring
+  teď mluví o „čtyřech rolích" (enum `Role`), ne o „třech + téma-generátor".
 - 🟡 **L11 · `generuj_text` docstring** („pro role, jejichž výstupem jsou volné texty
   karet") popisuje něco, co se neděje — texty karet jdou přes structured output.
+  **✅ OPRAVENO 2026-07-05.** Docstring teď přesně říká, že karty/koncept jdou
+  přes `generuj_json`/`generuj_model` a `generuj_text` dnes nemá volající
+  místo — je to připravené API (L6), ne popis reálného toku.
 - 🟢 **L12 · `RoleConfig` docstring** odkazuje na „doplní M3/M4/M7" — milníky hotové,
   odkaz je zastaralý.
+  **✅ OPRAVENO 2026-07-05.** Docstring teď odkazuje na skutečná volající
+  místa (`_prompt_vypravec`, `_zavolej_architekta`, `faze1a_koncept`) místo
+  na dokončené milníky.
 
 ---
 
@@ -279,11 +287,24 @@
   FÁZE 3–5 doplní M4–M6" — vše je hotové a default cesta jde přes scaffolder, který
   v docstringu chybí. Přepsat na skutečný tok (FÁZE 1 = koncept LLM + scaffolder;
   legacy LLM architekt za flagem).
+  **✅ OPRAVENO 2026-07-05.** Modulový docstring přepsán na skutečný tok
+  (FÁZE 0–5, scaffolder jako výchozí FÁZE 1b, legacy architekt zmíněn
+  explicitně).
 - 🟡 **O17 · Sekce „FÁZE 1 — ARCHITEKT (koncept + mapa)"** — mapa už defaultně
   nevzniká u architekta; nadpis sekce a docstring `faze1_architekt` označit „legacy".
+  **✅ OPRAVENO 2026-07-05.** Nadpis sekce → „FÁZE 1 — LEGACY LLM ARCHITEKT"
+  + poznámka, že výchozí cesta je scaffolder. Bonus: `faze1_architekt`
+  (legacy cesta) měla vlastní hardcoded `pocet_simulaci=5` — přepsáno na
+  `POCET_SIMULACI_DEFAULT` (V4 se na tohle místo nevztahovalo, protože
+  je to jiná funkce než `validuj_par_30_60`/`validuj_mapu`; teď je
+  sjednoceno i tady).
 - 🟢 **O18 · Překlep** v komentáři: „balíček nešhodí" (ř. 697) → „neshodí".
+  **✅ OPRAVENO 2026-07-05** (3 výskyty v orchestrator.py + 1 v
+  test_vyrob_hru.py, včetně jednoho, který jsem sám zavlekl při O9 opravě).
 - 🟢 **O19 · `_normalizuj_kartu`** docstring říká „doplní typ/nazev" — doplňuje i
   `cislo` z `id`; drobně rozšířit.
+  **Ověřeno 2026-07-05: již opraveno** (dřívější úpravou) — docstring už zní
+  „(id→cislo, doplní typ/nazev)", žádná další změna potřeba.
 
 ---
 
@@ -472,9 +493,14 @@
 - 🟡 **V9 · `topologie._minima_pro` docstring** neříká, že minima „větví" počítá jako
   uzly s ≥2 hranami (tj. včetně střežených apod.), zatímco engine mluví o „≥3 větve"
   topologicky. Upřesnit definici v docstringu.
+  **✅ OPRAVENO 2026-07-05.** Docstring teď explicitně říká, že „větve" =
+  uzly se stupněm ≥2 (podle skutečného výpočtu níže ve funkci), ne typ uzlu.
 - 🟢 **V10 · `simulace` docstring** slibuje „edge-case scénáře" (chybějící předmět,
   pokus o falešné řešení, počítadlo pod/nad prahem — spec §VALIDACE Simulace) —
   neimplementováno. Buď doplnit, nebo z docstringu odstranit a zapsat jako spec-mezeru.
+  **Ověřeno 2026-07-05: již opraveno** (dřívější úpravou) — modulový i
+  `zkontroluj_simulaci` docstring už tenhle slib neobsahují, žádná další
+  změna potřeba.
 
 ---
 
@@ -519,6 +545,10 @@
 ### Správnost popisů
 - 🟢 **SZ5 · `styl.py`:** komentář „Pasti WeasyPrint jako CSS konstanty" přesný;
   `SYM_*` duplikované v `sazba/__init__.py` i `styl.py` — jeden zdroj pravdy.
+  **✅ OPRAVENO 2026-07-05.** `honbicka/sazba/__init__.py` teď `SYM_*`
+  importuje ze `styl.py` (skutečný zdroj — `herni_list.py`/`karty_pdf.py`/
+  `pruvodce.py` odtamtud importují už dnes) místo duplicitní definice;
+  `from honbicka.sazba import SYM_*` dál funguje beze změny (re-export).
 
 ---
 
@@ -627,7 +657,11 @@
     (částečně) — OPRAVENO 2026-07-05
 14. ⏸️ SC2: topologická variabilita (2–3 vzory + rng) — ANALYZOVÁNO, ZÁMĚRNĚ
     ODLOŽENO 2026-07-05 (rizikové bez nové validační mřížky, viz rozhodnuti.md)
-15. Dokumentační očista: O16–O19, L10–L12, V9–V10, MD5, SZ5
+15. ✅ Dokumentační očista: O16–O19, L10–L12, V9–V10, MD5, SZ5 — OPRAVENO
+    2026-07-05 (O19/V10/MD5 byly už opravené dřívějšími úpravami — jen ověřeno)
+
+**VLNA 3 DOKONČENA 2026-07-05** (body 11–15 výše, mimo SC2 vědomě odloženo).
+244 testů (bez slow), ruff čistý.
 
 **Stav auditu: DOKONČENO** (všechny moduly projity; tento soubor je průběžný
 zápis — položky odškrtávat při realizaci).

@@ -73,7 +73,12 @@ def _muze_dosahnout_cil(mapa: Mapa) -> set[int]:
 
 
 def _minima_pro(pocet_karet: int) -> tuple[int, int, int, int]:
-    """Proporcionální topologická minima (SKILL.md §MAPA)."""
+    """Proporcionální topologická minima (SKILL.md §MAPA).
+
+    „Větve" tu znamená uzly s ≥2 hranami (viz `vetve = sum(... len(u.hrany)
+    >= 2 ...)` níže) — tj. JAKÝKOLI uzel s rozhodnutím, včetně střežených
+    (`STREZ`) apod., ne jen typ `rozcesti`. Engine mluví o „≥3 větve"
+    topologicky; tahle implementace to počítá přes stupeň uzlu, ne přes typ."""
     if pocet_karet >= PLNA_MINIMA_OD_KARET:
         return MIN_VETVE, MIN_SMYCKY, MIN_SLEPE, MIN_JEDNOSMERKY
     faktor = pocet_karet / PLNA_MINIMA_OD_KARET

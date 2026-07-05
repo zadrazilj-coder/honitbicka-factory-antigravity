@@ -1,10 +1,14 @@
-"""Stavový stroj FÁZE 0–5 (spec §4). M3 implementuje FÁZE 0 a FÁZE 1.
+"""Stavový stroj FÁZE 0–5 (spec §4).
 
 FÁZE 0  registr → okna zákazů → losování (Python `random` se seedem)
-FÁZE 1  architekt → koncept + mapa → validace (topologie+škálování+simulace);
-        cílená opravná smyčka (max 4 iterace → relosování seedu; max 2×, pak FAIL)
+FÁZE 1  koncept (LLM) + mapa. Mapa: deterministický scaffolder (výchozí,
+        `pouzij_scaffolder=True` — viz `honbicka.scaffold`) nebo legacy LLM
+        architekt s opravnou smyčkou (max 4 iterace → relosování seedu; max 2×,
+        pak FAIL) za `pouzij_scaffolder=False`, viz `faze1_architekt` níže.
 FÁZE 2  simulace (součást FÁZE 1 validace v této implementaci)
-FÁZE 3–5 vypravěč / sazba / registr — doplní M4–M6.
+FÁZE 3  vypravěč — karta po kartě, s okamžitým A5 fit-checkem
+FÁZE 4  redaktor — R1–R7 s ověřenými citacemi
+FÁZE 5  zápis skinu + sazba (PDF) + registr + taxonomie
 
 Zásada spec §3: LOSOVÁNÍ dělá Python, ne LLM. Seed se loguje (reprodukovatelnost).
 """
@@ -60,7 +64,7 @@ from honbicka.taxonomie import zatrid_hru
 from honbicka.validatory import VysledekValidace
 from honbicka.validatory.agregace import validuj_par_30_60
 from honbicka.validatory.sazba import Measurer, _weasy_measurer, fit_check_karty
-from honbicka.validatory.simulace import pasmo_aha
+from honbicka.validatory.simulace import POCET_SIMULACI_DEFAULT, pasmo_aha
 from honbicka.validatory.skalovani import SKALA, VEK_STROP, komponenty_rozsah
 
 MAX_ITERACI_ARCHITEKT = 4  # spec §4 FÁZE 1
@@ -160,7 +164,10 @@ def losuj_parametry(
 
 
 # --------------------------------------------------------------------------- #
-# FÁZE 1 — ARCHITEKT (koncept + mapa) s opravnou smyčkou
+# FÁZE 1 — LEGACY LLM ARCHITEKT (koncept + mapa) s opravnou smyčkou
+# Výchozí cesta je scaffolder (viz `vyrob_hru`, `pouzij_scaffolder=True`) —
+# tohle je záložní/legacy cesta za `pouzij_scaffolder=False` (nekonverguje
+# spolehlivě, viz docs/rozhodnuti.md „M8 zjištění").
 # --------------------------------------------------------------------------- #
 @dataclass
 class VysledekFaze1:
@@ -338,7 +345,7 @@ def faze1_architekt(
     *,
     zakazane_archetypy: frozenset[Archetyp] = frozenset(),
     validator: Callable[[Mapa], VysledekValidace] | None = None,
-    pocet_simulaci: int = 5,
+    pocet_simulaci: int = POCET_SIMULACI_DEFAULT,
 ) -> VysledekFaze1:
     """Opravná smyčka: max 4 iterace, pak relosování seedu (max 2×), pak FAIL.
 
@@ -944,7 +951,7 @@ def _pdf_sady(
 
     Vrací `(ok, chyba)`. Bez GTK (`SazbaNedostupna`) i při jiné chybě renderu
     (O9 — např. chyba fontu nebo pádu na konkrétní kartě) je selhání MĚKKÉ:
-    skin je uložen dřív (spec §4 „jedna vada balíček nešhodí"), hra jen
+    skin je uložen dřív (spec §4 „jedna vada balíček neshodí"), hra jen
     nedostane PDF a report.chyby dostane čitelný důvod."""
     core_cisla = {u.cislo for u in mapa.core_uzly}
     core_karty = [k for k in karty if k.cislo in core_cisla]
@@ -1068,7 +1075,7 @@ def vyrob_hru(
     karty, fit, log = faze3_vypravec(klient, zadani, koncept, mapa, measurer=measurer, log=log)
 
     # Průběžný zápis: koncept/mapa/karty se uloží HNED po FÁZE 3, ať drahou
-    # generaci nezahodí případný pád redaktora/sazby (spec §4 — jedna vada balíček nešhodí).
+    # generaci nezahodí případný pád redaktora/sazby (spec §4 — jedna vada balíček neshodí).
     predbezny = Report(slug=slug, seed=seed, archetyp=params.archetyp, iterace=iterace_faze1,
                        stav=StavHry.OK, fit_check=fit)
     _zapis_skin(hra_dir, _koncept_md(koncept, params), mapa, karty, predbezny, log)
