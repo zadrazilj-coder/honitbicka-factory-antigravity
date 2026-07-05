@@ -138,14 +138,20 @@ def _http_transport(payload: dict[str, Any], timeout_s: float) -> dict[str, Any]
     return resp.json()
 
 
+DEFAULT_KEEP_ALIVE = "30m"  # L5: Ollama defaultně uvolní model po ~5 min nečinnosti
+
+
 class OllamaKlient:
-    """Klient k jednomu modelu se třemi rolemi.
+    """Klient k jednomu modelu se čtyřmi rolemi.
 
     Parametry:
         model: název modelu v Ollamě.
         base_url: adresa Ollama serveru.
         transport: injektovatelná funkce volání (pro testy/mocky).
         timeout_s: timeout jednoho volání.
+        keep_alive: jak dlouho má Ollama držet model v paměti po posledním
+            volání (L5) — mezi hrami v dávce (zápis, validace, sazba) jinak
+            hrozí unload→reload (~30 s ztráta na každou další hru).
     """
 
     def __init__(
@@ -154,11 +160,13 @@ class OllamaKlient:
         base_url: str = DEFAULT_BASE_URL,
         transport: Transport | None = None,
         timeout_s: float = DEFAULT_TIMEOUT_S,
+        keep_alive: str = DEFAULT_KEEP_ALIVE,
     ) -> None:
         self.model = model
         self.base_url = base_url
         self.transport = transport or _http_transport
         self.timeout_s = timeout_s
+        self.keep_alive = keep_alive
 
     # -- veřejné API ------------------------------------------------------- #
     def generuj_json(
@@ -304,6 +312,7 @@ class OllamaKlient:
             "stream": False,
             "think": thinking,
             "options": {"temperature": cfg.temperature, "num_ctx": cfg.num_ctx},
+            "keep_alive": self.keep_alive,
             "_base_url": self.base_url,
         }
         if schema is not None:

@@ -895,9 +895,13 @@ def _zapis_skin(hra_dir: str, koncept_md: str, mapa: Mapa | None,
 def _pdf_sady(
     hra_dir: str, zadani: Zadani, koncept: Koncept, params: LosovaneParametry,
     mapa: Mapa, karty: list[Karta], editorial: list[RedakceVerdikt],
-) -> bool:
-    """Vyrenderuje všechny PDF (karty 30/60, herní listy, průvodce). Bez GTK
-    vrátí False (SazbaNedostupna) — hra zůstává datově platná."""
+) -> tuple[bool, str | None]:
+    """Vyrenderuje všechny PDF (karty 30/60, herní listy, průvodce).
+
+    Vrací `(ok, chyba)`. Bez GTK (`SazbaNedostupna`) i při jiné chybě renderu
+    (O9 — např. chyba fontu nebo pádu na konkrétní kartě) je selhání MĚKKÉ:
+    skin je uložen dřív (spec §4 „jedna vada balíček nešhodí"), hra jen
+    nedostane PDF a report.chyby dostane čitelný důvod."""
     core_cisla = {u.cislo for u in mapa.core_uzly}
     core_karty = [k for k in karty if k.cislo in core_cisla]
     komponenty = len({c for u in mapa.uzly for c in u.komponenty}) or 2
@@ -918,9 +922,11 @@ def _pdf_sady(
                                       karty=sada, prah=params.prah_aktivity,
                                       editorial=editorial)
             zapis_pdf(pr, os.path.join(hra_dir, f"pruvodce_{profil}min.pdf"))
-        return True
-    except SazbaNedostupna:
-        return False
+        return True, None
+    except SazbaNedostupna as exc:
+        return False, str(exc)
+    except Exception as exc:  # noqa: BLE001 — O9: jiná chyba WeasyPrintu je měkký fail
+        return False, f"{type(exc).__name__}: {exc}"
 
 
 # --------------------------------------------------------------------------- #
@@ -1041,9 +1047,9 @@ def vyrob_hru(
 
     # FÁZE 5 — zápis skinu + sazba + registr + taxonomie
     _zapis_skin(hra_dir, _koncept_md(koncept, params), mapa, karty, report, log)
-    pdf_ok = _pdf_sady(hra_dir, zadani, koncept, params, mapa, karty, editorial)
+    pdf_ok, pdf_chyba = _pdf_sady(hra_dir, zadani, koncept, params, mapa, karty, editorial)
     if not pdf_ok:
-        report.chyby.append("PDF nevyrenderováno (GTK/WeasyPrint chybí)")
+        report.chyby.append(f"PDF nevyrenderováno ({pdf_chyba or 'GTK/WeasyPrint chybí'})")
         _zapis_skin(hra_dir, _koncept_md(koncept, params), mapa, karty, report, log)
 
     zapis_zaznam(ZaznamRegistru(

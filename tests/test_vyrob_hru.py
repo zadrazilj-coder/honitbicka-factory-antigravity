@@ -268,6 +268,27 @@ def test_vyrob_hru_vlastni_measurer_obejde_failfast(tmp_path, monkeypatch):
     assert hra.report.stav == StavHry.OK
 
 
+# ------- O9: _pdf_sady chytá libovolnou chybu renderu, ne jen SazbaNedostupna #
+def test_vyrob_hru_pdf_jina_vyjimka_nez_sazbanedostupna_je_mekky_fail(tmp_path, monkeypatch):
+    """Živě relevantní: chyba fontu/pádu na konkrétní kartě uvnitř WeasyPrintu
+    by dřív (jen `except SazbaNedostupna`) shodila celou hru PO drahé LLM
+    generaci. Teď je to měkký fail se čitelným důvodem v report.chyby."""
+    import honbicka.orchestrator as orch
+
+    def boom(*a, **k):
+        raise RuntimeError("font se nenačetl")
+
+    monkeypatch.setattr(orch, "uloz_pdf_karet", boom)
+    mapa_dump = build_valid_mapa_60().model_dump(mode="json")
+    klient = DispatchKlient(mapa_dump)
+    zadani = Zadani(vek=VekPasmo.V09_12, format_hracu="dvojice", tema="Kapka vody")
+    hra = vyrob_hru(zadani, klient, seed=1, measurer=measurer_dle_delky,
+                    skiny_dir=str(tmp_path / "skiny"),
+                    registr_cesta=str(tmp_path / "skiny" / "registr.md"), zatridit=False)
+    assert hra.report.stav == StavHry.OK  # jedna vada balíček nešhodí (spec §4)
+    assert any("RuntimeError" in c and "font se nenačetl" in c for c in hra.report.chyby)
+
+
 # ------- L7/O13: jedno sloučené volání + fallback po jednom -------------- #
 def _koncept_l7():
     return Koncept(archetyp=Archetyp.A1, tema="Kapka vody",

@@ -91,6 +91,33 @@ def test_transportni_chyba_je_tvrdy_fail():
         klient.generuj_json(Role.ARCHITEKT, "x", SCHEMA_ZADANI)
 
 
+# --------------------------------------------------------------------------- #
+# L5 — keep_alive (mezi hrami v dávce se model nesmí uvolnit z paměti)
+# --------------------------------------------------------------------------- #
+def test_keep_alive_v_payloadu_ma_vychozi_hodnotu():
+    zachyceno = {}
+
+    def transport(payload, timeout):
+        zachyceno.update(payload)
+        return _odpoved(json.dumps({}))
+
+    klient = OllamaKlient(transport=transport)
+    klient.generuj_json(Role.TEMA_GENERATOR, "x", SCHEMA_ZADANI)
+    assert zachyceno["keep_alive"] == "30m"
+
+
+def test_keep_alive_lze_prepsat():
+    zachyceno = {}
+
+    def transport(payload, timeout):
+        zachyceno.update(payload)
+        return _odpoved(json.dumps({}))
+
+    klient = OllamaKlient(transport=transport, keep_alive="5m")
+    klient.generuj_json(Role.TEMA_GENERATOR, "x", SCHEMA_ZADANI)
+    assert zachyceno["keep_alive"] == "5m"
+
+
 def test_generuj_text_bez_schematu():
     def transport(payload, timeout):
         assert "format" not in payload  # volný text nemá structured output

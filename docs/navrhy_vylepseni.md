@@ -82,6 +82,11 @@
 - 🟡 **L5 · `keep_alive`.** Ollama defaultně uvolní model po ~5 min nečinnosti. Mezi hrami
   v dávce (zápis, validace, sazba) může dojít k unload→reload (~30 s ztráta). Přidat
   `"keep_alive": "30m"` do payloadu.
+  **✅ OPRAVENO 2026-07-05.** `OllamaKlient(keep_alive="30m")` (nový parametr
+  konstruktoru, `DEFAULT_KEEP_ALIVE = "30m"`) — jde do payloadu u každého
+  volání (`_volej_pokus`). Přepsatelné per-klient (`keep_alive="5m"` apod.),
+  žádná role-specifická logika navíc. Testy `test_keep_alive_v_payloadu_ma_vychozi_hodnotu`,
+  `_lze_prepsat`.
 - 🟢 **L6 · `generuj_text` je mrtvý kód** — nikde se nevolá (vypravěč používá structured
   output). Smazat, nebo označit jako záměrné API do budoucna.
 
@@ -211,6 +216,15 @@
 - 🟡 **O9 · `_pdf_sady` chytá jen `SazbaNedostupna`.** Jiná výjimka WeasyPrintu
   (chyba fontu, interní chyba na konkrétní kartě) shodí celou hru PO drahé generaci.
   Chytat `Exception` → zapsat do `report.chyby` (skin už je uložený, měkký fail).
+  **✅ OPRAVENO 2026-07-05.** `_pdf_sady` teď vrací `(ok, chyba)` místo holého
+  `bool`; přidán `except Exception as exc` po `SazbaNedostupna` (`# noqa: BLE001`,
+  vědomě široký — je to poslední záchranná síť PO uloženém skinu), zpráva jde
+  do `report.chyby` jako `f"PDF nevyrenderováno ({pdf_chyba or 'GTK/WeasyPrint chybí'})"`
+  — takže SazbaNedostupna dál hlásí obecné „GTK/WeasyPrint chybí", ale
+  neočekávaná chyba (font, render pádu) teď nese vlastní `TypChyby: zpráva`.
+  Test `test_vyrob_hru_pdf_jina_vyjimka_nez_sazbanedostupna_je_mekky_fail`
+  (monkeypatch `uloz_pdf_karet` → `RuntimeError`) ověřuje `hra.report.stav ==
+  OK` i čitelnou zprávu.
 - 🟡 **O10 · `ATMOSFERA_FLOOR=200` porušuje dodatek 3.4-7** (atmosféra 300–500 znaků
   POVINNÁ). Ořez smí jít pod 300. Rozhodnout: buď floor 300 + při nevejití nechat
   fit-check fail (a řešit zkrácením mechaniky?… ne — spíš re-prompt), nebo odchylku
@@ -529,7 +543,8 @@
 čistý.
 
 **Vlna 3 — robustnost a dluh:**
-11. ~~L2 (per-model think), L3 (retry na timeout)~~ hotovo v bodě 9 výše. L5 (keep_alive), O9 (širší catch PDF)
+11. ~~L2 (per-model think), L3 (retry na timeout)~~ hotovo v bodě 9 výše.
+    ✅ L5 (keep_alive) + O9 (širší catch PDF) — OPRAVENO 2026-07-05
 12. O8+V4: jedna validace, jeden počet průchodů
 13. O4: slovník žánru (grep) · V6: přístupnost 3.4-6 · MD2: pravdivost stop
 14. SC2: topologická variabilita (2–3 vzory + rng)
