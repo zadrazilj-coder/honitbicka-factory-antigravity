@@ -12,17 +12,37 @@ from honbicka.modely import Karta
 
 
 def karta_strana_html(karta: Karta, strana: str) -> str:
-    """Vrátí vnitřní HTML karty pro danou stranu: 'predni' | 'zadni' | 'zadni_30'."""
+    """Vrátí vnitřní HTML karty pro danou stranu:
+    'predni' | 'predni_30' | 'zadni' | 'zadni_30'.
+
+    Strany jsou deterministicky renderované pohledy na `Karta.volby`
+    (viz modely.Karta) — *_30 varianty filtrují SIDE volby (spec §5)."""
     esc = _html.escape
-    if strana == "predni":
+    if strana in ("predni", "predni_30"):
+        text = karta.predni_30 if strana == "predni_30" else karta.predni
         return (
             f"<div class='karta-predni'>"
             f"<p class='atmosfera'>{esc(karta.atmosfera)}</p>"
-            f"<div class='predni'>{esc(karta.predni)}</div>"
+            f"<div class='predni'>{esc(text)}</div>"
             f"</div>"
         )
-    if strana == "zadni_30":
-        text = karta.zadni_30 or karta.zadni
-    else:
-        text = karta.zadni
-    return f"<div class='karta-zadni'>{esc(text)}</div>"
+    jen_core = (strana == "zadni_30")
+    volby = karta._volby_pro(jen_core)
+    zaver_text = karta.zaver.strip()
+    
+    html_volby = []
+    for i, v in enumerate(volby):
+        pismeno = "ABCDEFGH"[i] if i < 8 else str(i + 1)
+        html_volby.append(
+            f"<div class='volba volba-{pismeno}'>"
+            f"<b>{pismeno})</b> {esc(v.vysledek.strip())} &rarr; <b>karta {v.cil}</b>"
+            f"</div>"
+        )
+    
+    html_zaver = f"<div class='zaver'>{esc(zaver_text)}</div>" if zaver_text else ""
+    html_volby_container = (
+        f"<div class='volby-zadni'>{''.join(html_volby)}</div>"
+        if html_volby else "<div class='volby-zadni'><i>Příběh na této kartě končí.</i></div>"
+    )
+    
+    return f"<div class='karta-zadni'>{html_zaver}{html_volby_container}</div>"

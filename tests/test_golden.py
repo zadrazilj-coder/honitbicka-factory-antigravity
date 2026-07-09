@@ -4,7 +4,16 @@ zadních stran, kalibrační arch."""
 
 import re
 
-from honbicka.modely import Archetyp, Karta, Koncept, Obtiznost, VekPasmo, Zadani
+from honbicka.modely import (
+    Archetyp,
+    Karta,
+    Koncept,
+    Obtiznost,
+    Profil,
+    VekPasmo,
+    Volba,
+    Zadani,
+)
 from honbicka.sazba.karty_pdf import pocet_stran, postav_html_karet, spocti_archy
 from honbicka.validatory.agregace import validuj_par_30_60
 from honbicka.validatory.sazba import fit_check_karty
@@ -16,11 +25,19 @@ def _measurer(html, sirka):
 
 
 def _golden_karty(mapa):
-    """Deterministické karty pro každý uzel (krátké → sednou na A5)."""
+    """Deterministické karty pro každý uzel (krátké → sednou na A5).
+    Volby se skládají z hran grafu — jako v produkci (sestav_kartu)."""
+    def _volby(u):
+        return [
+            Volba(text=f"Cesta {i + 1}", vysledek=f"Výsledek {i + 1}", cil=h.cil,
+                  podminka=h.podminka,
+                  side=(c := mapa.uzel(h.cil)) is not None and c.profil == Profil.SIDE)
+            for i, h in enumerate(u.hrany)
+        ]
     return [
         Karta(cislo=u.cislo, nazev=f"Uzel {u.cislo}", typ=u.typ,
               atmosfera="Klidná atmosféra u potoka, kde se cosi skrývá.",
-              predni=f"Příběh uzlu {u.cislo}. Vyber cestu.", zadni=f"Výsledek {u.cislo}.")
+              uvod=f"Příběh uzlu {u.cislo}. Vyber cestu.", volby=_volby(u))
         for u in sorted(mapa.uzly, key=lambda u: u.cislo)
     ]
 
@@ -50,7 +67,8 @@ def test_golden_pocet_stran_stabilni():
     core_karty = [k for k in karty if k.cislo in core_cisla]
 
     html60 = postav_html_karet(karty, nadpis="60")
-    html30 = postav_html_karet(core_karty, nadpis="30", zadni_strana="zadni_30")
+    html30 = postav_html_karet(core_karty, nadpis="30", predni_strana="predni_30",
+                               zadni_strana="zadni_30")
     assert spocti_archy(html60) == pocet_stran(20) == 22  # 2 + 2×10
     assert spocti_archy(html30) == pocet_stran(11) == 14  # 2 + 2×6
 

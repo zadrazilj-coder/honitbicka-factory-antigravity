@@ -3,7 +3,7 @@ s injektovaným fake measurerem."""
 
 import re
 
-from honbicka.modely import Karta, TypUzlu
+from honbicka.modely import Karta, TypUzlu, Volba
 from honbicka.validatory.sazba import (
     SazbaNedostupna,
     _weasy_measurer,
@@ -20,9 +20,12 @@ def measurer_dle_delky(html: str, sirka: float) -> float:
     return len(text) / 45.0 * 5.0
 
 
-def _karta(atmosfera="A" * 300, predni="P" * 200, zadni="Z" * 200, zadni_30=None):
+def _karta(atmosfera="A" * 300, uvod="P" * 200, zaver="Z" * 200, se_side_volbou=False):
+    volby = [Volba(text="Pokračuj", vysledek="Cesta vede dál", cil=2)]
+    if se_side_volbou:
+        volby.append(Volba(text="Odbočka", vysledek="Vedlejší cesta", cil=3, side=True))
     return Karta(cislo=1, nazev="Test", typ=TypUzlu.POSTAVA,
-                 atmosfera=atmosfera, predni=predni, zadni=zadni, zadni_30=zadni_30)
+                 atmosfera=atmosfera, uvod=uvod, zaver=zaver, volby=volby)
 
 
 def test_geometrie_a5():
@@ -44,8 +47,9 @@ def test_dlouha_karta_pretece():
     assert predni.vyska_mm > predni.limit_mm
 
 
-def test_zadni_30_se_kontroluje_kdyz_je():
-    fits = fit_check_karty(_karta(zadni_30="X" * 100), measurer=measurer_dle_delky)
+def test_zadni_30_se_kontroluje_kdyz_ma_side_volbu():
+    # zadni_30 existuje (a kontroluje se) právě když karta má SIDE volbu
+    fits = fit_check_karty(_karta(se_side_volbou=True), measurer=measurer_dle_delky)
     strany = {f.strana for f in fits}
     assert strany == {"predni", "zadni", "zadni_30"}
 

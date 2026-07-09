@@ -4,6 +4,7 @@
     honbicka batch zadani/plan.yaml    # dávka: N her přes noc
     honbicka new                       # interaktivní pomocník → YAML
     honbicka feedback <slug>           # zápis šablony playtestu
+    honbicka export <slug>             # .twee (Twine) + Mermaid mapa hry
     honbicka status                    # přehled běhů, failů, registru
 """
 
@@ -35,7 +36,7 @@ def _cmd_gen(args: argparse.Namespace) -> int:
     from honbicka.davka import nacti_zadani
     from honbicka.orchestrator import vyrob_hru
     zadani = nacti_zadani(args.zadani)
-    hra = vyrob_hru(zadani, _vytvor_klienta())
+    hra = vyrob_hru(zadani, _vytvor_klienta(), copypaste=args.copypaste)
     print(f"Hra: {hra.slug} — {hra.report.stav.value} (seed {hra.report.seed})")
     for c in hra.report.chyby:
         print(f"  ! {c}")
@@ -45,7 +46,7 @@ def _cmd_gen(args: argparse.Namespace) -> int:
 def _cmd_batch(args: argparse.Namespace) -> int:
     from honbicka.davka import nacti_plan, spust_davku
     plan = nacti_plan(args.plan)
-    report = spust_davku(plan, _vytvor_klienta())
+    report = spust_davku(plan, _vytvor_klienta(), copypaste=args.copypaste)
     print(f"Dávka: {report.uspesnych}/{report.celkem} OK, {report.failed} FAILED")
     for v in report.vysledky:
         print(f"  [{v.stav}] {v.slug} (seed {v.seed})")
@@ -85,6 +86,43 @@ def _cmd_feedback(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_export(args: argparse.Namespace) -> int:
+    """Export hry do .twee (kontrola proklikem v Twine) a Mermaid (mapa)."""
+    import json
+
+    from honbicka.export import export_mermaid, export_twee
+    from honbicka.modely import Karta, Mapa
+
+    skin = os.path.join(args.skiny_dir, args.slug)
+    mapa_cesta = os.path.join(skin, "mapa.json")
+    if not os.path.isfile(mapa_cesta):
+        print(f"Nenalezeno: {mapa_cesta}", file=sys.stderr)
+        return 1
+    with open(mapa_cesta, encoding="utf-8") as f:
+        mapa = Mapa.model_validate_json(f.read())
+    karty = None
+    karty_cesta = os.path.join(skin, "karty.json")
+    if os.path.isfile(karty_cesta):
+        with open(karty_cesta, encoding="utf-8") as f:
+            karty = [Karta.model_validate(k) for k in json.load(f)]
+    vystupy = []
+    if args.format in ("twee", "vse"):
+        cesta = os.path.join(skin, f"{args.slug}.twee")
+        with open(cesta, "w", encoding="utf-8") as f:
+            f.write(export_twee(mapa, karty, nazev=args.slug))
+        vystupy.append(cesta)
+    if args.format in ("mermaid", "vse"):
+        cesta = os.path.join(skin, "mapa.mmd")
+        with open(cesta, "w", encoding="utf-8") as f:
+            f.write(export_mermaid(mapa))
+        vystupy.append(cesta)
+    for v in vystupy:
+        print(f"Zapsáno: {v}")
+    print("Tip: .twee soubor přetáhni do Twine (twinery.org) — hra se zobrazí "
+          "jako klikatelný graf.")
+    return 0
+
+
 def _cmd_status(args: argparse.Namespace) -> int:
     from honbicka.registr import nacti_registr
     print(f"HONBIČKA FACTORY v{__version__}")
@@ -102,10 +140,12 @@ def vytvor_parser() -> argparse.ArgumentParser:
 
     g = sub.add_parser("gen", help="vyrob jednu hru (30+60) z YAML zadání")
     g.add_argument("zadani", help="cesta k YAML zadání")
+    g.add_argument("-c", "--copypaste", action="store_true", help="spustit v copy-paste rezimu pro placene LLM")
     g.set_defaults(func=_cmd_gen)
 
     b = sub.add_parser("batch", help="dávka her z plánu")
     b.add_argument("plan", help="cesta k YAML batch plánu")
+    b.add_argument("-c", "--copypaste", action="store_true", help="spustit v copy-paste rezimu pro placene LLM")
     b.set_defaults(func=_cmd_batch)
 
     n = sub.add_parser("new", help="interaktivní pomocník → YAML")
@@ -115,6 +155,12 @@ def vytvor_parser() -> argparse.ArgumentParser:
     f = sub.add_parser("feedback", help="zápis šablony playtestu")
     f.add_argument("slug", help="slug hry")
     f.set_defaults(func=_cmd_feedback)
+
+    e = sub.add_parser("export", help="export hry do .twee (Twine) a Mermaid mapy")
+    e.add_argument("slug", help="slug hry ve skiny/")
+    e.add_argument("--format", choices=["twee", "mermaid", "vse"], default="vse")
+    e.add_argument("--skiny-dir", default="skiny")
+    e.set_defaults(func=_cmd_export)
 
     s = sub.add_parser("status", help="přehled běhů, failů, registru")
     s.set_defaults(func=_cmd_status)

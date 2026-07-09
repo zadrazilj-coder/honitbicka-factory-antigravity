@@ -21,8 +21,15 @@ KONCEPT_DICT = {"archetyp": "A1", "tema": "Kapka vody", "zanr": "humor",
                 "mechanismus_reseni": "Průnik nezávislých stop odhalí pravdu.",
                 "klicova_rekvizita": "sítko",
                 "falesne_teorie": 2, "pravdive_stopy": 3, "konce": 2, "slovnik_zakazana": []}
-KARTA_DICT = {"cislo": 1, "nazev": "K", "typ": "postava", "atmosfera": "A" * 300,
-              "predni": "U potoka je stopa.", "zadni": "Výsledek."}
+KARTA_DICT = {
+    "cislo": 1, "nazev": "Karta", "typ": "postava", "atmosfera": "A" * 300,
+    "uvod": "U potoka je vidět stopa vody.", "zaver": "Výsledek.",
+    "volby": [
+        {"text": "Volba A", "vysledek": "Vysledek A"},
+        {"text": "Volba B", "vysledek": "Vysledek B"},
+        {"text": "Volba C", "vysledek": "Vysledek C"},
+    ]
+}
 VERDIKT_DICT = {"check": "R1", "verdikt": True, "citace_karet": ["stopa"], "zduvodneni": "ok"}
 
 
@@ -44,6 +51,17 @@ class DispatchKlient:
             return dict(VERDIKT_DICT)
         if "format_hracu" in props:  # SCHEMA_ZADANI (téma-generátor)
             return dict(ZADANI_DICT)
+        if "skutecne_reseni" in props:
+            return {
+                "koncept": dict(KONCEPT_DICT),
+                "skutecne_reseni": "Toto je skutecne reseni zapletky.",
+                "falesne_teorie_detaily": ["Falesna teorie 1 detail", "Falesna teorie 2 detail"],
+                "epilog": "Toto je epilog pribehu.",
+                "uzly_beaty": [
+                    {"cislo": u["cislo"], "nazev": u.get("nazev", f"Uzel {u['cislo']}"), "beat": f"Beat pro kartu {u['cislo']}", "rekvizity": []}
+                    for u in self.mapa_dict.get("uzly", [])
+                ]
+            }
         raise AssertionError("neznámé schéma")
 
 

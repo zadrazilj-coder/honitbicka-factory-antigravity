@@ -46,6 +46,13 @@ body {{ margin: 0; font-family: 'DejaVu Sans', sans-serif; font-size: 10pt; }}
 .hlavicka {{ border-bottom: 1mm solid; padding-bottom: 2mm; margin-bottom: 3mm;
             font-weight: bold; }}
 .atmosfera {{ font-style: italic; }}
+.karta-zadni {{ position: static; }}
+.karta-zadni .zaver {{ margin-bottom: 4mm; font-size: 9.5pt; max-height: 52mm; overflow: hidden; }}
+.volby-zadni {{ position: absolute; left: 10mm; right: 10mm; top: 82mm; height: 120mm; }}
+.volba {{ position: absolute; left: 0; right: 0; height: 35mm; border: 0.2mm solid #ddd; padding: 2.5mm; box-sizing: border-box; background: #fafafa; font-size: 9.5pt; overflow: hidden; border-radius: 1mm; }}
+.volba-A {{ top: 0mm; }}
+.volba-B {{ top: 40mm; }}
+.volba-C {{ top: 80mm; }}
 """
 
 CSS_A5_LIST = """

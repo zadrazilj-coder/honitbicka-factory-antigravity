@@ -3,7 +3,7 @@ Bez GTK — testuje se HTML/struktura, ne reálné PDF."""
 
 import pytest
 
-from honbicka.modely import Archetyp, Karta, Koncept, TypUzlu, VekPasmo, Zadani
+from honbicka.modely import Archetyp, Karta, Koncept, TypUzlu, VekPasmo, Volba, Zadani
 from honbicka.sazba.herni_list import postav_html_herni_list
 from honbicka.sazba.karty_pdf import (
     pocet_stran,
@@ -17,10 +17,14 @@ from honbicka.sazba.pruvodce import CHECKLIST, FEEDBACK_OTAZKY, postav_html_pruv
 def _karty(n, s_variantou_30=False):
     out = []
     for i in range(1, n + 1):
+        volby = [Volba(text=f"Cesta {i}", vysledek=f"Výsledek {i}", cil=i + 1)]
+        if s_variantou_30:
+            # SIDE volba → zadni_30 varianta existuje (filtr rendereru)
+            volby.append(Volba(text="Vedlejší cesta", vysledek="Výsledek jen SIDE",
+                               cil=i + 2, side=True))
         out.append(Karta(
             cislo=i, nazev=f"Karta {i}", typ=TypUzlu.POSTAVA,
-            atmosfera="Atmosféra " * 5, predni=f"Příběh {i}.", zadni=f"Výsledek {i}.",
-            zadni_30=(f"Výsledek {i} bez SIDE." if s_variantou_30 else None),
+            atmosfera="Atmosféra " * 5, uvod=f"Příběh {i}.", volby=volby,
         ))
     return out
 
@@ -80,12 +84,15 @@ def test_rez_a_dve_karty_na_arch():
     assert "class='rez'" in html
 
 
-def test_30min_pouziva_zadni_30():
+def test_30min_filtruje_side_volby():
     karty = _karty(2, s_variantou_30=True)
     html60 = postav_html_karet(karty, nadpis="60", zadni_strana="zadni")
-    html30 = postav_html_karet(karty, nadpis="30", zadni_strana="zadni_30")
-    assert "Výsledek 1." in html60 and "bez SIDE" not in html60.split("Výsledek 1.")[0]
-    assert "bez SIDE" in html30
+    html30 = postav_html_karet(karty, nadpis="30", predni_strana="predni_30",
+                               zadni_strana="zadni_30")
+    # 60min sada SIDE volbu má, 30min sada (deterministický filtr) ne
+    assert "Výsledek jen SIDE" in html60
+    assert "Výsledek jen SIDE" not in html30
+    assert "Vedlejší cesta" not in html30  # ani na přední straně
 
 
 # ------- herní list -------------------------------------------------------- #

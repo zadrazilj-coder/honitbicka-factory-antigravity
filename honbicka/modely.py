@@ -113,11 +113,18 @@ class Zadani(BaseModel):
     @field_validator("obtiznost", mode="before")
     @classmethod
     def _normalizuj_obtiznost(cls, v: object) -> object:
-        """Model občas vrátí diakritiku ('lehká') místo enum hodnoty ('lehka')."""
+        """Model občas vrátí diakritiku ('lehká') nebo rozsah ('lehká - střední')
+        místo enum hodnoty — živě pozorováno (E2E flake 2026-07-05). Normalizuje
+        diakritiku a z rozsahu vezme PRVNÍ rozpoznanou hodnotu."""
         if not isinstance(v, str):
             return v
         text = unicodedata.normalize("NFKD", v).encode("ascii", "ignore").decode().lower()
-        return text if text in {"lehka", "stredni", "tezka"} else v
+        if text in {"lehka", "stredni", "tezka"}:
+            return text
+        for kandidat in ("lehka", "stredni", "tezka"):
+            if kandidat in text:
+                return kandidat
+        return v
 
     @field_validator("format_hracu")
     @classmethod
@@ -264,19 +271,109 @@ class Koncept(BaseModel):
 
 
 # --------------------------------------------------------------------------- #
-# Karta (výstup VYPRAVĚČE)
+# Karta (výstup VYPRAVĚČE) — volby jako DATA, navigaci skládá renderer
 # --------------------------------------------------------------------------- #
+_PISMENA_VOLEB = "ABCDEFGH"
+
+
+def _pismeno_volby(i: int) -> str:
+    return _PISMENA_VOLEB[i] if i < len(_PISMENA_VOLEB) else str(i + 1)
+
+
+class Volba(BaseModel):
+    """Jedna volba karty jako DATA (docs/analyza_dsl_a_architektury.md §3).
+
+    `cil`/`podminka`/`side` doplňuje Python z hran grafu — LLM píše jen `text`
+    a `vysledek`. Řádek „A) … → karta N" skládá renderer (`Karta.text_*`),
+    takže navigace na vytištěné kartě NIKDY nevzniká v próze LLM (dřívější
+    třída chyb O1 vč. neviditelných šipek typu „→ slepa 10" zaniká z konstrukce)."""
+
+    text: str = Field(min_length=1, description="Akce volby (bez písmene, bez šipky a čísla)")
+    vysledek: str = Field(min_length=1, description="Výsledek volby (zadní strana)")
+    cil: int = Field(default=0, description="Číslo cílové karty — doplní Python z hrany")
+    podminka: str | None = Field(default=None, description="Gate z hrany (předmět/stav)")
+    side: bool = Field(default=False, description="Cíl je SIDE uzel → 30min varianta volbu vynechá")
+
+
+class VolbaNavrh(BaseModel):
+    """Volba tak, jak ji smí vrátit LLM: jen texty, žádná čísla karet."""
+
+    text: str = Field(min_length=1, description="Akce volby (bez šipky a čísla karty)")
+    vysledek: str = Field(min_length=1, description="Co se stane po této volbě (zadní strana)")
+
+
+class KartaNavrh(BaseModel):
+    """Výstup vypravěče (structured output Ollamy). Strukturu (cíle voleb,
+    číslo, typ) vlastní graf — model dodává výhradně texty. Počet voleb musí
+    odpovídat počtu hran uzlu; párování dělá `sestav_kartu` v orchestrátoru."""
+
+    nazev: str
+    atmosfera: str = Field(description="Povinný atmosférický odstavec (300–500 znaků, 3.4-7)")
+    uvod: str = Field(description="Příběh přední strany (bez voleb)")
+    zaver: str = Field(default="", description="Text zadní strany nad výsledky voleb; "
+                                               "u cílové karty sekce konců")
+    volby: list[VolbaNavrh] = Field(default_factory=list)
+
+
 class Karta(BaseModel):
-    """Text jedné karty. `zadni_30` je varianta zadní strany bez SIDE voleb
-    (spec §5); je-li None, platí `zadni` pro obě délky."""
+    """Jedna karta: texty + volby jako data. Strany `predni`/`zadni`/`zadni_30`
+    jsou deterministicky RENDEROVANÉ pohledy (property), ne uložená próza —
+    30min varianta je filtr SIDE voleb, ne druhý LLM text (spec §5)."""
+
+    model_config = {"extra": "forbid"}  # chytí legacy volání s predni=/zadni=
 
     cislo: int
     nazev: str
     typ: TypUzlu
     atmosfera: str = Field(description="Povinný atmosférický odstavec (300–500 znaků, 3.4-7)")
-    predni: str = Field(description="Přední strana: příběh + volby")
-    zadni: str = Field(description="Zadní strana (60min varianta / výchozí)")
-    zadni_30: str | None = Field(default=None, description="Zadní strana bez SIDE voleb (30min)")
+    uvod: str = Field(default="", description="Příběh přední strany (bez voleb)")
+    zaver: str = Field(default="", description="Zadní strana nad výsledky voleb / sekce konců")
+    volby: list[Volba] = Field(default_factory=list)
+
+    # --- deterministický renderer stran ---------------------------------- #
+    def _volby_pro(self, jen_core: bool) -> list[Volba]:
+        return [v for v in self.volby if not (jen_core and v.side)]
+
+    def text_predni(self, jen_core: bool = False) -> str:
+        """Přední strana: úvod + seznam akcí (bez čísel karet — ta patří na
+        zadní stranu, kde spec §5 drží varianty 30/60)."""
+        volby = self._volby_pro(jen_core)
+        radky = [self.uvod.strip()] if self.uvod.strip() else []
+        if volby:
+            radky.append("Vyber akci a otoč kartu:")
+            for i, v in enumerate(volby):
+                pod = f" (podmínka: {v.podminka})" if v.podminka else ""
+                radky.append(f"{_pismeno_volby(i)}) {v.text.strip()}{pod}")
+        return "\n".join(radky)
+
+    def text_zadni(self, jen_core: bool = False) -> str:
+        """Zadní strana: závěr + „X) výsledek → karta N" pro každou volbu."""
+        volby = self._volby_pro(jen_core)
+        radky = [self.zaver.strip()] if self.zaver.strip() else []
+        for i, v in enumerate(volby):
+            radky.append(f"{_pismeno_volby(i)}) {v.vysledek.strip()} → karta {v.cil}")
+        return "\n".join(radky) or "Příběh na této kartě končí."
+
+    @property
+    def ma_side_volbu(self) -> bool:
+        return any(v.side for v in self.volby)
+
+    @property
+    def predni(self) -> str:
+        return self.text_predni()
+
+    @property
+    def predni_30(self) -> str:
+        return self.text_predni(jen_core=True)
+
+    @property
+    def zadni(self) -> str:
+        return self.text_zadni()
+
+    @property
+    def zadni_30(self) -> str | None:
+        """Varianta bez SIDE voleb (spec §5); None, když se od `zadni` neliší."""
+        return self.text_zadni(jen_core=True) if self.ma_side_volbu else None
 
 
 # --------------------------------------------------------------------------- #
@@ -368,6 +465,32 @@ def _llm_schema(model: type[BaseModel]) -> dict[str, Any]:
 SCHEMA_ZADANI = _llm_schema(Zadani)
 SCHEMA_KONCEPT = _llm_schema(Koncept)
 SCHEMA_MAPA = _llm_schema(Mapa)
-SCHEMA_KARTA = _llm_schema(Karta)
+SCHEMA_KARTA = _llm_schema(KartaNavrh)  # LLM vrací návrh (texty), ne hotovou Kartu
 SCHEMA_REDAKCE = _llm_schema(RedakceVerdikt)
 SCHEMA_REDAKCE_VSECHNY = _llm_schema(RedakceVsechnyVerdikty)
+
+
+# --------------------------------------------------------------------------- #
+# Dějová osnova (Story Bible) - novinka 3.4
+# --------------------------------------------------------------------------- #
+class UzelBeat(BaseModel):
+    cislo: int
+    nazev: str
+    beat: str = Field(description="Dějový bod / vodítko, které se na této kartě hráč dozví")
+    rekvizity: list[str] = Field(default_factory=list, description="Rekvizity nalezené / použité na této kartě")
+
+
+class StoryBible(BaseModel):
+    """Celková dějová osnova hry pro narativní soudržnost (spec 3.4)."""
+
+    koncept: Koncept
+    skutecne_reseni: str = Field(description="Podrobné vysvětlenie skutečného řešení zápletky")
+    falesne_teorie_detaily: list[str] = Field(default_factory=list, description="Detailní popisy konkurenčních falešných teorií")
+    epilog: str = Field(description="Závěrečný příběh/vyhodnocení hry (epilog) pro přečtení na konci")
+    uzly_beaty: list[UzelBeat] = Field(default_factory=list, description="Seznam dějových beatů pro jednotlivé uzly mapy")
+
+    def beat_pro_uzel(self, cislo: int) -> UzelBeat | None:
+        return next((b for b in self.uzly_beaty if b.cislo == cislo), None)
+
+
+SCHEMA_STORY_BIBLE = _llm_schema(StoryBible)

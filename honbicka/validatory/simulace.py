@@ -117,6 +117,120 @@ def povinne_uzly(mapa: Mapa) -> set[int]:
     return povinne
 
 
+# --------------------------------------------------------------------------- #
+# Analytická pozice AHA — absorbující Markovův řetězec (doporučení #5)
+# --------------------------------------------------------------------------- #
+# `_jeden_pruchod` je náhodná procházka s pevnými váhami hran → Markovův řetězec
+# s absorbujícím stavem (cíl). Očekávané časy návštěv i očekávaná délka průchodu
+# se dají spočítat PŘESNĚ z fundamentální matice N = (I − Q)⁻¹ místo mediánu z
+# 15 náhodných průchodů. Výsledek je deterministický a HLADKÝ v pozici uzlu —
+# odstraňuje šum, který u archetypu A1 na některých seedech vyhazoval pozici AHA
+# těsně mimo pásmo (třída ~180/3600 selhání, viz docs/navrhy_vylepseni.md V1).
+# Čistý Python (Gauss–Jordan), grafy ≤35 uzlů → zanedbatelné.
+
+
+def _inverzuj_I_minus_Q(Q: list[list[float]]) -> list[list[float]] | None:
+    """Vrátí (I − Q)⁻¹ přes Gauss–Jordanovu eliminaci; None při singularitě."""
+    n = len(Q)
+    if n == 0:
+        return []
+    # rozšířená matice [ (I−Q) | I ]
+    a = [[(1.0 if i == j else 0.0) - Q[i][j] for j in range(n)]
+         + [1.0 if i == j else 0.0 for j in range(n)] for i in range(n)]
+    for col in range(n):
+        piv = max(range(col, n), key=lambda r: abs(a[r][col]))
+        if abs(a[piv][col]) < 1e-12:
+            return None
+        a[col], a[piv] = a[piv], a[col]
+        delitel = a[col][col]
+        a[col] = [x / delitel for x in a[col]]
+        for r in range(n):
+            if r != col and a[r][col] != 0.0:
+                faktor = a[r][col]
+                a[r] = [x - faktor * y for x, y in zip(a[r], a[col], strict=True)]
+    return [radek[n:] for radek in a]
+
+
+def _ocekavany_cas_do(
+    mapa: Mapa, dist: dict[int, int], start: int, absorbujici: set[int],
+    sledovany: set[int], disc: float,
+) -> tuple[float, float] | None:
+    """(očekávaný čas u tranzitních uzlů, P(absorpce právě v `sledovany`)) ze `start`.
+
+    `absorbujici` = všechny absorbující uzly (zastaví procházku); `sledovany` ⊆
+    `absorbujici` = ty, jejichž souhrnnou pravděpodobnost absorpce hlásíme (pro
+    AHA jen {aha}, ne cíl — jinak by pro nedominátor vyšlo mylně 1,0). Tempo se
+    počítá jako u `_jeden_pruchod`: první návštěva plné tempo, opakovaná `disc`×
+    (dodatek 3.4-3 pro volný formát; disc=1 jinak), přes h[j]=N[start][j]/N[j][j]."""
+    tranzit = [u.cislo for u in mapa.uzly if u.cislo in dist and u.cislo not in absorbujici]
+    if start not in tranzit:
+        return None
+    idx = {c: i for i, c in enumerate(tranzit)}
+    n = len(tranzit)
+    Q = [[0.0] * n for _ in range(n)]
+    r_sled = [0.0] * n  # pravděpodobnost přechodu z tranzitního uzlu do `sledovany`
+    for c in tranzit:
+        u = mapa.uzel(c)
+        kand = [h for h in u.hrany if h.cil in dist]
+        if not kand:
+            continue
+        vahy = [2 if dist[h.cil] < dist[c] else 1 for h in kand]
+        celkem = sum(vahy)
+        for h, w in zip(kand, vahy, strict=True):
+            p = w / celkem
+            if h.cil in idx:
+                Q[idx[c]][idx[h.cil]] += p
+            elif h.cil in sledovany:
+                r_sled[idx[c]] += p
+    N = _inverzuj_I_minus_Q(Q)
+    if N is None:
+        return None
+    si = idx[start]
+    visits = N[si]
+    cas = 0.0
+    for c in tranzit:
+        j = idx[c]
+        njj = N[j][j]
+        hj = visits[j] / njj if njj > 1e-12 else 0.0
+        cas += _tempo_uzlu(mapa.uzel(c).prostredi) * (hj + disc * (visits[j] - hj))
+    p_sled = sum(visits[j] * r_sled[j] for j in range(n))
+    return cas, p_sled
+
+
+def ocekavana_pozice_aha(
+    mapa: Mapa, zadani: Zadani, profil_min: int, aha_uzel: int
+) -> float | None:
+    """Analytická pozice AHA v % (očekávaný_čas_k_AHA / očekávaný_čas_k_cíli).
+
+    Deterministická náhrada mediánu ze simulace pro výběr AHA uzlu
+    (`scaffold._vyber_aha_uzel`). `None`, když start nedosáhne cíle, nebo AHA
+    uzel není dominátor (nedosáhne se na každé cestě — pak by poměr nedával
+    smysl a volající uzel přeskočí). `profil_min` je jen pro podpis-symetrii se
+    `simuluj`; tempo/pásmo řídí prostředí uzlů a `zadani`."""
+    dist = _vzdalenost_do_cile(mapa)
+    start = _start_uzel(mapa)
+    cile = {u.cislo for u in mapa.uzly if u.typ == TypUzlu.CIL}
+    if start is None or start.cislo not in dist or aha_uzel not in dist:
+        return None
+    disc = TEMPO_OPAKOVANI if zadani.je_volny_format else 1.0
+
+    do_cile = _ocekavany_cas_do(mapa, dist, start.cislo, cile, cile, disc)
+    do_aha = _ocekavany_cas_do(mapa, dist, start.cislo, cile | {aha_uzel}, {aha_uzel}, disc)
+    if do_cile is None or do_aha is None:
+        return None
+    cas_cil, _ = do_cile
+    cas_aha, p_aha = do_aha
+    if p_aha < 0.999:  # AHA není dominátor → poměr nedefinovaný
+        return None
+    # simulace počítá tempo absorbujícího uzlu do času (cas += tempo PŘED testem
+    # na cíl/AHA) → přičti tempo uzlu, u kterého se absorbuje.
+    cas_aha += _tempo_uzlu(mapa.uzel(aha_uzel).prostredi)
+    cas_cil += _tempo_uzlu(mapa.uzel(next(iter(cile))).prostredi)
+    if cas_cil <= 0:
+        return None
+    return round(cas_aha / cas_cil * 100.0, 1)
+
+
 def _jeden_pruchod(mapa: Mapa, rng: random.Random, volny_format: bool) -> SimulaceReport | None:
     start = _start_uzel(mapa)
     dist = _vzdalenost_do_cile(mapa)

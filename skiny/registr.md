@@ -1,0 +1,7 @@
+# Registr her HONBIČKA
+
+| Datum | Slug | Archetyp | Mechanismus | Rekvizity | Žánr/publikum | Profily | Seed |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-07-04 | ctyri-svetla | A4 | prunik_stop | denik_detektiva | /09-12 | 30+60 | 101 |
+| 2026-07-04 | ctyri-svetla | A3 | prunik_stop |  | /09-12 | 30+60 | 101 |
+| 2026-07-06 | princezna-a-drak | A7 | Pravda se odvodí překrytím tří nezávislých stop – scénářů v jeskyni, chybějících rukopisů na hradě a divadelních kostýmů v lese –, které společně tvoří koherentní obraz spolupráce místo nepřátelství, aniž by kterákoliv stopa sama o sobě naznačovala celé vysvětlení. | divadelní rejstřík | /09-12 | 30+60 | 541306238 |

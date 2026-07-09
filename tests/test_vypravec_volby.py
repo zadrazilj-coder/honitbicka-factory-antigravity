@@ -1,24 +1,30 @@
-"""Testy O1/T1: volby v textu karty MUSÍ odpovídat skutečným hranám grafu.
+"""Testy párování voleb s hranami grafu (`sestav_kartu`) a rendereru stran.
 
-Živý běh „čtyři světla" ukázal, že vypravěč si čísla voleb umí vymyslet
-(karta odkazovala „→8" sama na sebe místo skutečné hrany 8→11). Tyto testy
-pokrývají extrakci čísel, ověření proti grafu, opravnou smyčku a
-deterministický fallback."""
+Nahrazuje dřívější O1 regex-kontrolu „→N v próze ↔ hrany": živá data ukázala,
+že regex měl díru („→ slepa 10" neviděl — viz docs/analyza_dsl_a_architektury.md
+§3). Volby jsou teď DATA: cíl/podmínku/side doplňuje Python z hran, navigaci
+(„→ karta N") skládá renderer — nesoulad s grafem je nemožný z konstrukce."""
 
 from __future__ import annotations
 
 import re
 
-from honbicka.modely import Archetyp, Karta, Koncept, Profil, TypUzlu
+from honbicka.modely import (
+    Archetyp,
+    Karta,
+    KartaNavrh,
+    Koncept,
+    Profil,
+    TypUzlu,
+    Volba,
+    VolbaNavrh,
+)
 from honbicka.orchestrator import (
     MAX_ITERACI_KARTA,
-    _extrahuj_cisla_voleb,
     _nouzova_karta,
-    _ocekavana_cisla_voleb,
-    _oprav_volby_deterministicky,
     _prompt_vypravec,
-    _volby_v_karte_platne,
     napis_kartu,
+    sestav_kartu,
 )
 
 
@@ -28,14 +34,15 @@ def measurer_dle_delky(html: str, sirka: float) -> float:
 
 
 def _koncept():
-    return Koncept(archetyp=Archetyp.A1, tema="Kapka vody", 
+    return Koncept(archetyp=Archetyp.A1, tema="Kapka vody",
         mechanismus_reseni="Průnik nezávislých stop odhalí pravdu, ne jediný zdroj.",
                    falesne_teorie=1, pravdive_stopy=2, konce=2)
 
 
-def _karta(cislo, predni, zadni, zadni_30=None):
-    return Karta(cislo=cislo, nazev="X", typ=TypUzlu.POSTAVA, atmosfera="A" * 320,
-                 predni=predni, zadni=zadni, zadni_30=zadni_30)
+def _navrh(pocet_voleb, atmosfera="A" * 320):
+    return KartaNavrh(nazev="X", atmosfera=atmosfera, uvod="Úvodní příběh.",
+                      volby=[VolbaNavrh(text=f"Akce {i}", vysledek=f"Výsledek {i}")
+                             for i in range(1, pocet_voleb + 1)])
 
 
 class FakeKlient:
@@ -53,180 +60,206 @@ class FakeKlient:
         raise AssertionError("FakeKlient: došly odpovědi")
 
 
-def _karta_dict(predni, zadni, atmosfera="A" * 320):
-    return {"cislo": 1, "nazev": "X", "typ": "postava",
-            "atmosfera": atmosfera, "predni": predni, "zadni": zadni}
+def _navrh_dict(pocet_voleb, atmosfera="A" * 320):
+    return {"nazev": "X", "atmosfera": atmosfera, "uvod": "Úvodní příběh.", "zaver": "",
+            "volby": [{"text": f"Akce {i}", "vysledek": f"Výsledek {i}"}
+                      for i in range(1, pocet_voleb + 1)]}
 
 
-# ------- extrakce a ověření ------------------------------------------------ #
-def test_extrahuj_cisla_voleb():
-    assert _extrahuj_cisla_voleb("A) jdi →2  B) zůstaň →3") == {2, 3}
-    assert _extrahuj_cisla_voleb("bez šipek") == set()
-    assert _extrahuj_cisla_voleb("→10 a taky →10 znovu") == {10}
+# ------- sestav_kartu: párování voleb ↔ hrany ------------------------------ #
+def test_sestav_kartu_paruje_cile_z_grafu(valid_mapa):
+    uzel7 = valid_mapa.uzel(7)  # hrany → [8, 9]
+    karta = sestav_kartu(_navrh(2), uzel7, valid_mapa)
+    assert karta is not None
+    assert [v.cil for v in karta.volby] == [8, 9]  # pořadí hran, ne LLM
+    assert karta.cislo == 7 and karta.typ == uzel7.typ
 
 
-def test_ocekavana_cisla_voleb_core_vylouci_side(valid_mapa):
-    valid_mapa.uzel(4).profil = Profil.SIDE
-    uzel2 = valid_mapa.uzel(2)  # hrany → [3, 4]
-    assert _ocekavana_cisla_voleb(valid_mapa, uzel2) == {3, 4}
-    assert _ocekavana_cisla_voleb(valid_mapa, uzel2, jen_core=True) == {3}
-
-
-def test_volby_platne_pro_spravna_cisla(valid_mapa):
+def test_sestav_kartu_prebytecne_volby_orizne(valid_mapa):
     uzel8 = valid_mapa.uzel(8)  # jediná hrana → 10
-    karta = _karta(8, "A) →10", "Výsledek →10")
-    assert _volby_v_karte_platne(karta, uzel8, valid_mapa)
+    karta = sestav_kartu(_navrh(3), uzel8, valid_mapa)
+    assert karta is not None
+    assert len(karta.volby) == 2 and karta.volby[0].cil == 10 and karta.volby[1].cil == 10
 
 
-def test_volby_neplatne_kdyz_odkazuje_na_sebe(valid_mapa):
-    # přesně živě pozorovaný bug: karta 8 odkazovala „→8" místo skutečné hrany →10.
-    uzel8 = valid_mapa.uzel(8)
-    karta = _karta(8, "A) →8  B) →10", "Výsledek →10")
-    assert not _volby_v_karte_platne(karta, uzel8, valid_mapa)
+def test_sestav_kartu_malo_voleb_vraci_none(valid_mapa):
+    uzel7 = valid_mapa.uzel(7)  # 2 hrany
+    assert sestav_kartu(_navrh(1), uzel7, valid_mapa) is None
 
 
-def test_volby_neplatne_kdyz_chybi_sipka(valid_mapa):
-    uzel8 = valid_mapa.uzel(8)
-    karta = _karta(8, "Text bez šipky vůbec.", "Výsledek bez šipky.")
-    assert not _volby_v_karte_platne(karta, uzel8, valid_mapa)
+def test_sestav_kartu_doplnit_pridava_genericke_volby(valid_mapa):
+    uzel7 = valid_mapa.uzel(7)  # 2 hrany
+    karta = sestav_kartu(_navrh(1), uzel7, valid_mapa, doplnit=True)
+    assert karta is not None
+    assert [v.cil for v in karta.volby] == [8, 9]
+    assert karta.volby[0].text == "Akce 1"          # LLM text zachován
+    assert karta.volby[1].text == "Pokračuj dál"    # chybějící doplněn genericky
 
 
-def test_cilova_karta_bez_hran_vzdy_platna(valid_mapa):
-    cil = next(u for u in valid_mapa.uzly if u.typ == TypUzlu.CIL)
-    karta = _karta(cil.cislo, "Konec příběhu.", "Hra skončila.")
-    assert _volby_v_karte_platne(karta, cil, valid_mapa)
-
-
-def test_zadni_30_se_kontroluje_proti_core_mnozine(valid_mapa):
+def test_sestav_kartu_prenasi_podminku_a_side(valid_mapa):
     valid_mapa.uzel(4).profil = Profil.SIDE
     uzel2 = valid_mapa.uzel(2)  # hrany → [3, 4(SIDE)]
-    # zadni_30 smí odkazovat jen na 3 (core), ne na 4 (SIDE)
-    karta_ok = _karta(2, "A) →3  B) →4", "Výsledek →3 nebo →4", zadni_30="Jen →3")
-    assert _volby_v_karte_platne(karta_ok, uzel2, valid_mapa)
-    karta_spatne = _karta(2, "A) →3  B) →4", "Výsledek →3 nebo →4", zadni_30="Chybně →4")
-    assert not _volby_v_karte_platne(karta_spatne, uzel2, valid_mapa)
+    uzel2.hrany[0].podminka = "LUCERNA"
+    karta = sestav_kartu(_navrh(2), uzel2, valid_mapa)
+    assert karta.volby[0].podminka == "LUCERNA" and not karta.volby[0].side
+    assert karta.volby[1].side
 
 
-# ------- deterministická oprava -------------------------------------------- #
-def test_oprav_volby_deterministicky_jediny_cil(valid_mapa):
-    uzel8 = valid_mapa.uzel(8)  # jediná hrana → 10
-    karta = _karta(8, "A) →8  B) →99", "Výsledek →8")
-    opravena = _oprav_volby_deterministicky(karta, uzel8, valid_mapa)
-    assert _volby_v_karte_platne(opravena, uzel8, valid_mapa)
-    assert "→10" in opravena.predni and "→10" in opravena.zadni
+def test_sestav_kartu_cilova_karta_bez_hran(valid_mapa):
+    cil = next(u for u in valid_mapa.uzly if u.typ == TypUzlu.CIL)
+    karta = sestav_kartu(_navrh(0), cil, valid_mapa)
+    assert karta is not None and karta.volby == []
+    # volby navíc u cílové karty se tiše oříznou (0 hran)
+    karta2 = sestav_kartu(_navrh(2), cil, valid_mapa)
+    assert karta2 is not None and karta2.volby == []
 
 
-def test_oprav_volby_deterministicky_vice_cilu_beze_zmeny(valid_mapa):
-    uzel7 = valid_mapa.uzel(7)  # dvě hrany → {8, 9} — nejednoznačné
-    karta = _karta(7, "A) →99  B) →98", "Výsledek →99")
-    opravena = _oprav_volby_deterministicky(karta, uzel7, valid_mapa)
-    # nejednoznačné (2 platné cíle) → beze změny, stále neplatné
-    assert opravena.predni == "A) →99  B) →98"
-    assert not _volby_v_karte_platne(opravena, uzel7, valid_mapa)
+# ------- renderer stran: navigace vzniká deterministicky ------------------- #
+def test_predni_strana_ma_pismena_bez_cisel_karet():
+    karta = Karta(cislo=7, nazev="X", typ=TypUzlu.POSTAVA, atmosfera="A" * 300,
+                  uvod="Stojíš na rozcestí.",
+                  volby=[Volba(text="Doleva k potoku", vysledek="Šplouchá", cil=8),
+                         Volba(text="Doprava do houští", vysledek="Šustí", cil=9)])
+    assert "A) Doleva k potoku" in karta.predni
+    assert "B) Doprava do houští" in karta.predni
+    assert "8" not in karta.predni and "9" not in karta.predni  # čísla až na zadní
 
 
-# ------- prompt: tvrdý požadavek + opravný text ---------------------------- #
-def test_prompt_obsahuje_tvrda_cisla(valid_mapa):
-    uzel8 = valid_mapa.uzel(8)
-    kontext = {"sousedi": [{"cislo": 10, "nazev": "X", "podminka": None, "side": False}],
-               "je_aha": False, "klicove_svedectvi": False, "pred_aha": True}
-    from honbicka.modely import Obtiznost, VekPasmo, Zadani
-    zadani = Zadani(vek=VekPasmo.V09_12, obtiznost=Obtiznost.LEHKA)
-    prompt = _prompt_vypravec(zadani, _koncept(), uzel8, kontext, False, None)
-    assert "[10]" in prompt and "KRITICKÉ" in prompt
-    assert str(uzel8.cislo) in prompt  # zmíněno jako zakázané číslo
+def test_zadni_strana_ma_sipky_na_cile():
+    karta = Karta(cislo=7, nazev="X", typ=TypUzlu.POSTAVA, atmosfera="A" * 300,
+                  uvod="U.", zaver="Slyšíš kroky.",
+                  volby=[Volba(text="t1", vysledek="Potok tě osvěží", cil=8),
+                         Volba(text="t2", vysledek="Houští škrábe", cil=9)])
+    assert "Slyšíš kroky." in karta.zadni
+    assert "A) Potok tě osvěží → karta 8" in karta.zadni
+    assert "B) Houští škrábe → karta 9" in karta.zadni
 
 
-def test_prompt_oprava_voleb_pridava_text(valid_mapa):
-    uzel8 = valid_mapa.uzel(8)
-    kontext = {"sousedi": [{"cislo": 10, "nazev": "X", "podminka": None, "side": False}],
-               "je_aha": False, "klicove_svedectvi": False, "pred_aha": True}
-    from honbicka.modely import Obtiznost, VekPasmo, Zadani
-    zadani = Zadani(vek=VekPasmo.V09_12, obtiznost=Obtiznost.LEHKA)
-    prompt = _prompt_vypravec(zadani, _koncept(), uzel8, kontext, False, None,
-                              oprava_voleb=True)
-    assert "ŠPATNÁ čísla" in prompt
+def test_predni_strana_zobrazuje_podminku():
+    karta = Karta(cislo=5, nazev="X", typ=TypUzlu.STREZ, atmosfera="A" * 300,
+                  uvod="Brána.",
+                  volby=[Volba(text="Odemkni bránu", vysledek="Otevřeno", cil=6,
+                               podminka="KLÍČ")])
+    assert "(podmínka: KLÍČ)" in karta.predni
+
+
+def test_varianta_30_filtruje_side_a_preciseluje_pismena():
+    karta = Karta(cislo=2, nazev="X", typ=TypUzlu.ROZCESTI, atmosfera="A" * 300,
+                  uvod="U.",
+                  volby=[Volba(text="side akce", vysledek="side výsledek", cil=13, side=True),
+                         Volba(text="core akce", vysledek="core výsledek", cil=3)])
+    # 30min varianta: side volba zmizí a zbylá se přečísluje na A)
+    assert "A) core akce" in karta.predni_30
+    assert "side akce" not in karta.predni_30
+    assert karta.zadni_30 == "A) core výsledek → karta 3"
+    # 60min varianta má obě
+    assert "A) side akce" in karta.predni and "B) core akce" in karta.predni
+
+
+def test_cilova_karta_bez_voleb_ma_zaver():
+    karta = Karta(cislo=12, nazev="Cíl", typ=TypUzlu.CIL, atmosfera="A" * 300,
+                  uvod="Finále.", zaver="Organizátor přečte epilog.")
+    assert karta.zadni == "Organizátor přečte epilog."
+    assert karta.zadni_30 is None
+
+
+# ------- prompt: cíle vyjmenované, count vynucený --------------------------- #
+def test_prompt_vyjmenuje_cile_v_poradi_hran(valid_mapa, valid_zadani):
+    from honbicka.orchestrator import _kontext_karty
+    uzel7 = valid_mapa.uzel(7)  # hrany → [8, 9]
+    kontext = _kontext_karty(valid_mapa, uzel7)
+    prompt = _prompt_vypravec(valid_zadani, _koncept(), uzel7, kontext)
+    assert "PŘESNĚ 2" in prompt
+    assert "1. volba vede na kartu" in prompt and "2. volba vede na kartu" in prompt
+    assert "NIKDY nepiš šipky" in prompt
+
+
+def test_prompt_cilove_karty_zada_prazdne_volby(valid_mapa, valid_zadani):
+    from honbicka.orchestrator import _kontext_karty
+    cil = next(u for u in valid_mapa.uzly if u.typ == TypUzlu.CIL)
+    kontext = _kontext_karty(valid_mapa, cil)
+    prompt = _prompt_vypravec(valid_zadani, _koncept(), cil, kontext)
+    assert "prázdný seznam" in prompt and "epilog" in prompt
+
+
+def test_prompt_oprava_poctu_voleb(valid_mapa, valid_zadani):
+    from honbicka.orchestrator import _kontext_karty
+    uzel7 = valid_mapa.uzel(7)
+    kontext = _kontext_karty(valid_mapa, uzel7)
+    prompt = _prompt_vypravec(valid_zadani, _koncept(), uzel7, kontext,
+                              oprava_poctu_voleb=True)
+    assert "ŠPATNÝ POČET" in prompt
 
 
 # ------- end-to-end napis_kartu --------------------------------------------- #
-def test_napis_kartu_opravi_volby_pres_retry(valid_mapa, valid_zadani):
-    # 1. pokus: špatné číslo (sebe-odkaz); 2. pokus: správné → uspěje
-    klient = FakeKlient(odpovedi=[
-        _karta_dict("A) →8  B) →10", "Výsledek →8"),
-        _karta_dict("A) →10  B) →10", "Výsledek →10"),
-    ])
-    uzel = valid_mapa.uzel(8)
+def test_napis_kartu_opravi_pocet_voleb_pres_retry(valid_mapa, valid_zadani):
+    # 1. pokus: 1 volba na uzel se 2 hranami; 2. pokus: 2 volby → uspěje
+    klient = FakeKlient(odpovedi=[_navrh_dict(1), _navrh_dict(2)])
+    uzel = valid_mapa.uzel(7)
     karta, fits, log = napis_kartu(klient, valid_zadani, _koncept(), valid_mapa, uzel,
                                    measurer=measurer_dle_delky)
-    assert _volby_v_karte_platne(karta, uzel, valid_mapa)
-    assert any(e.get("volby_chyba") for e in log)
+    assert [v.cil for v in karta.volby] == [8, 9]
+    assert any(e.get("volby_pocet_chyba") == 1 for e in log)
     assert len(klient.prompty) == 2
-    assert "ŠPATNÁ čísla" in klient.prompty[1]
+    assert "ŠPATNÝ POČET" in klient.prompty[1]
 
 
-def test_napis_kartu_deterministicka_oprava_po_vycerpani_pokusu(valid_mapa, valid_zadani):
-    # model 3× vrátí špatné číslo → poslední záchrana: deterministická oprava
-    # (uzel 8 má jediný platný cíl → 10, oprava je jednoznačná a bezpečná)
-    klient = FakeKlient(cyklus=_karta_dict("A) →8  B) →8", "Výsledek →8"))
-    uzel = valid_mapa.uzel(8)
+def test_napis_kartu_doplni_volby_po_vycerpani_pokusu(valid_mapa, valid_zadani):
+    # model 3× vrátí málo voleb → poslední záchrana: doplnění generických voleb
+    klient = FakeKlient(cyklus=_navrh_dict(1))
+    uzel = valid_mapa.uzel(7)
     karta, fits, log = napis_kartu(klient, valid_zadani, _koncept(), valid_mapa, uzel,
                                    measurer=measurer_dle_delky)
     assert len(klient.prompty) == MAX_ITERACI_KARTA
-    assert _volby_v_karte_platne(karta, uzel, valid_mapa)
-    assert any(e.get("volby_opraveny_deterministicky") for e in log)
+    assert [v.cil for v in karta.volby] == [8, 9]  # navigace úplná i tak
+    assert any(e.get("volby_doplneny_deterministicky") for e in log)
 
 
-def test_napis_kartu_neopravitelne_se_zaloguje(valid_mapa, valid_zadani):
-    # uzel 7 má DVĚ hrany (8 i 9) — špatné číslo nelze jednoznačně opravit
-    klient = FakeKlient(cyklus=_karta_dict("A) →99  B) →98", "Výsledek →99"))
-    uzel = valid_mapa.uzel(7)
+def test_napis_kartu_prebytek_voleb_projde_na_prvni_pokus(valid_mapa, valid_zadani):
+    # 3 volby na uzel s 1 hranou → tiché oříznutí, žádný opravný prompt
+    klient = FakeKlient(odpovedi=[_navrh_dict(3)])
+    uzel = valid_mapa.uzel(8)
     karta, fits, log = napis_kartu(klient, valid_zadani, _koncept(), valid_mapa, uzel,
                                    measurer=measurer_dle_delky)
-    assert karta is not None  # hra se nezastaví
-    assert any(e.get("volby_neopravitelne") for e in log)
+    assert len(klient.prompty) == 1
+    assert [v.cil for v in karta.volby] == [10, 10]
 
 
 # ------- O6: nouzová karta má platnou navigaci ----------------------------- #
-def test_nouzova_karta_ma_platne_volby_jedna_hrana(valid_mapa):
-    # uzel 8 má jedinou hranu → 10
-    uzel = valid_mapa.uzel(8)
+def test_nouzova_karta_ma_volby_z_grafu_jedna_hrana(valid_mapa):
+    uzel = valid_mapa.uzel(8)  # jediná hrana → 10
     karta = _nouzova_karta(uzel, _koncept(), valid_mapa)
-    assert _volby_v_karte_platne(karta, uzel, valid_mapa)
-    assert _extrahuj_cisla_voleb(karta.predni) == {10}
-    assert _extrahuj_cisla_voleb(karta.zadni) == {10}
+    assert [v.cil for v in karta.volby] == [10, 10]
+    assert "→ karta 10" in karta.zadni
 
 
-def test_nouzova_karta_ma_platne_volby_vice_hran(valid_mapa):
-    # uzel 7 má dvě hrany → {8, 9}
-    uzel = valid_mapa.uzel(7)
+def test_nouzova_karta_ma_volby_z_grafu_vice_hran(valid_mapa):
+    uzel = valid_mapa.uzel(7)  # dvě hrany → [8, 9]
     karta = _nouzova_karta(uzel, _koncept(), valid_mapa)
-    assert _volby_v_karte_platne(karta, uzel, valid_mapa)
-    assert _extrahuj_cisla_voleb(karta.predni) == {8, 9}
+    assert [v.cil for v in karta.volby] == [8, 9]
 
 
 def test_nouzova_karta_cilova_karta_bez_voleb(valid_mapa):
     cil = next(u for u in valid_mapa.uzly if u.typ == TypUzlu.CIL)
     karta = _nouzova_karta(cil, _koncept(), valid_mapa)
-    assert _volby_v_karte_platne(karta, cil, valid_mapa)  # bez hran = vždy platné
-    assert _extrahuj_cisla_voleb(karta.predni) == set()  # žádné (falešné) →N
+    assert karta.volby == []
+    assert "epilog" in karta.zadni.lower()
 
 
-def test_nouzova_karta_ma_zadni_30_pro_core_rozcestnik(valid_mapa):
-    # uzel 2 → [3, 4]; uděláme 4 jako SIDE, aby uzel 2 potřeboval zadni_30
+def test_nouzova_karta_side_volba_dostane_flag(valid_mapa):
     valid_mapa.uzel(4).profil = Profil.SIDE
-    uzel = valid_mapa.uzel(2)
+    uzel = valid_mapa.uzel(2)  # hrany → [3, 4(SIDE)]
     karta = _nouzova_karta(uzel, _koncept(), valid_mapa)
     assert karta.zadni_30 is not None
-    assert _extrahuj_cisla_voleb(karta.zadni_30) == {3}  # jen CORE cíl
-    assert _volby_v_karte_platne(karta, uzel, valid_mapa)
+    assert "→ karta 3" in karta.zadni_30 and "→ karta 4" not in karta.zadni_30
 
 
 def test_napis_kartu_nouzova_karta_po_vycerpani_schema_pokusu(valid_mapa, valid_zadani):
     # model 3× vrátí nepoužitelný obsah (chybí povinná pole) → nouzová karta
-    # MUSÍ mít platnou navigaci, ne rozbité "Cesta pokračuje dál." bez čísel.
+    # s navigací složenou z grafu.
     klient = FakeKlient(cyklus={"nesmysl": True})
     uzel = valid_mapa.uzel(8)
     karta, fits, log = napis_kartu(klient, valid_zadani, _koncept(), valid_mapa, uzel,
                                    measurer=measurer_dle_delky)
     assert any(e.get("nouzova_karta") for e in log)
-    assert _volby_v_karte_platne(karta, uzel, valid_mapa)
+    assert [v.cil for v in karta.volby] == [10, 10]

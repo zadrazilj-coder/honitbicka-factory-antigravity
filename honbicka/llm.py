@@ -26,6 +26,7 @@ from pydantic import BaseModel, ValidationError
 
 DEFAULT_BASE_URL = "http://localhost:11434"
 DEFAULT_MODEL = "qwen3.6:27b"
+DEFAULT_EMBED_MODEL = "nomic-embed-text"  # #8: lokální embeddings pro okna zákazů
 DEFAULT_TIMEOUT_S = 600
 MAX_RETRY = 3  # spec §1: 3× retry s opravným promptem, pak tvrdý fail
 
@@ -140,6 +141,19 @@ def _http_transport(payload: dict[str, Any], timeout_s: float) -> dict[str, Any]
     return resp.json()
 
 
+def _http_embed(
+    base_url: str, model: str, vstupy: list[str], timeout_s: float
+) -> list[list[float]]:
+    """POST na Ollama /api/embed (#8). Vrací vektory ve stejném pořadí jako `vstupy`."""
+    import requests
+
+    resp = requests.post(
+        f"{base_url}/api/embed", json={"model": model, "input": vstupy}, timeout=timeout_s
+    )
+    resp.raise_for_status()
+    return resp.json().get("embeddings", [])
+
+
 DEFAULT_KEEP_ALIVE = "30m"  # L5: Ollama defaultně uvolní model po ~5 min nečinnosti
 
 
@@ -163,12 +177,25 @@ class OllamaKlient:
         transport: Transport | None = None,
         timeout_s: float = DEFAULT_TIMEOUT_S,
         keep_alive: str = DEFAULT_KEEP_ALIVE,
+        embed_model: str = DEFAULT_EMBED_MODEL,
     ) -> None:
         self.model = model
         self.base_url = base_url
         self.transport = transport or _http_transport
         self.timeout_s = timeout_s
         self.keep_alive = keep_alive
+        self.embed_model = embed_model
+
+    def embed(self, texty: list[str]) -> list[list[float]]:
+        """Vrátí embeddings textů přes lokální Ollama model (#8, /api/embed).
+
+        Používá se pro sémantická okna zákazů registru (podobnost mechanismů
+        řešení). Chyba/nedostupnost embed modelu se propaguje ven — volající
+        (`semantika.je_prilis_podobny`) ji chytí a měkce degraduje na přesnou
+        shodu, aby generace hry kvůli chybějícímu embed modelu nespadla."""
+        if not texty:
+            return []
+        return _http_embed(self.base_url, self.embed_model, texty, self.timeout_s)
 
     # -- veřejné API ------------------------------------------------------- #
     def generuj_json(

@@ -25,7 +25,12 @@ KONCEPT_DICT = {
 }
 KARTA_DICT = {
     "cislo": 1, "nazev": "Karta", "typ": "postava", "atmosfera": "A" * 300,
-    "predni": "U potoka je vidět stopa vody.", "zadni": "Výsledek.",
+    "uvod": "U potoka je vidět stopa vody.", "zaver": "Výsledek.",
+    "volby": [
+        {"text": "Volba A", "vysledek": "Vysledek A"},
+        {"text": "Volba B", "vysledek": "Vysledek B"},
+        {"text": "Volba C", "vysledek": "Vysledek C"},
+    ]
 }
 VERDIKT_DICT = {"check": "R1", "verdikt": True, "citace_karet": ["stopa"], "zduvodneni": "ok"}
 
@@ -49,6 +54,17 @@ class DispatchKlient:
             return dict(self.koncept)
         if "citace_karet" in props:
             return dict(self.verdikt)
+        if "skutecne_reseni" in props:
+            return {
+                "koncept": dict(self.koncept),
+                "skutecne_reseni": "Toto je skutecne reseni zapletky.",
+                "falesne_teorie_detaily": ["Falesna teorie 1 detail", "Falesna teorie 2 detail"],
+                "epilog": "Toto je epilog pribehu.",
+                "uzly_beaty": [
+                    {"cislo": u["cislo"], "nazev": u.get("nazev", f"Uzel {u['cislo']}"), "beat": f"Beat pro kartu {u['cislo']}", "rekvizity": []}
+                    for u in self.mapa_dict.get("uzly", [])
+                ]
+            }
         raise AssertionError("neznámé schéma")
 
 
@@ -56,7 +72,7 @@ class DispatchKlient:
 def _karta(cislo, predni):
     from honbicka.modely import Karta, TypUzlu
     return Karta(cislo=cislo, nazev="X", typ=TypUzlu.POSTAVA,
-                 atmosfera="Atmosféra.", predni=predni, zadni="Z.")
+                 atmosfera="Atmosféra.", uvod=predni, zaver="Z.")
 
 
 def test_redaktor_overi_existujici_citaci():
@@ -391,13 +407,13 @@ def test_faze4_redaktor_po_jednom_prime_volani():
 # ------- O2: vzorkování karet pro redakci --------------------------------- #
 def test_vzorkuj_karty_bez_mapy_vraci_vse():
     karty = [Karta(cislo=i, nazev="X", typ=TypUzlu.INFORMACE, atmosfera="A" * 320,
-                   predni="p", zadni="z") for i in range(1, 22)]
+                   uvod="p", zaver="z") for i in range(1, 22)]
     assert _vzorkuj_karty_pro_redakci(karty, None) == karty
 
 
 def test_vzorkuj_karty_vzdy_obsahuje_aha_a_klicove_svedectvi(valid_mapa_60):
     karty = [Karta(cislo=u.cislo, nazev="X", typ=u.typ, atmosfera="A" * 320,
-                   predni="p", zadni="z") for u in valid_mapa_60.uzly]
+                   uvod="p", zaver="z") for u in valid_mapa_60.uzly]
     vzorek = _vzorkuj_karty_pro_redakci(karty, valid_mapa_60, pocet_nahodnych=2)
     cisla_vzorku = {k.cislo for k in vzorek}
     assert valid_mapa_60.pozice_aha_uzel in cisla_vzorku
@@ -408,7 +424,7 @@ def test_vzorkuj_karty_vzdy_obsahuje_aha_a_klicove_svedectvi(valid_mapa_60):
 
 def test_vzorkuj_karty_je_deterministicky(valid_mapa_60):
     karty = [Karta(cislo=u.cislo, nazev="X", typ=u.typ, atmosfera="A" * 320,
-                   predni="p", zadni="z") for u in valid_mapa_60.uzly]
+                   uvod="p", zaver="z") for u in valid_mapa_60.uzly]
     a = _vzorkuj_karty_pro_redakci(karty, valid_mapa_60, pocet_nahodnych=3)
     b = _vzorkuj_karty_pro_redakci(karty, valid_mapa_60, pocet_nahodnych=3)
     assert [k.cislo for k in a] == [k.cislo for k in b]
@@ -416,7 +432,28 @@ def test_vzorkuj_karty_je_deterministicky(valid_mapa_60):
 
 def test_vzorkuj_karty_je_serazeny_podle_cisla(valid_mapa_60):
     karty = [Karta(cislo=u.cislo, nazev="X", typ=u.typ, atmosfera="A" * 320,
-                   predni="p", zadni="z") for u in valid_mapa_60.uzly]
+                   uvod="p", zaver="z") for u in valid_mapa_60.uzly]
     vzorek = _vzorkuj_karty_pro_redakci(karty, valid_mapa_60, pocet_nahodnych=3)
     cisla = [k.cislo for k in vzorek]
     assert cisla == sorted(cisla)
+
+
+def test_mapuj_cisla_uzlu(valid_mapa_60):
+    from honbicka.orchestrator import mapuj_cisla_uzlu
+    nova_mapa, mapping = mapuj_cisla_uzlu(valid_mapa_60, seed=42)
+    assert len(nova_mapa.uzly) == len(valid_mapa_60.uzly)
+    assert nova_mapa.uzly[0].cislo == mapping[1]
+    orig_edges = valid_mapa_60.uzly[0].hrany
+    mapped_edges = nova_mapa.uzly[0].hrany
+    for orig, mapped in zip(orig_edges, mapped_edges):
+        assert mapped.cil == mapping[orig.cil]
+
+
+def test_postav_html_obalky():
+    from honbicka.sazba.obalka import postav_html_obalky
+    html = postav_html_obalky("Testovaci tema")
+    assert "KARETNI OBALKA" in html or "Karetní obálka" in html or "KARETNÍ OBÁLKA" in html
+    assert "Testovaci tema" in html
+    assert "CHLOPEN A" in html or "CHLOPEŇ A" in html
+    assert "CHLOPEN B" in html or "CHLOPEŇ B" in html
+    assert "CHLOPEN C" in html or "CHLOPEŇ C" in html

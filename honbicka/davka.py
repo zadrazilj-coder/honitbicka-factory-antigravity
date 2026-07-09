@@ -79,6 +79,7 @@ def spust_davku(
     skiny_dir: str = "skiny",
     registr_cesta: str = "skiny/registr.md",
     zatridit: bool = True,
+    copypaste: bool = False,
 ) -> DavkaReport:
     """Vyrobí N her přes noc. Každá hra: téma-generátor (diverzita) → vyrob_hru.
     FAILED hra (LLM/validace/výjimka) nezastaví dávku (spec §10)."""
@@ -98,7 +99,7 @@ def spust_davku(
                 if zmeny:
                     zadani = zadani.model_copy(update=zmeny)
                 hra = vyrob_hru(zadani, klient, measurer=measurer, skiny_dir=skiny_dir,
-                                registr_cesta=registr_cesta, zatridit=zatridit)
+                                registr_cesta=registr_cesta, zatridit=zatridit, copypaste=copypaste)
                 report.vysledky.append(DavkaVysledek(
                     slug=hra.slug, stav=hra.report.stav.value,
                     seed=hra.report.seed, chyby=hra.report.chyby))

@@ -49,7 +49,15 @@ from honbicka.modely import (
     Uzel,
     VekPasmo,
     Zadani,
+    StoryBible,
+    SCHEMA_STORY_BIBLE,
+    UzelBeat,
+    KartaNavrh,
+    VolbaNavrh,
+    Volba,
+    TypUzlu,
 )
+from honbicka.sazba.obalka import uloz_pdf_obalky
 from honbicka.registr import (
     ZaznamRegistru,
     nacti_registr,
@@ -405,117 +413,168 @@ def _potrebuje_30_variantu(mapa: Mapa, uzel: Uzel) -> bool:
     )
 
 
-def _kontext_karty(mapa: Mapa, uzel: Uzel) -> dict:
+def _kontext_karty(mapa: Mapa, uzel: Uzel, story_bible: StoryBible | None = None) -> dict:
+    # Pořadí `sousedi` = pořadí hran uzlu – na něm stojí párování voleb
+    # (LLM vrací volby VE STEJNÉM POŘADÍ, cíle doplní `sestav_kartu`).
     sousedi = [
         {"cislo": h.cil, "nazev": (c.nazev if (c := mapa.uzel(h.cil)) else "?"),
          "podminka": h.podminka, "side": bool(c and c.profil == Profil.SIDE)}
         for h in uzel.hrany
     ]
+    
+    # Vyhledání příchozích uzlů pro vizuální kontinuitu (vazba na předchozí lokace)
+    prichozi_uzly = []
+    for u in mapa.uzly:
+        for h in u.hrany:
+            if h.cil == uzel.cislo:
+                prichozi_uzly.append(u)
+    prichozi = [
+        {"cislo": u.cislo, "nazev": u.nazev, "prostredi": u.prostredi, "region": u.region}
+        for u in prichozi_uzly
+    ]
+    
+    beat = story_bible.beat_pro_uzel(uzel.cislo) if story_bible else None
+    
     return {
         "sousedi": sousedi,
         "je_aha": uzel.cislo == mapa.pozice_aha_uzel,
         "klicove_svedectvi": uzel.klicove_svedectvi,
-        # Heuristika (O3): čísla uzlů zhruba sledují pořadí trunku, takže nižší
+        # Heuristika (O3): čísla uzlů zhruba sledují pořadí trunku, takže niž
         # číslo než AHA uzel = karta se hraje dřív. Není to grafově přesné
         # (větve/SIDE smyčky), jen orientační signál pro vypravěče.
         "pred_aha": uzel.cislo < mapa.pozice_aha_uzel,
+        "prichozi": prichozi,
+        "beat": beat.beat if beat else "",
+        "rekvizity": beat.rekvizity if beat else []
     }
-
 
 def _prompt_vypravec(
     zadani: Zadani, koncept: Koncept, uzel: Uzel, kontext: dict,
-    dve_varianty: bool, zkrat_o_pct: int | None, oprava_schematu: bool = False,
-    oprava_voleb: bool = False, oprava_slovnik: str | None = None,
+    zkrat_o_pct: int | None = None, oprava_schematu: bool = False,
+    oprava_poctu_voleb: bool = False, oprava_slovnik: str | None = None,
 ) -> str:
-    volby = "; ".join(
-        f"→{s['cislo']} {s['nazev']}" + (f" [podmínka: {s['podminka']}]" if s["podminka"] else "")
-        + (" (SIDE)" if s["side"] else "")
-        for s in kontext["sousedi"]
-    ) or "(cílová karta — bez voleb)"
-    cisla = sorted({s["cislo"] for s in kontext["sousedi"]})
+    sousedi = kontext["sousedi"]
+    n = len(sousedi)
     smi = []
     if kontext["je_aha"]:
-        smi.append("ZDE padá AHA odhalení — nech hráče poznat pravdu, ale neoznamuj ji přímo")
+        smi.append("ZDE padá AHA odhalení – nech hráče poznat pravdu, ale neoznamuj ji přímo")
     if kontext["klicove_svedectvi"]:
-        smi.append("nese klíčové svědectví (stopu k pravdě) — podej ho jako výpověď postavy")
-    pole = '"nazev", "atmosfera", "predni", "zadni"' + (', "zadni_30"' if dve_varianty else "")
+        smi.append("nese klíčové svědectví (stopu k pravdě) – podej ho jako výpověď postavy")
+    
+    is_linear = (n == 1) and (uzel.typ not in (TypUzlu.ONBOARDING, TypUzlu.CIL))
+    if is_linear:
+        n_prompt = 2
+        popisy = (
+            f"  1. volba vede na kartu „{sousedi[0]['nazev']}“ (přístup A)\n"
+            f"  2. volba vede na kartu „{sousedi[0]['nazev']}“ (přístup B)"
+        )
+        volby_instrukce = (
+            f'"volby" = seznam PŘESNĚ {n_prompt} objektů {{"text","vysledek"}}:\n'
+            f"{popisy}\n"
+            '  Obě volby vedou na stejné místo, ale představují různé akce nebo přístupy '
+            '(např. bezpečný vs. odvážný přístup, nebo použití předmětu). Každá musí mít '
+            'jiný text a výsledek!\n'
+            '  "text" = akce s herním důvodem, "vysledek" = co se po volbě stane.\n'
+            "  NIKDY nepiš šipky (->), čísla karet ani písmena voleb – navigaci "
+            "doplní systém sám.\n"
+        )
+    elif n:
+        n_prompt = n
+        popisy = "\n".join(
+            f"  {i + 1}. volba vede na kartu „{s['nazev']}“"
+            + (f" (podmínka: {s['podminka']})" if s["podminka"] else "")
+            + (" (vedlejší větev – jen v delší verzi hry)" if s["side"] else "")
+            for i, s in enumerate(sousedi)
+        )
+        volby_instrukce = (
+            f'"volby" = seznam PŘESNĚ {n} objektů {{"text","vysledek"}} v TOMTO pořadí:\n'
+            f"{popisy}\n"
+            '  "text" = akce s herním důvodem, "vysledek" = co se po volbě stane.\n'
+            "  NIKDY nepiš šipky (->), čísla karet ani písmena voleb – navigaci "
+            "doplní systém sám.\n"
+        )
+    else:
+        n_prompt = 0
+        volby_instrukce = (
+            '"volby" = prázdný seznam [] (cílová karta). Do "zaver" napiš sekci '
+            "konců (telegraficky) a větu „organizátor nyní přečte epilog“.\n"
+        )
+        
     zaklad = (
         f"Napiš JEDNU kartu č. {uzel.cislo} „{uzel.nazev}“ (typ {uzel.typ.value}).\n"
         f"Téma: {koncept.tema}. Věk: {zadani.vek.value}, tón: {zadani.ton or koncept.zanr}.\n"
-        f"Volby (zadní strana): {volby}.\n"
-        f"Vrať POUZE JSON s poli {pole}:\n"
-        '  "nazev" = název karty; "atmosfera" = atmosférický odstavec 300–500 znaků; '
-        '"predni" = příběh + volby (A/B…); "zadni" = výsledky voleb.\n'
-        'Příklad: {"nazev":"Kraj lesa","atmosfera":"Mezi kmeny se plazí mlha a čtvrté '
-        'světlo kdesi zhaslo…","predni":"Stojíš na kraji lesa. A) k potoku →2  B) na '
-        'mýtinu →3","zadni":"A) U potoka najdeš čerstvou stopu. B) Mýtina mlčí."}\n'
-        "Atmosférický odstavec (300–500 znaků) je POVINNÝ. Fyzický úkol vždy s příběhovým "
+        'Vrať POUZE JSON s poli "nazev", "atmosfera", "uvod", "zaver", "volby":\n'
+        '  "nazev" = název karty; "atmosfera" = atmosférický odstavec 300-500 znaků;\n'
+        '  "uvod" = příběh přední strany (2-4 věty, bez voleb);\n'
+        '  "zaver" = krátký text zadní strany (smí být prázdný řetězec);\n'
+        f"  {volby_instrukce}"
+        'Příklad: {"nazev":"Kraj lesa","atmosfera":"Mezi kmeny se plazí mlha...",'
+        '"uvod":"Stojíš na kraji lesu a stopa vede dvěma směry.","zaver":"",'
+        '"volby":[{"text":"Sejdi k potoku po čerstvé stopě",'
+        '"vysledek":"U potoka najdeš otisk obří tlapy"},'
+        '{"text":"Vydej se na mýtinu za zvukem zvonku",'
+        '"vysledek":"Mýtina mlčí, ale tráva je polehlá do kruhu"}]}\n'
+        "Atmosférický odstavec (300-500 znaků) je POVINNÝ. Fyzický úkol vždy s příběhovým "
         "důvodem (PROČ). Neúspěšná větev ať baví víc než úspěšná.\n"
     )
     if koncept.slovnik_zakazana:
-        # O4: slovník žánru (SKILL.md §SLOVNÍK ŽÁNRU / bod 10 — „žádné forbidden_terms").
         zaklad += (
             f"\nZAKÁZANÁ SLOVA pro tento žánr/věk (nikdy nepoužij, ani v jiném "
             f"tvaru): {', '.join(koncept.slovnik_zakazana)}.\n"
         )
-    # O3: kontext zápletky pro narativní soudržnost napříč kartami — pravda se
-    # NIKDY neoznamuje přímo (SKILL.md P0), tohle je jen skryté pozadí příběhu,
-    # ať karty ladí (stejné motivy, rekvizity, postavy), ne aby se citovalo.
     zaklad += (
-        f"\nSKRYTÉ POZADÍ PŘÍBĚHU (pro soudržnost — NIKDY neprozraď přímo, ani "
+        f"\nSKRYTÉ POZADÍ PŘÍBĚHU (pro soudržnost – NIKDY neprozraď přímo, ani "
         f"náznakem mimo AHA kartu): skutečné řešení je „{koncept.mechanismus_reseni}“; "
         f"klíčová rekvizita příběhu: „{koncept.klicova_rekvizita or koncept.tema}“.\n"
     )
+    if kontext.get("beat"):
+        zaklad += f"\nNARRATIVNÍ DĚJOVÝ BOD (BEAT) PRO TUTO KARTU (povinně zapracuj do příběhu úvodu): {kontext['beat']}\n"
+    if kontext.get("rekvizity"):
+        zaklad += f"Předměty/rekvizity na této kartě: {', '.join(kontext['rekvizity'])}\n"
+        
+    prichozi = kontext.get("prichozi", [])
+    if prichozi:
+        zaklad += "\nVIZUÁLNÍ KONTINUITA (Vazba na předchozí lokace):\n"
+        zaklad += "Hráč může na tuto kartu přijít z následujících míst. Pokud k tomu v popisu dojde, zapracuj vizuální kontinuitu (např. je-li předchozí karta hrad a tato louka, popiš hrad viditelný v dálce):\n"
+        for p in prichozi:
+            zaklad += f"  - Z karty #{p['cislo']} ({p['nazev']}) v prostředí '{p['prostredi']}' (region '{p['region']}')\n"
+
     if not kontext["je_aha"]:
         if kontext["pred_aha"]:
             zaklad += (
-                "Tato karta je PŘED odhalením — hráč pravdu ještě nezná, smíš jen "
+                "Tato karta je PŘED odhalením – hráč pravdu ještě nezná, smí jen "
                 "nenápadně naznačovat (barvy, předměty, chování postav), nikdy potvrdit.\n"
             )
         else:
             zaklad += (
-                "Tato karta je PO odhalení — hráč už pravdu zná, text na ni může "
+                "Tato karta je PO odhalení – hráč už pravdu zná, text na ni může "
                 "navazovat (dozvuky, reakce postav), ale nemusí ji opakovat.\n"
             )
-    if cisla:
-        zaklad += (
-            f"KRITICKÉ: čísla za šipkou (→) v `predni` i `zadni` MUSÍ být PŘESNĚ "
-            f"z množiny {cisla} — žádná jiná, a nikdy číslo této karty ({uzel.cislo}).\n"
-        )
     if smi:
         zaklad += "Tato karta: " + "; ".join(smi) + ".\n"
-    if dve_varianty:
-        zaklad += (
-            "Napiš DVĚ varianty zadní strany: `zadni` = plné volby (60min), "
-            "`zadni_30` = tytéž volby BEZ karet označených SIDE (30min). Příběh stejný.\n"
-        )
     if zkrat_o_pct:
         zaklad += (
-            f"\nPŘEDCHOZÍ karta přetekla A5. Zkrať text o ~{zkrat_o_pct} % — "
+            f"\nPŘEDCHOZÍ karta přetekla A5. Zkrať text o ~{zkrat_o_pct} % – "
             "ubírej z atmosférického odstavce, NIKDY z voleb/mechaniky."
         )
     if oprava_schematu:
         zaklad += (
-            f"\nPŘEDCHOZÍ odpověď neměla správná pole. Vrať PŘESNĚ pole {pole} "
-            "jako plochý JSON objekt (žádné vnořené struktury, žádné 'id')."
+            '\nPŘEDCHOZÍ odpověď neměla správná pole. Vrať PŘESNĚ pole "nazev", '
+            '"atmosfera", "uvod", "zaver", "volby" (seznam objektů '
+            '{"text","vysledek"}) – žádná jiná pole, žádné ' + "'id'."
         )
-    if oprava_voleb:
+    if oprava_poctu_voleb:
         zaklad += (
-            f"\nPŘEDCHOZÍ karta odkazovala na ŠPATNÁ čísla za šipkou (→). Volby MUSÍ "
-            f"vést PŘESNĚ na čísla {cisla} — zkontroluj a oprav VŠECHNY šipky."
+            f"\nPŘEDCHOZÍ odpověď měla ŠPATNÝ POČET voleb. Pole `volby` MUSÍ mít "
+            f"PŘESNĚ {n_prompt} položek, ve stejném pořadí jako seznam cílů výše."
         )
     if oprava_slovnik:
         zaklad += (
             f"\nPŘEDCHOZÍ karta obsahovala zakázané slovo „{oprava_slovnik}“. "
-            "Přepiš dotčenou větu tak, aby se toto slovo (ani žádný jeho tvar) "
-            "v textu VŮBEC neobjevilo — nahraď ho jiným, žánru/věku odpovídajícím výrazem."
+            "Přepiš dotčenou větu tak, aby se ovo slovo (ani žádný jeho tvar) "
+            "v textu VŮBEC neobjevil – nahraď ho jiným, žánru/věku odpovídajícím výrazem."
         )
     return zaklad
-
-
-# Regex „→ N" (číslo volby v textu karty) — pro ověření proti hranám grafu (O1).
-_SIPKA_CISLO = re.compile(r"→\s*(\d+)")
-
 
 def _extrahuj_cisla_voleb(text: str) -> set[int]:
     return {int(n) for n in _SIPKA_CISLO.findall(text)}
@@ -566,6 +625,49 @@ def _oprav_volby_deterministicky(karta: Karta, uzel: Uzel, mapa: Mapa) -> Karta:
     return karta
 
 
+def _volba_z_hrany(mapa: Mapa, hrana: Hrana, navrh: VolbaNavrh | None) -> Volba:
+    """Spáruje jednu hranu grafu s textem volby od LLM (nebo generickým)."""
+    text = navrh.text if navrh else "Pokračuj dál"
+    vysledek = navrh.vysledek if navrh else "Cesta pokračuje"
+    return Volba(text=text, vysledek=vysledek, cil=hrana.cil,
+                 podminka=hrana.podminka, side=bool(mapa.uzel(hrana.cil) and mapa.uzel(hrana.cil).profil == Profil.SIDE))
+
+
+def sestav_kartu(
+    navrh: KartaNavrh, uzel: Uzel, mapa: Mapa, *, doplnit: bool = False
+) -> Karta | None:
+    """Postaví Kartu z LLM návrhu: texty voleb se párují s hranami grafu PO
+    POŘADÍ; cíl/podmínku/side vlastní graf, LLM je nikdy nepíše (analýza §3 –
+    náhrada dřívějších O1 regex-kontrol, které měly prokázanou díru).
+
+    Volby navíc se tiše oříznou (ztráta květnatosti je bezpečná). Chybí-li
+    volby: `doplnit=False` → None (volající pošle opravný prompt),
+    `doplnit=True` → chybějící se doplní generickým textem (finální záchrana,
+    navigace je vždy úplná)."""
+    expected_len = 2 if (len(uzel.hrany) == 1 and uzel.typ not in (TypUzlu.ONBOARDING, TypUzlu.CIL)) else len(uzel.hrany)
+    if len(navrh.volby) < expected_len:
+        if not doplnit:
+            return None
+        navrh_volby = navrh.volby + [None] * (expected_len - len(navrh.volby))
+    else:
+        navrh_volby = navrh.volby[:expected_len]
+
+    if len(uzel.hrany) == 1 and len(navrh_volby) > 1:
+        volby = [
+            _volba_z_hrany(mapa, uzel.hrany[0], v)
+            for v in navrh_volby
+        ]
+    else:
+        volby = [
+            _volba_z_hrany(mapa, h, navrh_volby[i] if i < len(navrh_volby) else None)
+            for i, h in enumerate(uzel.hrany)
+        ]
+    return Karta(
+        cislo=uzel.cislo, nazev=navrh.nazev or uzel.nazev, typ=uzel.typ,
+        atmosfera=navrh.atmosfera, uvod=navrh.uvod, zaver=navrh.zaver, volby=volby,
+    )
+
+
 def _najdi_zakazane_slovo(karta: Karta, zakazana: list[str]) -> str | None:
     """O4: deterministická kontrola SLOVNÍKU ŽÁNRU (SKILL.md §SLOVNÍK ŽÁNRU /
     Patro 1 bod 10 — „žádné forbidden_terms"). Prohledá všechny textové strany
@@ -582,19 +684,12 @@ def _najdi_zakazane_slovo(karta: Karta, zakazana: list[str]) -> str | None:
     return None
 
 
-def _normalizuj_kartu(data: dict, uzel: Uzel) -> dict:
-    """Srovná drobné odchylky výstupu modelu (id→cislo, doplní typ/nazev)."""
+def _normalizuj_navrh(data: dict, uzel: Uzel) -> dict:
+    """Srovná drobné odchylky výstupu modelu (doplní typ/nazev)."""
     if not isinstance(data, dict):
         return {}
-    if "cislo" not in data:
-        data["cislo"] = data.get("id", uzel.cislo)
-    data.setdefault("typ", uzel.typ.value)
     data.setdefault("nazev", uzel.nazev)
     return data
-
-
-_PISMENA_VOLEB = "ABCDEFGH"
-
 
 def _nouzove_volby(hrany: list[Hrana]) -> str:
     """Bezpečné volby „A) Pokračuj → N" z hran uzlu (O6) — bez nich by
@@ -608,25 +703,32 @@ def _nouzove_volby(hrany: list[Hrana]) -> str:
 
 
 def _nouzova_karta(uzel: Uzel, koncept: Koncept, mapa: Mapa) -> Karta:
-    """Nouzová karta, když model 3× nevrátí validní obsah — hra se dokončí,
-    slabá karta je označena v logu (nikdy neshodí celý balíček, spec §4).
-    Volby (O6) se generují přímo z hran grafu, takže vždy odpovídají mapě
-    (na rozdíl od LLM textu je není třeba ověřovat přes _volby_v_karte_platne)."""
-    karta = Karta(
-        cislo=uzel.cislo, nazev=uzel.nazev, typ=uzel.typ,
-        atmosfera=f"({koncept.tema}) Toto místo skrývá další střípek příběhu; "
-                  "rozhlédni se a poskládej, co jsi dosud zjistil.",
-        predni=f"Zvaž, kudy dál. {_nouzove_volby(uzel.hrany)}",
-        zadni=f"Cesta pokračuje. {_nouzove_volby(uzel.hrany)}",
-    )
-    if _potrebuje_30_variantu(mapa, uzel):
-        hrany_core = [
-            h for h in uzel.hrany
-            if (c := mapa.uzel(h.cil)) is None or c.profil != Profil.SIDE
+    """Nouzová karta, když model 3x nevrátí validní obsah - hra se dokončí,
+    slabá karta je označena v logu (nikdy neshodí celý balíček, spec §4)."""
+    volby = []
+    expected_len = 2 if (len(uzel.hrany) == 1 and uzel.typ not in (TypUzlu.ONBOARDING, TypUzlu.CIL)) else len(uzel.hrany)
+    if len(uzel.hrany) == 1 and expected_len > 1:
+        volby = [
+            _volba_z_hrany(mapa, uzel.hrany[0], VolbaNavrh(text="Zkus projít bezpečně", vysledek="Podařilo se ti projít")),
+            _volba_z_hrany(mapa, uzel.hrany[0], VolbaNavrh(text="Zkus projít odvážně", vysledek="Prošel jsi dál")),
         ]
-        karta.zadni_30 = f"Cesta pokračuje. {_nouzove_volby(hrany_core)}"
-    return karta
+    else:
+        for h in uzel.hrany:
+            target_name = mapa.uzel(h.cil).nazev if mapa.uzel(h.cil) else f"Karta {h.cil}"
+            volby.append(_volba_z_hrany(mapa, h, VolbaNavrh(text=f"Jdi na: {target_name}", vysledek="Pokračuješ v cestě")))
+            
+    if uzel.typ == TypUzlu.CIL:
+        zaver = "Organizátor nyní přečte epilog."
+    else:
+        zaver = "Cesta pokračuje."
 
+    return Karta(
+        cislo=uzel.cislo, nazev=uzel.nazev, typ=uzel.typ,
+        atmosfera=f"({koncept.tema}) Toto místo skrývá další střípek příběhu; rozhlédni se.",
+        uvod="Zvaž, kudy dál.",
+        zaver=zaver,
+        volby=volby
+    )
 
 def _orez_atmosfery(karta: Karta, measurer: Measurer) -> list[FitCheck]:
     """Deterministický ořez: zkracuj atmosféru (nikdy mechaniku), dokud přední
@@ -645,50 +747,53 @@ def _orez_atmosfery(karta: Karta, measurer: Measurer) -> list[FitCheck]:
 
 def napis_kartu(
     klient: OllamaKlient, zadani: Zadani, koncept: Koncept, mapa: Mapa, uzel: Uzel,
-    *, measurer: Measurer, log: list[dict] | None = None,
+    *, measurer: Measurer, story_bible: StoryBible | None = None, log: list[dict] | None = None,
 ) -> tuple[Karta, list[FitCheck], list[dict]]:
-    """Napíše a fit-checkne jednu kartu. Max 3 pokusy o opravu (schéma, volby
-    ↔ hrany grafu — O1, zkrácení) přes LLM, pak deterministický fallback
-    (spec §4 FÁZE 3). Volby v textu MUSÍ odpovídat skutečným hranám uzlu —
-    jinak by vytištěná karta posílala hráče na špatné/neexistující číslo."""
-    log = log if log is not None else []
-    kontext = _kontext_karty(mapa, uzel)
+    """Vytvoří kompletní texty a volby pro jednu kartu (FAZE 3, spec §3/§4)."""
+    if log is None:
+        log = []
+    # 30 vs 60min verze (O2)
     dve = _potrebuje_30_variantu(mapa, uzel)
+    kontext = _kontext_karty(mapa, uzel, story_bible)
+
     zkrat: int | None = None
     oprava_schematu = False
     oprava_voleb = False
     oprava_slovnik: str | None = None
     karta: Karta | None = None
     fits: list[FitCheck] = []
+    
     for pokus in range(1, MAX_ITERACI_KARTA + 1):
-        prompt = _prompt_vypravec(zadani, koncept, uzel, kontext, dve, zkrat,
+        prompt = _prompt_vypravec(zadani, koncept, uzel, kontext, zkrat,
                                   oprava_schematu, oprava_voleb, oprava_slovnik)
-        data = _normalizuj_kartu(klient.generuj_json(Role.VYPRAVEC, prompt, SCHEMA_KARTA), uzel)
+        data = _normalizuj_navrh(klient.generuj_json(Role.VYPRAVEC, prompt, SCHEMA_KARTA), uzel)
         try:
-            karta = Karta.model_validate(data)
+            navrh = KartaNavrh.model_validate(data)
         except ValidationError as exc:
-            oprava_schematu = True  # model nevrátil správná pole → oprav a zkus znovu
+            oprava_schematu = True
             oprava_voleb = False
             oprava_slovnik = None
             log.append({"faze": 3, "karta": uzel.cislo, "pokus": pokus,
                         "schema_chyba": exc.error_count()})
             continue
         oprava_schematu = False
-        karta.cislo, karta.typ = uzel.cislo, uzel.typ  # čísla/typ řídí graf, ne LLM
-        if not dve:
-            karta.zadni_30 = None
 
-        if not _volby_v_karte_platne(karta, uzel, mapa):
-            oprava_voleb = True  # „→N" v textu neodpovídá hranám grafu (O1) → oprav
-            oprava_slovnik = None
-            log.append({"faze": 3, "karta": uzel.cislo, "pokus": pokus, "volby_chyba": True})
-            continue
+        karta = sestav_kartu(navrh, uzel, mapa)
+        if karta is None:
+            if pokus == MAX_ITERACI_KARTA:
+                # Last resort: complete deterministically
+                karta = sestav_kartu(navrh, uzel, mapa, doplnit=True)
+                log.append({"faze": 3, "karta": uzel.cislo, "volby_doplneny_deterministicky": True})
+            else:
+                oprava_voleb = True
+                oprava_slovnik = None
+                log.append({"faze": 3, "karta": uzel.cislo, "pokus": pokus, "volby_pocet_chyba": 1})
+                continue
         oprava_voleb = False
 
         fits = fit_check_karty(karta, measurer=measurer)
         log.append({"faze": 3, "karta": uzel.cislo, "pokus": pokus,
                     "ok": all(f.verdikt for f in fits)})
-        # O4: zakázané slovo musí pryč, i kdyby fit-check prošel — gate na return.
         zakazane_slovo = _najdi_zakazane_slovo(karta, koncept.slovnik_zakazana)
         if zakazane_slovo:
             oprava_slovnik = zakazane_slovo
@@ -698,31 +803,25 @@ def napis_kartu(
         oprava_slovnik = None
         if all(f.verdikt for f in fits):
             return karta, fits, log
+            
         prekroceni = max(
             (f.vyska_mm - f.limit_mm) / f.limit_mm for f in fits if not f.verdikt
         )
         zkrat = max(10, round(prekroceni * 100) + 5)
-    if karta is None:  # model 3× nevrátil validní obsah → nouzová karta
+        
+    if karta is None:
         karta = _nouzova_karta(uzel, koncept, mapa)
         log.append({"faze": 3, "karta": uzel.cislo, "nouzova_karta": True})
-    elif not _volby_v_karte_platne(karta, uzel, mapa):
-        # Poslední pokus měl validní obsah, ale volby stále neodpovídají grafu.
-        karta = _oprav_volby_deterministicky(karta, uzel, mapa)
-        if _volby_v_karte_platne(karta, uzel, mapa):
-            log.append({"faze": 3, "karta": uzel.cislo, "volby_opraveny_deterministicky": True})
-        else:
-            # Víc než 1 platný cíl = nejednoznačná oprava; zaznamenat pro report.chyby.
-            log.append({"faze": 3, "karta": uzel.cislo, "volby_neopravitelne": True})
-    # O4: LLM 3× nevyřešilo zakázané slovo — Python nemá bezpečnou náhradu (hrozí
-    # rozbitá gramatika), tak jen zaznamená pro report.chyby (jako výše u voleb).
-    zbyle_zakazane = _najdi_zakazane_slovo(karta, koncept.slovnik_zakazana)
-    if zbyle_zakazane:
-        log.append({"faze": 3, "karta": uzel.cislo, "slovnik_neopravitelne": zbyle_zakazane})
-    fits = _orez_atmosfery(karta, measurer)  # deterministický fallback
-    log.append({"faze": 3, "karta": uzel.cislo, "orez": "atmosfera",
-                "ok": all(f.verdikt for f in fits)})
+        fits = fit_check_karty(karta, measurer=measurer)
+    else:
+        # Check for forbidden words on the last try if it failed
+        zbyle_zakazane = _najdi_zakazane_slovo(karta, koncept.slovnik_zakazana)
+        if zbyle_zakazane:
+            log.append({"faze": 3, "karta": uzel.cislo, "slovnik_neopravitelne": zbyle_zakazane})
+        fits = _orez_atmosfery(karta, measurer=measurer)
+        log.append({"faze": 3, "karta": uzel.cislo, "orez": "atmosfera",
+                    "ok": all(f.verdikt for f in fits)})
     return karta, fits, log
-
 
 def _synchronizuj_nazvy_uzlu(mapa: Mapa, karty: list[Karta]) -> None:
     """SC3: vypravěč si pro každou kartu vymyslí vlastní název (žádoucí —
@@ -747,34 +846,37 @@ def _synchronizuj_nazvy_uzlu(mapa: Mapa, karty: list[Karta]) -> None:
 
 def faze3_vypravec(
     klient: OllamaKlient, zadani: Zadani, koncept: Koncept, mapa: Mapa,
-    *, measurer: Measurer, log: list[dict] | None = None,
+    *, measurer: Measurer, story_bible: StoryBible | None = None, log: list[dict] | None = None,
 ) -> tuple[list[Karta], list[FitCheck], list[dict]]:
-    """Napíše všechny karty mapy (v pořadí čísel) s okamžitým fit-checkem."""
-    log = log if log is not None else []
+    """Generuje text všech karet postupně (FÁZE 3). Přepisuje názvy v mapě."""
+    if log is None:
+        log = []
     karty: list[Karta] = []
-    fit: list[FitCheck] = []
+    vsechny_fits: list[FitCheck] = []
+    
+    # Řadíme deterministicky dle čísla uzlu, aby generování bylo stabilní
     for uzel in sorted(mapa.uzly, key=lambda u: u.cislo):
         karta, fits, log = napis_kartu(klient, zadani, koncept, mapa, uzel,
-                                       measurer=measurer, log=log)
+                                       measurer=measurer, story_bible=story_bible, log=log)
         karty.append(karta)
-        fit.extend(fits)
+        vsechny_fits.extend(fits)
+        
     _synchronizuj_nazvy_uzlu(mapa, karty)
-    return karty, fit, log
+    return karty, vsechny_fits, log
 
 
 # --------------------------------------------------------------------------- #
-# FÁZE 4 — REDAKTOR (LLM-judge R1–R7 s ověřenými citacemi)
+# FÁZE 4 – REDAKTOR (LLM-judge R1–R7 s ověřenými citacemi)
 # --------------------------------------------------------------------------- #
 REDAKCE_CHECKY: dict[str, str] = {
-    "R1": "Pravda se odvozuje průnikem ≥2 nezávislých stop; žádný uzel ji neprozradí.",
+    "R1": "Pravda se odvozuje průnikem ≥ 2 nezávislých stop; žádný uzel ji neprozradí.",
     "R2": "Každá falešná teorie má důkazy i jednu nevysvětlenou stopu; vše vysvětlí jen řešení.",
     "R3": "Postavy mají konflikty a protiřečí si; lži plynou z motivací.",
     "R4": "Neúspěšné větve jsou zábavnější než úspěšné (P9).",
     "R5": "Každý fyzický úkol má příběhový důvod (PROČ).",
-    "R6": "Jazyk a humor odpovídají věku a tónu.",
+    "R6": "Jazyk a humor odpovídají věku and tónu.",
     "R7": "Hra nepůsobí jako kopie předchozích (metahra).",
 }
-
 
 def _karty_blob(karty: list[Karta]) -> str:
     return "\n".join(
@@ -957,6 +1059,7 @@ def _pdf_sady(
     core_karty = [k for k in karty if k.cislo in core_cisla]
     komponenty = len({c for u in mapa.uzly for c in u.komponenty}) or 2
     try:
+        uloz_pdf_obalky(os.path.join(hra_dir, "obalka.pdf"), koncept.tema)
         uloz_pdf_karet(karty, os.path.join(hra_dir, "karty_60min.pdf"),
                        nadpis=koncept.tema, zadni_strana="zadni")
         uloz_pdf_karet(core_karty, os.path.join(hra_dir, "karty_30min.pdf"),
@@ -983,6 +1086,195 @@ def _pdf_sady(
 # --------------------------------------------------------------------------- #
 # Celý stavový stroj (FÁZE 0–5)
 # --------------------------------------------------------------------------- #
+
+# --------------------------------------------------------------------------- #
+# Pomocne funkce pro sifrovani cisel, Story Bible and korektury (spec 3.4)
+# --------------------------------------------------------------------------- #
+def mapuj_cisla_uzlu(mapa: Mapa, seed: int) -> tuple[Mapa, dict[int, int]]:
+    """Deterministicky zamicha cisla uzlu na nahodna unikatni (opakovatelnost)."""
+    import random
+    rng = random.Random(seed)
+    n = len(mapa.uzly)
+    
+    # Vygenerujeme nahodnou permutaci cisel 1..n
+    cisla = list(range(1, n + 1))
+    rng.shuffle(cisla)
+    
+    mapping = {i + 1: cisla[i] for i in range(n)}
+    
+    nove_uzly = []
+    for uzel in mapa.uzly:
+        kopie = uzel.model_copy(deep=True)
+        kopie.cislo = mapping[uzel.cislo]
+        for hrana in kopie.hrany:
+            hrana.cil = mapping[hrana.cil]
+        nove_uzly.append(kopie)
+        
+    nova_mapa = mapa.model_copy(deep=True)
+    nova_mapa.uzly = nove_uzly
+    nova_mapa.pozice_aha_uzel = mapping[mapa.pozice_aha_uzel]
+    
+    for u in nova_mapa.uzly:
+        u.klicove_svedectvi = (u.cislo == nova_mapa.pozice_aha_uzel)
+        
+    return nova_mapa, mapping
+
+
+def _prompt_story_bible(zadani: Zadani, koncept: Koncept, mapa: Mapa) -> str:
+    node_list = []
+    for uzel in sorted(mapa.uzly, key=lambda u: u.cislo):
+        soused_ids = [h.cil for h in uzel.hrany]
+        smi_info = []
+        if uzel.cislo == mapa.pozice_aha_uzel:
+            smi_info.append("AHA uzel (odhaleni pravdy)")
+        if uzel.klicove_svedectvi:
+            smi_info.append("klicove svedectvi")
+        info_str = f" (#{', '.join(smi_info)})" if smi_info else ""
+        node_list.append(
+            f"- Karta #{uzel.cislo} (Typ: {uzel.typ.value}, Region: {uzel.region}, Prostredi: {uzel.prostredi}){info_str} -> vede na: {soused_ids}"
+        )
+    nodes_str = "\n".join(node_list)
+
+    prompt = (
+        f"Jsi hlavni narativni designer and architekt pribehovych her. Tvor scenar (Story Bible) pro hru na tema: '{koncept.tema}'.\n"
+        f"Zanr: {koncept.zanr}, Ton: {zadani.ton or 'atmosfericky'}.\n"
+        f"Cilovy vek hracu: {zadani.vek.value}, Format: {zadani.format_hracu}.\n"
+        f"Archetyp zvratu: {koncept.archetyp.value}.\n"
+        f"Pravdivych stop celkem: {koncept.pravdive_stopy}. Falesnych teorii: {koncept.falesne_teorie}.\n\n"
+        f"Topologie grafu hry (uzly a cesty):\n{nodes_str}\n\n"
+        f"Slepe ulicky (karty typu SLEPA) musi vzdy obsahovat cenne informace, napovedy nebo uzitecné predmety (napruklad Hvezdne mince, klice, lucerny), ktere hraci pomohou prekonat prekazky na jinych kartach nebo ktere muze vymenit u obchodnika (uzel OBCHODNIK) - tim udelas pruzkum slepych ulicek herne atraktivni.\n\n"
+        f"Vytvor kompletni pribehove pozadi, ktere propojuje celou hru. Vrat JSON splnujici schema StoryBible s temito poli:\n"
+        f"- 'koncept': koncept hry (zkopiruj hodnoty)\n"
+        f"- 'skutecne_reseni': Podrobne vysvetleni skutenho reseni zapletky (cca 3-4 vety).\n"
+        f"- 'falesne_teorie_detaily': Seznam popisu falesnych teorii.\n"
+        f"- 'epilog': Zaverecny pribeh (epilog) pro precteni na konci hry.\n"
+        f"- 'uzly_beaty': Seznam objektu pro KAZDOU kartu v mape (pole: 'cislo', 'nazev', 'beat', 'rekvizity'). "
+        f"V poli 'beat' popis presne and strucne dejovy bod and clue pro danou kartu. Karta #{mapa.pozice_aha_uzel} (AHA uzel) musi nest zlomovy bod odhaleni pravdy.\n\n"
+        f"Vrat striktne platny JSON odpovidajici schematu StoryBible."
+    )
+    return prompt
+
+
+def faze2a_story_bible(
+    klient: OllamaKlient, zadani: Zadani, koncept: Koncept, mapa: Mapa,
+    copypaste: bool, log: list[dict], hra_dir: str
+) -> StoryBible:
+    """Vytvori Story Bible (Faze 2a) bud pres copy-paste nebo lokalne."""
+    prompt = _prompt_story_bible(zadani, koncept, mapa)
+    
+    if copypaste:
+        os.makedirs(hra_dir, exist_ok=True)
+        prompt_cesta = os.path.join(hra_dir, "prompt_story_bible.txt")
+        json_cesta = os.path.join(hra_dir, "story_bible.json")
+        
+        with open(prompt_cesta, "w", encoding="utf-8") as f:
+            f.write(prompt)
+            
+        print("\n" + "="*80)
+        print("PROMPT PRO STORY BIBLE VYGENEROVAN!")
+        print(f"Zkopirujte obsah souboru: {prompt_cesta}")
+        print("Vlozte jej do sveho placeneho frontier modelu (Claude, GPT-4, atd.).")
+        print(f"Vystupni JSON ulozte do: {json_cesta}")
+        print("Jakmile soubor ulozite, stisknete ENTER pro pokracovani...")
+        print("="*80 + "\n")
+        
+        while True:
+            input()
+            if not os.path.isfile(json_cesta):
+                print(f"Soubor {json_cesta} nebyl nalezen. Zkuste to znovu a stisknete ENTER...")
+                continue
+            try:
+                with open(json_cesta, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                sb = StoryBible.model_validate(data)
+                log.append({"faze": "2a", "akce": "copypaste_story_bible", "ok": True})
+                print("Story Bible uspesne nactena a zvalidovana!")
+                return sb
+            except Exception as e:
+                print(f"Chyba validace JSONu: {e}")
+                print("Opravte soubor and stisknete ENTER pro novy pokus...")
+    else:
+        # Lokalni Ollama
+        data = klient.generuj_json(Role.ARCHITEKT, prompt, SCHEMA_STORY_BIBLE)
+        sb = StoryBible.model_validate(data)
+        log.append({"faze": "2a", "akce": "local_story_bible", "ok": True})
+        
+        # Ulozime ji pro kontrolu
+        os.makedirs(hra_dir, exist_ok=True)
+        with open(os.path.join(hra_dir, "story_bible.json"), "w", encoding="utf-8") as f:
+            f.write(sb.model_dump_json(indent=2))
+        return sb
+
+
+def faze4b_korektura_copypaste(karty: list[Karta], log: list[dict], hra_dir: str) -> list[Karta]:
+    """Umozni opravu gramatiky karet pres externi paid model."""
+    prompt_cesta = os.path.join(hra_dir, "prompt_korektura.txt")
+    json_original = os.path.join(hra_dir, "karty_original.json")
+    json_opraveno = os.path.join(hra_dir, "karty_opraveno.json")
+    
+    # Ulozime original pro reference
+    karty_data = [k.model_dump() for k in karty]
+    with open(json_original, "w", encoding="utf-8") as f:
+        json.dump(karty_data, f, indent=2, ensure_ascii=False)
+        
+    prompt = (
+        "Jsi korektor ceskeho jazyka. Oprav stylistiku a gramatiku nasledujicich karet tistene hry. "
+        "Karty are reprezentovany jako JSON pole objektu. U kazdeho objektu oprav cesky text v polich:\n"
+        "- 'atmosfera' (zachovej delku cca 300-500 znaku)\n"
+        "- 'uvod'\n"
+        "- 'zaver'\n"
+        "- u kazde volby v seznamu 'volby' oprav pole 'text' and 'vysledek'.\n\n"
+        "KRITICKE UPOZORNENI:\n"
+        "1. NIKDY nemen 'cislo' karty, 'typ' karty ani pocet voleb v seznamu 'volby'.\n"
+        "2. V poli 'vysledek' u voleb zachovej cilove cislo za sipkou (napr. '-> karta 10' nebo '-> 10' na konci textu, pokud se tam vyskytuje).\n"
+        "3. Vrat POUZE platny JSON odpovidajici puvodni strukture.\n\n"
+        f"Karty k oprave:\n{json.dumps(karty_data, indent=2, ensure_ascii=False)}"
+    )
+    
+    with open(prompt_cesta, "w", encoding="utf-8") as f:
+        f.write(prompt)
+        
+    print("\n" + "="*80)
+    print("PROMPT PRO KOREKTURU KARET VYGENEROVAN!")
+    print(f"Zkopirujte obsah souboru: {prompt_cesta}")
+    print("Vlozte jej do sveho placeneho frontier modelu (Claude, GPT-4, atd.).")
+    print(f"Opraveny JSON ulozte do: {json_opraveno}")
+    print("Jakmile soubor ulozite, stisknete ENTER pro pokracovani...")
+    print("="*80 + "\n")
+    
+    while True:
+        input()
+        if not os.path.isfile(json_opraveno):
+            print(f"Soubor {json_opraveno} nebyl nalezen. Zkuste to znovu a stisknete ENTER...")
+            continue
+        try:
+            with open(json_opraveno, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            # Validace integrity
+            nove_karty = []
+            for i, item in enumerate(data):
+                orig_k = karty[i]
+                orig_k_dict = orig_k.model_dump()
+                orig_k_dict["nazev"] = item.get("nazev", orig_k.nazev)
+                orig_k_dict["atmosfera"] = item.get("atmosfera", orig_k.atmosfera)
+                orig_k_dict["uvod"] = item.get("uvod", orig_k.uvod)
+                orig_k_dict["zaver"] = item.get("zaver", orig_k.zaver)
+                
+                for j, v_item in enumerate(item.get("volby", [])):
+                    orig_k_dict["volby"][j]["text"] = v_item.get("text", orig_k.volby[j].text)
+                    orig_k_dict["volby"][j]["vysledek"] = v_item.get("vysledek", orig_k.volby[j].vysledek)
+                
+                nove_karty.append(Karta.model_validate(orig_k_dict))
+                
+            log.append({"faze": 4, "akce": "copypaste_korektura", "ok": True})
+            print("Korektura karet uspesne nactena a zvalidovana!")
+            return nove_karty
+        except Exception as e:
+            print(f"Chyba validace nebo nesoulad struktury: {e}")
+            print("Opravte soubor a stisknete ENTER pro novy pokus...")
+
+
 def vyrob_hru(
     zadani: Zadani,
     klient: OllamaKlient,
@@ -993,6 +1285,7 @@ def vyrob_hru(
     registr_cesta: str = "skiny/registr.md",
     zatridit: bool = True,
     pouzij_scaffolder: bool = True,
+    copypaste: bool = False,
 ) -> Hra:
     """Provede jednu hru celým stavovým strojem FÁZE 0–5 (spec §4).
 
@@ -1070,9 +1363,19 @@ def vyrob_hru(
                        mapa=None, karty=[], report=report)
         mapa = f1.mapa
         iterace_faze1 = f1.iterace_celkem
+    # ŠIFROVÁNÍ (PERMUTACE) ČÍSEL UZLŮ (opakovatelnost, spec 3.4)
+    mapa, cislo_mapping = mapuj_cisla_uzlu(mapa, seed)
+    log.append({"faze": 1, "akce": "shuffled_nodes", "mapping": cislo_mapping})
 
-    # FÁZE 3 — vypravěč karta po kartě + A5 fit-check
-    karty, fit, log = faze3_vypravec(klient, zadani, koncept, mapa, measurer=measurer, log=log)
+    # FÁZE 2a — Story Bible (Dějová osnova, spec 3.4)
+    story_bible = faze2a_story_bible(klient, zadani, koncept, mapa, copypaste, log, hra_dir)
+
+    # FÁZE 3 — vypravěč karta po kartě + A5 fit-check (předáváme story_bible)
+    karty, fit, log = faze3_vypravec(klient, zadani, koncept, mapa, measurer=measurer, story_bible=story_bible, log=log)
+    
+    # COPY-PASTE JAZYKOVÁ KOREKTURA KARET
+    if copypaste:
+        karty = faze4b_korektura_copypaste(karty, log, hra_dir)
 
     # Průběžný zápis: koncept/mapa/karty se uloží HNED po FÁZE 3, ať drahou
     # generaci nezahodí případný pád redaktora/sazby (spec §4 — jedna vada balíček neshodí).

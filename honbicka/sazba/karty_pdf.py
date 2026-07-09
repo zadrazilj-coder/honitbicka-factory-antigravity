@@ -77,8 +77,12 @@ def _kalibrace() -> tuple[str, str]:
     return predni, zadni
 
 
-def postav_html_karet(karty: list[Karta], *, nadpis: str, zadni_strana: str = "zadni") -> str:
-    """Sestaví HTML tiskové sady. `zadni_strana`='zadni' (60min) | 'zadni_30' (30min)."""
+def postav_html_karet(
+    karty: list[Karta], *, nadpis: str, predni_strana: str = "predni",
+    zadni_strana: str = "zadni",
+) -> str:
+    """Sestaví HTML tiskové sady. 60min: výchozí strany; 30min:
+    `predni_strana='predni_30'` + `zadni_strana='zadni_30'` (filtr SIDE voleb)."""
     kal_predni, kal_zadni = _kalibrace()
     strany = [kal_predni, kal_zadni]
     for i in range(0, len(karty), 2):
@@ -86,7 +90,7 @@ def postav_html_karet(karty: list[Karta], *, nadpis: str, zadni_strana: str = "z
         a = dvojice[0]
         b = dvojice[1] if len(dvojice) > 1 else None
         # Přední arch: A vlevo, B vpravo.
-        strany.append(_arch(_slot(a, "predni", "left"), _slot(b, "predni", "right")))
+        strany.append(_arch(_slot(a, predni_strana, "left"), _slot(b, predni_strana, "right")))
         # Zadní arch: STEJNÉ pořadí (levá zůstává levá po překlopení po delší straně).
         strany.append(_arch(_slot(a, zadni_strana, "left"), _slot(b, zadni_strana, "right")))
     telo = "".join(strany)
@@ -106,8 +110,10 @@ def zkontroluj_pocet_stran(html: str, pocet_karet: int) -> bool:
 
 
 def uloz_pdf_karet(
-    karty: list[Karta], cesta: str, *, nadpis: str, zadni_strana: str = "zadni"
+    karty: list[Karta], cesta: str, *, nadpis: str, predni_strana: str = "predni",
+    zadni_strana: str = "zadni",
 ) -> None:
     """Vyrenderuje tiskovou sadu do PDF (vyžaduje GTK; jinak SazbaNedostupna)."""
-    html = postav_html_karet(karty, nadpis=nadpis, zadni_strana=zadni_strana)
+    html = postav_html_karet(karty, nadpis=nadpis, predni_strana=predni_strana,
+                             zadni_strana=zadni_strana)
     zapis_pdf(html, cesta)

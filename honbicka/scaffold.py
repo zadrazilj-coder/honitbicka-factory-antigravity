@@ -23,7 +23,13 @@ import statistics
 
 from honbicka.modely import Hrana, Koncept, Mapa, Pravdivost, Profil, TypUzlu, Uzel, Zadani
 from honbicka.orchestrator import LosovaneParametry
-from honbicka.validatory.simulace import POCET_SIMULACI_DEFAULT, pasmo_aha, povinne_uzly, simuluj
+from honbicka.validatory.simulace import (
+    POCET_SIMULACI_DEFAULT,
+    ocekavana_pozice_aha,
+    pasmo_aha,
+    povinne_uzly,
+    simuluj,
+)
 from honbicka.validatory.skalovani import komponenty_rozsah
 
 AHA_UZEL_DEFAULT = 10  # postava mezi uzlem 7 a uzlem 8 (~70 % trunku)
@@ -43,17 +49,25 @@ def _regiony(zadani: Zadani) -> tuple[str, str]:
 POCET_SIMULACI = POCET_SIMULACI_DEFAULT
 
 
-def _median_aha(mapa: Mapa, zadani: Zadani, profil: int, uzel: int) -> float | None:
+def _pozice_aha(mapa: Mapa, zadani: Zadani, profil: int, uzel: int) -> float | None:
+    """Pozice AHA (v čase, %) pro daný kandidátní uzel — analyticky (absorbující
+    Markovův řetězec, deterministické a hladké). Fallback na mediánovou simulaci,
+    kdyby analytika vrátila None (uzel není dominátor / degenerovaný graf)."""
+    analyticka = ocekavana_pozice_aha(mapa, zadani, profil, uzel)
+    if analyticka is not None:
+        return analyticka
+    mapa_kopie_aha = mapa.pozice_aha_uzel
     mapa.pozice_aha_uzel = uzel
     pcts = [r.pozice_aha_pct for r in simuluj(mapa, zadani, profil, pocet=POCET_SIMULACI)
             if r.pozice_aha_pct >= 0]
+    mapa.pozice_aha_uzel = mapa_kopie_aha
     return statistics.median(pcts) if pcts else None
 
 
 def _vyber_aha_uzel(mapa: Mapa, zadani: Zadani) -> int:
-    """Vybere uzel na povinné trase, jehož mediánová pozice AHA (v čase) je
+    """Vybere uzel na povinné trase, jehož ANALYTICKÁ pozice AHA (v čase) je
     nejblíž STŘEDU pásma pro 60min i 30min zároveň — nejbezpečnější vůči
-    variabilitě simulace (ne krajní hodnota pásma). Deterministické."""
+    okrajům pásma. Deterministické (žádná simulační variabilita — #5)."""
     low, high = pasmo_aha(mapa.archetyp, zadani.je_volny_format)
     stred = (low + high) / 2
     core = mapa.podgraf_core()
@@ -65,8 +79,8 @@ def _vyber_aha_uzel(mapa: Mapa, zadani: Zadani) -> int:
     )
     nejlepsi, nejlepsi_skore = AHA_UZEL_DEFAULT, 1e18
     for d in kandidati:
-        m60 = _median_aha(mapa, zadani, 60, d)
-        m30 = _median_aha(core, zadani, 30, d)
+        m60 = _pozice_aha(mapa, zadani, 60, d)
+        m30 = _pozice_aha(core, zadani, 30, d)
         if m60 is None or m30 is None:
             continue
         # skóre = nejhorší vzdálenost od středu → preferuje centrovaný uzel
@@ -118,15 +132,72 @@ def postav_skeleton(
     # Uzel 13 = léčitel (engine: stavy „vždy léčitelné", herní list na něj
     # odkazuje — v mapě dřív chyběl). Uzel 14 = postava (dřív generický sběr).
     # Spolu s CORE (7,8,10) dávají 60min postavy=4+lecitel=1=5 (§SKÁLOVÁNÍ 5–7).
-    add(13, T.LECITEL, reg_b, [14, 15], S)
-    add(14, T.POSTAVA, reg_b, [16], S, kostka=True)
-    add(15, T.SLEPA, reg_b, [13], S)
-    add(16, T.STREZ, reg_b, [17], S, komp_=([komp[2]] if komp_min > 2 else None))
-    add(17, T.INFORMACE, reg_b, [18], S, kostka=True)
-    add(18, T.GATED, reg_b, [19], S, komp_=([komp[3]] if komp_min > 3 else None))
-    add(19, T.OBCHODNIK, reg_b, [20], S)
-    add(20, T.SMYCKA, reg_b, [21], S)
-    add(21, T.JEDNOSMER, reg_b, [7], S)                     # návrat do CORE (uzel 7)
+        # --- SIDE region B (jen 60min), sbíhá se do uzlu 7 před AHA ---------- #
+    LAYOUTS = [
+        # Layout 1: Puvodni
+        {
+            13: [14, 15], 15: [13],
+            14: [16], 16: [17], 17: [18], 18: [19], 19: [20], 20: [21], 21: [7]
+        },
+        # Layout 2: Prohozeni STREZ (16) a POSTAVA (14)
+        {
+            13: [16, 15], 15: [13],
+            16: [14], 14: [17], 17: [18], 18: [19], 19: [20], 20: [21], 21: [7]
+        },
+        # Layout 3: Prohozeni GATED (18) a OBCHODNIK (19)
+        {
+            13: [14, 15], 15: [13],
+            14: [16], 16: [17], 17: [19], 19: [18], 18: [20], 20: [21], 21: [7]
+        },
+        # Layout 4: Prohozeni SMYCKA (20) a JEDNOSMER (21)
+        {
+            13: [14, 15], 15: [13],
+            14: [16], 16: [17], 17: [18], 18: [19], 19: [21], 21: [20], 20: [7]
+        },
+        # Layout 5: Skakavy prubeh
+        {
+            13: [17, 15], 15: [13],
+            17: [16], 16: [14], 14: [18], 18: [19], 19: [20], 20: [21], 21: [7]
+        },
+        # Layout 6: Kramar (19) jako prvni pred prekazkami
+        {
+            13: [19, 15], 15: [13],
+            19: [14], 14: [16], 16: [17], 17: [18], 18: [20], 20: [21], 21: [7]
+        },
+        # Layout 7: Smycka (20) jako druhy uzel
+        {
+            13: [14, 15], 15: [13],
+            14: [20], 20: [16], 16: [17], 17: [18], 18: [19], 19: [21], 21: [7]
+        },
+        # Layout 8: Rozsirene propojeni
+        {
+            13: [14, 15], 15: [13],
+            14: [18], 18: [16], 16: [17], 17: [19], 19: [20], 20: [21], 21: [7]
+        },
+        # Layout 9: Gated pred strednim dilem
+        {
+            13: [18, 15], 15: [13],
+            18: [14], 14: [16], 16: [17], 17: [19], 19: [20], 20: [21], 21: [7]
+        },
+        # Layout 10: Delsi vetveni na zacatku SIDE
+        {
+            13: [15, 14], 15: [13],
+            14: [17], 17: [16], 16: [18], 18: [19], 19: [20], 20: [21], 21: [7]
+        }
+    ]
+
+    layout_idx = params.seed % len(LAYOUTS)
+    lay = LAYOUTS[layout_idx]
+
+    add(13, T.LECITEL, reg_b, lay[13], S)
+    add(14, T.POSTAVA, reg_b, lay[14], S, kostka=True)
+    add(15, T.SLEPA, reg_b, lay[15], S)
+    add(16, T.STREZ, reg_b, lay[16], S, komp_=([komp[2]] if komp_min > 2 else None))
+    add(17, T.INFORMACE, reg_b, lay[17], S, kostka=True)
+    add(18, T.GATED, reg_b, lay[18], S, komp_=([komp[3]] if komp_min > 3 else None))
+    add(19, T.OBCHODNIK, reg_b, lay[19], S)
+    add(20, T.SMYCKA, reg_b, lay[20], S)
+    add(21, T.JEDNOSMER, reg_b, lay[21], S)
 
     # MD2: přiřaď pravdivostní hodnotu INFORMACE uzlům dle koncept-počtu
     # pravdivých stop (SKILL.md §INFORMACE JSOU ODMĚNA) — dřív šlo jen o číslo
