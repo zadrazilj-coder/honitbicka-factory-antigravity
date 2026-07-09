@@ -507,13 +507,30 @@ def _prompt_vypravec(
         '  "nazev" = název karty; "atmosfera" = atmosférický odstavec 300-500 znaků;\n'
         '  "uvod" = příběh přední strany (2-4 věty, bez voleb);\n'
         '  "zaver" = krátký text zadní strany (smí být prázdný řetězec);\n'
-        f"  {volby_instrukce}"
-        'Příklad: {"nazev":"Kraj lesa","atmosfera":"Mezi kmeny se plazí mlha...",'
-        '"uvod":"Stojíš na kraji lesu a stopa vede dvěma směry.","zaver":"",'
-        '"volby":[{"text":"Sejdi k potoku po čerstvé stopě",'
-        '"vysledek":"U potoka najdeš otisk obří tlapy"},'
-        '{"text":"Vydej se na mýtinu za zvukem zvonku",'
-        '"vysledek":"Mýtina mlčí, ale tráva je polehlá do kruhu"}]}\n'
+        f"  {volby_instrukce}\n"
+        "=== STYL PSANÍ A STRUKTURA KARTY ===\n"
+        "Každá karta musí být malou dobrodružnou scénou, nikoli pouze popisem lokace. Hráč musí prožívat svět očima postavy.\n"
+        "Struktura karty:\n"
+        "  1. VTAŽENÍ DO DĚJE: Popisuj svět skrze smysly (zrak, sluch, pocity, napětí). Hráč stojí uprostřed dění.\n"
+        "  2. UDÁLOST: Na každé kartě se musí něco stát (někdo promluví, spadne věc, objeví se stopa, zvuk atd.). Nikdy se hráč jen rozhlíží.\n"
+        "  3. NOVÁ OTÁZKA: Karta musí vyvolat novou otázku (Kdo tu byl? Kam vedou stopy? Co znamená symbol?).\n"
+        "  4. ODMĚNA: Předměty a informace nikdy pouze nevyjmenovávej, dej jim význam (např. 'Pod kamenem objevíš starý mosazný klíč. Je těžší, než bys čekal...').\n"
+        "  5. CLIFFHANGER: Konec karty (před volbami) musí končit napětím (tiché prásknutí dveří, tichý šepot, stín atd.).\n\n"
+        "=== PŘÍKLAD KVALITNÍ HERNÍ KARTY ===\n"
+        "KARTA 2\n"
+        "Opuštěné divadlo Globe\n\n"
+        "Když se přiblížíš k dřevěné budově divadla Globe, zaskřípou pod tvými kroky stará prkna. Mlha se líně převaluje přes prázdné hlediště a na okamžik máš pocit, že v horních ochozech někdo sedí. Když zvedneš hlavu, místo je opět prázdné.\n\n"
+        "Na jevišti se povalují potrhané kostýmy, převržená kulisa hradu a několik stránek divadelního textu. Všechny jsou promočené, jen jediná zůstala suchá, jako by ji sem někdo položil teprve před chvílí. Než ji stihneš přečíst, vítr ji odnese do tmy zákulisí.\n\n"
+        "Uprostřed jeviště leží jednoduchá divadelní maska. Když ji vezmeš do ruky, na její vnitřní straně objevíš drobný nápis: „Nehledej autora. Hledej důvod.“ Písmena jsou vyrytá nožem tak hluboko, že musela vznikat dlouhé hodiny. Pod nimi je zaschlý otisk červeného vosku se znakem divadla Globe. Masku si raději schováš. Netušíš proč, ale máš pocit, že ji budeš ještě potřebovat.\n\n"
+        "Získáváš předmět: Maska herce\n\n"
+        "V tu chvíli se z hlubin divadla ozve tiché prásknutí dveří. Na okamžik bys přísahal, že někdo zašeptal tvoje jméno.\n\n"
+        "=== GENERÁTOR VOLEB ===\n"
+        "Volby nejsou pouze směrovky (Ne: 'Jdi doleva', 'Jdi doprava'). Každá možnost musí stručně vysvětlit, proč by si ji hráč vybral, a slibovat jiný druh zážitku:\n"
+        "  - A) Prozkoumáš zákulisí. Vítr odnesl stránku právě tím směrem. Pokud ji někdo schoval schválně, možná tam najdeš další stopy. Navíc ten zvláštní zvuk přišel právě odtud.\n"
+        "  - B) Vrátíš se zpět do Southwarku. Divadlo je podivné a tísnivé. Možná bude rozumnější nejprve zjistit, co o ztraceném rukopisu vědí místní lidé.\n"
+        "  - C) Obejdi divadlo a sleduj stopy za budovou. Ve vlhké hlíně za jevištěm jsou jasně vidět čerstvé otisky bot. Jsou příliš nové na to, aby patřily hercům...\n\n"
+        "=== POCIT HRÁČE ===\n"
+        "Po přečtení každé karty by si měl hráč říct alespoň jednu z těchto vět: 'Tak tohle jsem nečekal.', 'Musím zjistit, co je za těmi dveřmi.', 'Ten člověk něco tají.', 'Doufám, že jsem si vybral správně.'\n\n"
         "Atmosférický odstavec (300-500 znaků) je POVINNÝ. Fyzický úkol vždy s příběhovým "
         "důvodem (PROČ). Neúspěšná větev ať baví víc než úspěšná.\n"
     )
