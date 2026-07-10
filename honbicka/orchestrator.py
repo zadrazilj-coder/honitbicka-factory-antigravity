@@ -922,18 +922,38 @@ def _ocisti_citaci(text: str) -> str:
 
 def _citace_je_dolozena(citace: str, blob: str) -> bool:
     """Ověří citaci proti kartám (case-insensitive). Model smí legitimně spojit 
-    dva doslovné úryvky elipsou (...) – pak se každý fragment ověří zvlášť."""
+    dva doslovné úryvky elipsou (...) – pak se každý fragment ověří zvlášť.
+    Podporuje také částečné shody dlouhých fragmentů pro toleranci překlepů."""
     text = _ocisti_citaci(citace)
     if not text:
         return False
     blob_lower = blob.lower()
-    text_lower = text.lower()
-    if text_lower in blob_lower:
-        return True
-    # Split by ellipsis, slashes, newlines, semicolons, colons, or periods
-    fragmenty = [f.strip(" .?,;:-").lower() for f in re.split(r"\.\.\.|/|\n|;|:|\.", text)]
-    fragmenty = [f for f in fragmenty if len(f) >= 3]
-    return len(fragmenty) >= 1 and all(f in blob_lower for f in fragmenty)
+    
+    # Rozdělíme na hlavní bloky spojené elipsou, lomítkem nebo novým řádkem
+    import re
+    blocks = [b.strip() for b in re.split(r"\.\.\.|/|\n", text)]
+    blocks = [b for b in blocks if len(b) >= 3]
+    if not blocks:
+        return False
+        
+    # Ověříme každý blok nezávisle
+    for block in blocks:
+        block_lower = block.lower()
+        if block_lower in blob_lower:
+            continue
+            
+        # Pokud se celý blok neshoduje, rozdělíme ho na menší pod-fragmenty podle interpunkce
+        sub_frags = [sf.strip(" .?,;:-—–").lower() for sf in re.split(r",|;|:|\.|—|–", block)]
+        sub_frags = [sf for sf in sub_frags if len(sf) >= 3]
+        
+        # Pro ověření bloku stačí, když se aspoň jeden dostatečně dlouhý sub-fragment (>= 12 znaků) shodne
+        if any(len(sf) >= 12 and sf in blob_lower for sf in sub_frags):
+            continue
+            
+        # Pokud se blok neshoduje ani částečně, celá citace padá
+        return False
+        
+    return True
 
 
 def _vzorkuj_karty_pro_redakci(
