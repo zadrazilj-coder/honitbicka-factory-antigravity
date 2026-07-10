@@ -1,0 +1,129 @@
+:: StoryTitle
+princezna-a-drak_60min_qwen3-vl8b
+
+:: StoryData
+{"ifid": "00000000-0000-4000-8000-000000000000", "format": "Harlowe", "format-version": "3.3.8"}
+
+:: 1 obchodnik 19 [obchodnik SIDE] {"position":"100,100"}
+//Podzemní obchod na konci starého hradu vydává vonnou mlhu z pěti stříbrných mýdel. Mléčná záře tiché klenby připomíná plaménky, které se dotýkají jen části skrytého nápisu na hladkém kamenném stole. Vzduch je teplý a vůně živých květin se ztrácí v tiché hloubce podzemí. Mimo středu přístupu k obchodnímu pultu, za skrytou části hradby, visí vznášející se lampa s měsíčním žárem a svými šťastnými zvuky tichá hloubka podzemí. Za tímto pohledem se otevírá další přístup k obchodnímu prostorek – neviditelné mřížky na stěnách vyžadují jen nápovědu od klíče, který máš uvnitř tajného dveře. Ticho je tak silné, že zde hlasem prochází skryté představy o tom, co se stalo v minulosti. A když se podíváš do hlubiny obchodního prostoru, spatříš jen pustoší, ale někdo právě odjel.//
+Jsi u předpokládaného obchodu – nečekaným přístupem z hradu. Váš hlavní úkol je koupit hvězdné mince, které jste objevili na louce, aby mohly být využity pro následné výzvy. Obchodník sedí za stříbrnou pultem s výrazným zářivým obličejem. Před sebou má dvě žluté sklenice, do kterých hned po příchodu jeho ruka proplácení hvězdných mincí. Je tu taky malá částka peněz z návštěvy na louce, ale obchodník neříká nic o tom.
+[[A) Naplať hvězdné mince a podnikni riziko->9 gated 18]]
+[[B) Zdejší obchodník není skutečný – zkus si přijít zpět k hradu->9 gated 18]]
+
+:: 2 lecitel 13 [lecitel SIDE] {"position":"320,100"}
+//V lesním okolí roste hustý smrkový les s jemnou mlhou. Lesní trasa je pokrytá tenkým prachem a všude kolem jsou vidět zbytky rozbitých kamenů. Nad hlavou se ozývají tiché šepotání stromů a při každém kroku máš pocit, že někdo skrývá v krku mlhy. Zářivé slunce proniká jen do zpětných úhlových částí lesa. Nejprve se zdá, že je to pouze prázdná ulička, ale pokud se dál podíváš, na stromu u vstupu leží starý kus papíru s nápisem: „Nech mě tam být.“//
+Lecitel ti ukazuje cestu do lesa a dává klíč od první překážky. Uprostřed lesní trasy se ozve tiché šepotání stromů, kterým následuje jemná mlha. Na okraji cesty uvidíš rozbitou kameninu s několika starými papíry přeskládanými na trávě.
+[[A) Prozkoumáš záznamy na stromě. Všechny papíry mají stejný nápis: „Nech mě tam být.“->12 postava 14]]
+[[B) Přečteš papíry na trávě. Jejich obsah vyznačuje směr k záhadnému stromu.->3 Slepa 15: Zlatý průchod]]
+
+:: 3 Slepa 15: Zlatý průchod [slepa SIDE] {"position":"540,100"}
+//Vzduch v slepém úzkém průchodě šepotá zlato a černou stínovou tekutinou. Srdce s kameny na podlaze tleskají pod tvými nohama, jako by se chtěly vynořit. Nad hlavou se pohybují tiché zvuky – škrábání něčeho těžkého přes kamenný povrch, chrapotání kovu. V průchodě je plno jisker, které svítí a žháře jako hvězdy v nočním nebi, ale ve skutečnosti jsou to jen zlato na černém pozadí. Kde jsi? Ještě se nikdo nesnažil překonat tyto steny a procestovat tuto uličku. Ticho není poklidné, ale vyhrošťující – jako by ti chtěly zůstat uvnitř.//
+Slepá ulička je plná nekonečných kamenů a hvězdných mincí. Ty se opatrně procházíš podél jejich svítících hran, cítíš teplé vibrace v podlaze. Za chvilku si uvědomuješ, že jsi uprostřed něčeho velkého a tajemného, přitom ztratil čas, který běžel ve stínovém průchodě. Nenápadně jsi spatřil na jednom z kamenů malou zlatou stopu – její tvary vypadají jako obrysy něčeho velkého, ale neznámého.
+[[A) Využij hvězdných mincí a postupuj dál, aby ses dostal do hradu->2 lecitel 13]]
+[[B) Začni pátrat po skrytém vchodu – zlatá stopa může být klíčem->2 lecitel 13]]
+
+:: 4 Smyčka 20 [smycka SIDE] {"position":"760,100"}
+//Pod stromem s červenými listy se třepí vichřice. Dřevo pod nohama má tichou hrušku a skrz lístky prosvítá měsíc, který na zemi zanechává šedé stopy. Ticho je takové, že slyšíš svůj dech a každé škrábání větví připomíná tajný hlas. Uprostřed lesa se pohybující stíny pohybují jako živé stvoření, ale nejsou to jen větrovky – někdo tu je večer.//
+Máš před očima starý dřevěný okraj smluvy. Přes klenutou díru se tichou pohledem na lesní průchod, který vede do temného údolí. Mapa leží zpod kamenů a tvrdá ruka ji přebral.
+[[A) Zjisti podrobnosti o mapě->21 Jednosmer 21]]
+[[B) Začni hledat průchod->21 Jednosmer 21]]
+
+:: 5 Princ a Drak z Tmavého Hradu [informace CORE] {"position":"980,100"}
+//Větrné štíty hradu se pohybují podél černých stromů, kde praská vlna světla od tajemných okén. Na zemi jsou vyryté symboly červeného vosku a na hlavách jevíků vysokým trávníkem se odráží obloha. Vzduch voní po spáleném dřevě, ale při pohledu na západ je v něm tajný chlad, jako by tohle místo nebylo živé a jen posloužilo jako hrobka. Na okraji louky se mihotavé zvuky slyšet, ale při držení prstů na tváři ještě více vycítíš, že někdo tajně řeší tvoje jméno.//
+Vcházíš do hradu Tmavého Hradu a okamžitě ti přijde na úmysl. Ve středu dvora se vynořuje mladý drak, jehož kůže je jako černá čepice a ocas vykvetl červenou květinou. Vzduch ho otočil výrazem, který ti říká: „Tady byla princezna – ale nejednala jinak.“
+[[A) Otevři dveře k hradu a sejděš do podzemí. Je tam prázdné, ale uvnitř náhodou objevíš tajemný předmět – červený list s vnitřním osvětlením. Ten by mohl prozradit skutečnost.->10 strez 5]]
+[[B) Pusť mladého draka a přejdi na louku. Tam ses opatrně postavíš do tajemné zahrady, která je podobná místu, kde vypadal prvek princezny.->10 strez 5]]
+
+:: 6 Rozcesti 2 [rozcesti CORE] {"position":"100,260"}
+//Vzduch v lesním údolí je tichý a zároveň naplněný šepotem listů, které se pohybují bez větru. Všude kolem stromů září slabá světla měsíců – nejsou přímo uvnitř stromů, ale jejich kmeny odrážejí něco jiného, jako by se v nich skrývala temná tajemství. Vzduch má tón zvuků, které se neodráží do okolí – šepot proutků nebo hlas přírody, který není slyšet. Na každém kameni jsou jemné stopy po nohách, ale nic nesvědčuje o tom, že by všichni tito lidé procházeli stejnou cestou.//
+Stojíš před třemi cestami, každá se svým světlem. První vedie k dalekému hradu s mohutnými věžemi a vysokým zvonečkem – pravdivý cestovatel. Druhá se ztrácí mezi stromy, odkud vyzařuje chladné šepotání – zlé kouzlo. Třetí je čistá, ale nejkrásnější cesta, která má své vlastní tajemství.
+[[A) Vezmi pravdivý cestovatel->15 Princezna a drak (15)]]
+[[B) Zažij zlé kouzlo->5 Princ a Drak z Tmavého Hradu]]
+[[C) Pojď klidnou cestou->2 lecitel 13]]
+
+:: 7 Slepa 9 [slepa CORE] {"position":"320,260"}
+//Vlhký dech mlhy zasáhl tvé oči, když se vyklouzlaš ze stromového průzkumu. Světlo měsíce prosvítá skrz listy jen některými okny a na tichém trpaslíkověm kameni leží otevřená kniha, která se nezabudne. Zadní strana mlhy má tajemnou barvu červeného šampaňského – jako by někdo skrýval tuhý svět za zavřenými očima. Všude kolem tichá hrozba, ale ve vzduchu je slabá vůně starých knih a mokrého dřeva.//
+V mlze stojí před nástrojovou stěnou – zastavený vítr chladne tvé ruce. Na stěně je vyrytý symbol: červená květina s dvěma listy, které se kroutí jako hrozivá větev. Když jsi přišel, měl jsi pocit, že tady někdo bydlí... nebo spí. Nad hlavou ušla část mlhy a zůstalo ticho – až na ten šepot: 'Nech to být...', který se rozbil v prázdnost. Ve středu místnosti leží stará mapa lesa, jejíž okraj je poškozen a vyplněn červenou rukopisem.
+[[A) Otevřeš knihu otevřít krevní zlatý symbol. Tím se objeví příběh o princezně, která nese květinu s jinou barvou než ostatní.->16 Postava 7: Princezna a drak]]
+[[B) Zkousneš mapu na střední část, kde je nějaký okraj zničen. Můžeš ji přeměnit.->16 Postava 7: Princezna a drak]]
+
+:: 8 Princezna a drak [informace SIDE] {"position":"540,260"}
+//Na louce se vznáší zlaté šťastné tmy. Místní stromy jsou pokryté tenkým světlem, které se mění podle chladu kůry. Vzduch má vonnou chuť jarních plodů. Pod nohama hříbá vysoké trsy rostliny s červenými květy a bílými listy, které se třepetají při každém kroku.//
+Jednou jsi zjistil, že princezna ještě neváží. Všude kolem nás roste vysoká tráva a stromy hovoří tichými hlasy o jejím příteli – draku. Drak žije ve stromě, který se nachází v centru louky.
+[[A) Vydáš se k stromu s úmyslem prozkoumat jeho trnité kořeny->1 obchodnik 19]]
+[[B) Vydáš se přímo k trnitému kořenu stromu->1 obchodnik 19]]
+
+:: 9 gated 18 [gated SIDE] {"position":"760,260"}
+//Na hranici lesa stojí černá dřevěná brána s nápisem: KDO JE VSTUPUJÍCÍ, MUSÍ VYKÁZAT SVŮJ DŮVOD. Hluboko v tiché zemi se ozývají šepotavé hlasy, jako by tam někdo prohledával stromy. Zima má na sobě kouř od starých ohňů a kolem rostou trnité keře s ostny jako stříbrné dráty. V záře měsíce vidíš, jak se dým z hrobu šplhá ve vzdálené straně lesa. Za bránou je temnota bez konce – ale někde tam stojí silueta draka s jemnější hlavou než ostatní.//
+Princovna našla tajný průchod do podzemního lesa, kterým se mohla dostat k jejímu dívčinu přátel. Ale brána je uzavřená, vysvětluje šepot z hrobu: 'Pouze ten, kdo má klíč, může projdout.'
+[[A) Zkus překonat bránu bez klíče – použij rychlost a úzkost.->4 Smyčka 20]]
+[[B) Zkus najít klíč ve slepé uličce vedle brány.->4 Smyčka 20]]
+
+:: 10 strez 5 [strez CORE] {"position":"980,260"}
+//Vzduch v lesním údolí třepetá jako čistá voda. Vzdálenejší stromy se odrážejí ve vodě podzemního jezírka, které září slabým modrým světlem. Zde a tam se třesou kmeny jako by někdo houpal na nich. Půda je pokrytá tenkým vrstvou bílého prášku – nezvyklé jemné prachy, který má vůni květin a železa. Když pohledem procházíš podél stromů, uvidíš náznak stopy: kameny jsou přesunuty na stranu a skryté za jedním z nich je zlatá hlavice s nevysloveným hlasem. Nejistota tichého džungle má takový účinek, že se zdáš být ve dvou místech najednou.//
+Vzduch kolem tebe ztěžuje dýchání jako v tlustém prachovém písku. Za kamenem skrytou cestu vedoucí ke stromům s červenými listy jsi uviděl stopu nejakého velkého stvoření – třásně země před tebou vzniká podél kamenů až k lesnímu průchodnému tunelu. Podstavec neslyšíš, ale na chvíli se zdá, že jsi cítil pohled, který tě prohledává. V tomto údolí je předčasná nebezpečnost.
+[[A) Využij přístupu A: Prozkoumáš stromy s červenými listy a sleduješ stopu přes cestu. Zatímco jsi se otočil, uslyšel jsi šepot nad těbou – někdo ti vytahuje záda.->14 gated 6]]
+[[B) Využij přístupu B: Prozkoumáš tunel a hledáš skryté cesty. Vzhledem k tomu, že jsi měl pocit, že někdo tě sleduje, jsi se rozhodl být opatrnější.->14 gated 6]]
+
+:: 11 Záhadný les pod hradem [cil CORE] {"position":"100,420"}
+//Pod stromy leží štěrk a vlhkost vůně jeho korek. Vzduch je čirý, ale zvuky jsou přetřásány pohybujícím se listím, které tajně proplétá údolí. Ve vzduchu plaví světelné skvrny od neznámých jisker – připomínají toho však nesmrtelného draka na okraji lesa, který se snaží utéci. Každý krok způsobuje šepot v řádkách stromu. Na větvích jsou přivázány listy, které nevydávají žádné slovo.//
+Vstoupil jsi do lesa pod hradem a našel tajné průchodce – kolem nich jsou stromy pokryté zlatými květy, které ti poskytují ochranu před větrem. Vysoká větev s úzkou šňůrkou se dalo přeskočit. Hledal jsi cestu k princeznom, ale tu nechceš vidět – máš pocit, že drak je blíž.
+
+:: 12 postava 14 [postava SIDE] {"position":"320,420"}
+//Podzimní večer v lesním údolí. Vlhký vzduch vůně vlhkého listí a starých kmenů, které se táhnou mezi stromy jako šedé sloupce. Myslíš si, že tady někdo zvuk neviditelného překážky, ale je to jen hluboký dech draka, který ti projde kůží. Když se dotknouši své ruky na hladkém kameni pod stromem, cítíš slabou vibraci – jako by tam vyskočila nějaká starostlivá mysl. Ale nejvíce tě trápí zvuk jejich špiček, které se pohybují mezi kameny a hladkými větvemi. Myslíš si, že přišel někde jinam, ale je to jen náhodná vlna vzduchu. Snažíš se zaznamenat každý zvuk jako možné stopu, když se zvedne šepot nad tichou vodou. Myslíš si, že je to předtím, než uvidíš jakéhosi člověka stojícího na okraji lesa. Ale je to jen náhodný zvuk. Všechno vypadá jako hrozba, ale žádnou nejsme, protože nevíš proč. A co když tu draka není? Nebo kde se skrývala ta princezna?//
+Stojíš na okraji lesního údolí za tím, co v něm bylo dřív. Hladké stromy a hluboká zahrada listí ti poskytují cestu k malému hradu s červenou bránou. Na prvním pohledu je to starý hrad, ale když se podíváš blíže, je někde tu přirozenost a současná architektura. Zadní strana brány odhaluje tajemný znak: jediné stromy kolem mají zlatou listinu na vnitřní straně. Že jsi cestoval, ale nevíš proč. Hledáš princeznu a draka – ale nikde není nic. Až teď, když se podíváš blíže, vidíš malou stopu na prvním pohledu: kus papíru s nápisem 'Začni u brány' ve tvaru listů. Ale to je jen zbytek starého dokumentu. Na okamžik se zastavuješ a cítíš, že bys měl vyzkoušet první možnost – dát klíč na bráně a otevřít ji. A potom si uvědomuješ, že už jsi nechal papír na zemi.
+[[A) Udej klíč přesně na klenbu brány jako v návodu->17 Strez 16 - Princezna a drak]]
+[[B) Udej klíč přesně na základnu brány jako v návodu->17 Strez 16 - Princezna a drak]]
+
+:: 13 Princezna a drak (13) [postava CORE AHA] {"position":"540,420"}
+//Vzduch nad lesním potokem je těžký, zahaleny kouřem šedivých listů. Světlo měsíce proniká mezi stromy jako prstence stříbrného mléka. U vodopádu se ztrácí hlas a slyšíš jen to, co vzniká tajemným šepotem – někde za kameny, v hlubinách lesa, přichází otevření stromů. Prsty uchoptí vlhkou zemi a cítíš, že jsi ve světě, který si nebyl nikdy měl myslet.//
+Pod vodopádem se před tebou objevuje princezna s červenými vlasy rozpuštěnými do tmy. Její oblečení je prudce zbarveno, ale jasné a nezranitelné jako stříbrná voda. Mluví ti o kouzelnickém úmyslu – měsícovém tajemství, které se projevuje v lesním rostlinství. Její pohled je plný strachu a naděje, jako by chtěla něco poslat. 'Musím dát draka zpátky do hory,' řekne. 'Ale jen když budeš mít na sestři svou právnu.'
+[[A) Podá jejímu prstenu klíč, který mám v ruce. Řekni: 'Myslíš, že se mi podaří?'->19 Princezna a drak (19)]]
+[[B) Vyklopěj se k drakovím zuby, aby sis prohlídnul všechny důkazy o kouzelnickém úmyslu. Druhým prsty si udeř na své rameno a řekni: 'Jdeme tímto směrem.'->19 Princezna a drak (19)]]
+
+:: 14 gated 6 [gated CORE] {"position":"760,420"}
+//Podél hradby lesa se tichě pohybují stromy jako ochranné dveře. Vzduch je vůněm mokrého jehličí a starých kamenů, která tají pod pokožkou světla. Každý dech se rozlévá do chladného ovzduší, při němž se vypíná i hluk z okolního lesa. Za hradbami slyšíš jen tiché šepotání listů a praskliny uvnitř kamenů, které byly vytesány na pohledné dveře. Zvuk větru se mísí s náznakem něčeho starého – jako by za tímto hradbou ležel obrovský objekt nebo jen zastavil čas.//
+Vstupuješ do podzemních průchodů, kde se lesní dřevo střídá s mokrými kamennými vláknovitými překryvy. Uprostřed hradby stojí starý dřevěný klíč, jehož první půlka je prokletá a druhá – nesnesitelně teplá. Sleduješ jakoukoliv změnu v tomto prostoru, ale nic se nestane – hlavní okno před tebou ukazuje na hradbu lesa s kamenem ve tvaru dveří. Když jdeš kolem klíče, náhle se před tebou otevírá cesta, která vede za hradbami.
+[[A) Zatímco se procházíš lesem, spatřuješ tajný průchod skrz kameny. Vstoupíš dovnitř a objevíš starou místnost s červeným krbem. Ticho je nabité napětím – jako by chtělo začít řeč.->16 Postava 7: Princezna a drak]]
+[[B) Za hradbami zjistíš, že před tebou stojí nezřetelná červená skupina. Představuje drak v tajném prostoru. Sleduješ jak se kolem něj pohybují listy a záhadné květiny.->16 Postava 7: Princezna a drak]]
+
+:: 15 Princezna a drak (15) [informace CORE] {"position":"980,420"}
+//Měsíc září skrz husté stromy lesa, kterým prochází tenkým vůní tajemství. Vzduch je vlhký, jako by se přehrával do jiného světa, kde každý krok způsobuje jemné vibrace. Zvuky jsou tlumené – hlavně šepot prstů na kamenech a tiché šplouchání vody, která stéká ze skalního útvaru. Podél cesty se objevují jemné živé skvrny světlejší než okolní tmy; pohybují se jako by měly vlastní mysl. Každý krok způsobuje malou vibraci, která zvětšuje tajemství ve vzduchu.//
+Stojíš na okraji lesa, kde se dřívější cesta přestala táhnout. Měsíc svítí vysoko nad úrovní stromů a tvoje nohy po každém kroku pociťují slabý vibrací – jako by někdo ti předával zprávu prostřednictvím prstů. Uprostřed hladkého skalního útvaru, který odkrývá tajemství měsíce a hvězd, se tyčí několik kamenů s bílými značkami, vyrytými jako by je zaschla voda. Na jednom z nich visí třpytkavá přívěška, která chvěje ve větru a pohybující se jakž takž po těchto kamenách.
+[[A) Zkus si prohlédnout skvrny na kamenech. Některé mají zvukovou stopu, která ti připomíná pohyb měsíce a hvězd.->10 strez 5]]
+[[B) Vyskoč a přeskoči skvrny na kamenech. Můžeš se dostat k druhému úpatí, které má vlastní zvukovou stopu.->10 strez 5]]
+
+:: 16 Postava 7: Princezna a drak [postava CORE] {"position":"100,580"}
+//Chladivý větřík tleská o kůru stromu, kterým jsi prošel před chvílí. Vzdálený šum lesního potoka se ztrácí v mrazivém vzduchu. Na trávě pod nohama seskládaly drobné skvrny červených listů, jako by tam někdo posléze rozstřelil svou krev. Všude kolem tvoje oči pronásledují nevysvětlitelné stíny, které se pohybují mimo lidské rozměry.//
+Před tebou je princezna Elara, jejíž vlasy jsou roztrhané a tělo pokryté šramoky. Stojí u vstupu do starého lesa, kterým jsi před chvílí prošel. V ruce drží malý kus papíru s nápisem: 'Kdo to byl? Důvěřuj jen těm, kteří mají bílé oči.' Zajímavost – její šaty jsou pokryté červenými skvrnami. Její dýchání je nepravidelné a vypouštění prstů z ruky s představou, že ti musí něco říct.
+[[A) Nech ji prozradit svoji tajemství.->13 Princezna a drak (13)]]
+[[B) Prozkoumá její šaty a hledá skryté známky.->7 Slepa 9]]
+
+:: 17 Strez 16 - Princezna a drak [strez SIDE] {"position":"320,580"}
+//Veškeré světlo září jen otevřenými okny hradu, které se zdají téměř prázdné. V místnosti vysoko v hradě zazní úzkostný šepot: „Kde je…?“ Tichá mlha pokrývá podlahu, jejíž chlad vyzařuje přes dřevěné schodiště. Uprostřed místnosti stojí staré zrcadlo ohraničené jemnou kovovou rámečkem s odhalenými vnitřními částmi a okolím zářícími tichy. Za ním jsou ukrývány skryté stopy: na podlaze neviditelné plošky, které se táhnou k prázdnému místu uprostřed hradu.//
+Místo, kam jsi přišel, je vstupem do hradu. Vzduch má tichý, ale není úplně klidný. Za okny se slyší šepot a chvění listů, které znamenají, že někdo předává výzvu dovnitř hradu. Veškeré světlo v místnosti je omezeno na jen dva okna, kde se stromy tichounce pohybují ve slunci. Za střešními prkny jsou vidět záhadné stopy – nepravidelné skvrny, které naznačují, že se něco děje v hradu.
+[[A) Prozkoumáš okno na západě a pozoruješ, jak drak prochází kolem stromů. Šepot přichází z této strany.->8 Princezna a drak]]
+[[B) Prozkoumáš okno na severu a zjistíš, že tam stojí princezna s námořnickou mapou. Šepot je z této strany.->8 Princezna a drak]]
+
+:: 18 smycka 11 [smycka CORE] {"position":"540,580"}
+//Větrný přístav se třpytí v červeném západu slunce. Mořské vlny šplhají po kamenou hrázi, která je opásaná jemným prachem z měsíčního kamenů. Zadní strana lodě na doku tleská, jako by něco vnitřní chvíli zapomnělo – ale nečeká se tu příjemné zvuky. Záhadné květina s černými listy a jasnožlutou středovou částí tleská na kameném podstavci u vchodu. Ticho je tak hlučné, že se můžeš vytrhnout přímo z mysli.//
+Záhadný přístav s jemným prachem z měsíčního kamenů tě čeká. Stojíš u vchodu a cítíš, jak se kolem tebe pohybují stíny, které nejsou pro těchto lidí přirozené. Vzadu za loděmi je hluk hladkého kamenářství – ticho je takové, že slyšíš svůj vlastní dech. Na podstavci u vchodu leží záhadná květina s černými listy a jasnožlutou středovou částí. Pohled na tuto květinu ti dává pocit, že je toho moc a nemůžeš přestat se dívat.
+[[A) Zkus prozkoumat květinu s černými listy->11 Záhadný les pod hradem]]
+[[B) Vstoup do černého prachů->11 Záhadný les pod hradem]]
+
+:: 19 Princezna a drak (19) [postava CORE] {"position":"760,580"}
+//V záři úsvitu přežívající tiché lesy dýchat jako někdo, kdo hledá smysl. Vzduch je naplněn jemnou červenou duší – jakoby malé světélka, která se vznášejí nad trávou a listy. Zpětný pohled na stromy připomíná mapu starých pravd; každý lístek je třesklivý od dřívějších šťastných chvil. Všude kolem lítají kouzelné květiny, jen jedna má výraznou červenou středovou stopku. Náhodně se zdá být nejvzácnější z nich – a je to přesně ta, která může draka uklidnit.//
+Stojíš na okraji lesa, kde se rozlévaly šťastné výkřiky princezny. Nyní je tiché jako hrob; stromy jsou zasypány prachem a listy leží někde daleko za tobou. Všude kolem je vidět stopa červené květiny – jediná, která nezabudla na svůj účel.
+[[A) Přesvědč si, že květina může být důkazem přítomnosti princezny. Vezmeš ji a vyzkoušíš její parfém.->18 smycka 11]]
+[[B) Zkuste poznat význam červené květiny pomocí obrazy a pohybů kolem tebe.->18 smycka 11]]
+
+:: 20 Princezna a drak (20) [onboarding CORE] {"position":"980,580"}
+//Večerní les kolem hradu Václavova je tajuplný jako mléko zmrzlé na stromě. Půda pod nohama šepká, když se pohybují přes mokré listy. Z dálky slyšet, jak se něco šplhá po stromu – tichý třesk odléhání větví a potom šepot, který neznamená žádné slovo. V záři plamene ohniště hradu před tebou stojí skleněná koule na podstavci: v ní se odráží červená hvězda, která má uvnitř svítit jako život. Pokud neztratíš zrak, můžeš vidět, jak se za hranicemi koule objevují šedivé stopy – podobné těm na tvém prstenu.//
+Když jsi vstoupil do Václavova hradu, připadalo ti jako hluboký dech. Na stole u krbu ležela stará kniha s obrázky draků a jedinou říčkou – zlatým proutím. Když jsi se podíval do kousku papíru, na kterém byl napsán číslo 17, objevil jsi větu: „Kdo neví, co je drak, ten ví, že draka není. Ale i to není pravda.“ Tady zůstalo dřívější princezna s krátkými vlasy a rukou už téměř bez vlasů.
+[[A) Přiblíž se k ohništi a vyhledej zlatý proutí na stole->6 Rozcesti 2]]
+
+:: 21 Jednosmer 21 [jednosmer SIDE] {"position":"100,740"}
+//Vítr šustí listím v hladkém lesním tunelu. V pozadí se třesou stromy, jejichž koruny jsou pokryté jemnými bělavými květy, které vyzařují slabý zářivý nádech. Kameny pod nohama mají vlhkost, jako by se právě probudily. Zadní strana cesty je tma a hluk všeho skončil – nic neznamená, než že jsi na pravém místě.//
+Stojíš před hranicí lesa, kterou zakrývají stromy s bělavými květy. Za nimi se třepotá černá silueta – neznámého předmětu ležícího na zemi. Vzduch má vůni jako poškozené jablko a slunce proniká skrz listy jen o něco slabšími paprsky. Když se k němu přiblížíš, spatřuješ výraznější stopy: na zemi jsou náznaky bílého prachu, které se mihotají jako blikající oči.
+[[A) Zkusi prozkoumat předmět na hranici lesa. Tiché stopy naznačují, že byl tam někdo však už dlouho pryč. Možná je to klíč k ztracenému lese.->16 Postava 7: Princezna a drak]]
+[[B) Vstoup do tunelu přes hranici a projdi cestu k lese. Ticho v tomto místě naznačuje, že tady je nebezpečné pro svého draka.->16 Postava 7: Princezna a drak]]

@@ -1,0 +1,129 @@
+:: StoryTitle
+touch-grass-boj-o-preziti-v-realite_30min
+
+:: StoryData
+{"ifid": "00000000-0000-4000-8000-000000000000", "format": "Harlowe", "format-version": "3.3.8"}
+
+:: 1 Informace 3: Touch Grass [informace CORE] {"position":"100,100"}
+//Světlo tady není renderované, ale brutálně fyzické. Slunce pálí na retinu a stín pod dubem má hloubku, kterou bys ani v RTX mode nepočítal. Větve se hýbou chaoticky, bez loopu animací. Cítíš vlhkost na kůži a zvuk ptáků přichází z různých směrů – žádná stereo stopa z jednoho reproduktoru. Je to únavné, ostré a nepříjemně autentické. Tvůj mozek panikáří, protože si neví rady s tímto nesmyslně vysokým počtem polygonů na listech. Není tu 'Spectate' ani 'AFK'. Jen ty a nekonečná realita čekající na input.//
+Probudíš se pod dubem s hlasitým upozorněním 'Connection Lost' v uších, které rychle bledne do ticha lesa. Tvé ruce jsou těžké a ztracený klávesový ovladač nahrazuje divná nutnost stoupnout nohy dopředu. Na zemi leží holografický návod 'Základy chůze' a vedle něj poloprázdná plechovka s energetákem, jenž slibuje rychlé refreshnutí buffu.
+[[A) Zvedneš holografický návod a snažíš se dekodovat fyziku kroků podle instrukcí. Chceš mít jistotu, že nepropadneš do textury.->21 strez 5]]
+[[B) Ignoruješ návod a šlápněš do strany instinktivně, doufaje v RNG na pohyb. Zároveň si sáhneš po energetáku.->21 strez 5]]
+
+:: 2 postava 14 [postava SIDE] {"position":"320,100"}
+//Vzduch v parku voní směsí deště, pražených ořechů a digitálního vyhoření. Nad hlavami se lesknou holografické reklamy na boostovací služby, které pulzují v rytmu tvého zrychleného tepu. Všude kolem sedí lidé přilepení k obrazovkám, jejichž tváře jsou osvětleny studeným světlem displejů. Je to jako obrovský lobby server, kde nikdo nehraje, jen čeká na respawn. Atmosféra je tlakující, plná statického šumu tisíců nepřečtených zpráv a neodposlouchaných DM. Cítíš, že realita tu nefunguje podle manuálu, ale spíš jako buggy build, který někdo poskládal z náhodných assetů. Každý krok po asfaltu zní příliš hlasitě, jako by zvukový engine měl gain nastavený na maximum.//
+U lavičky pod svítícím stromem sedí postava v kuchařské čepici s nápisem 'ADMIN'. Neptá se, kdo jsi. Jen mávne rukou a před tebou se objeví prázdná plechovka s logem 'Reality Fuel'. Křičí do telefonu: 'DISCORD DOWN? IRL IS UP! 💀🔥', zatímco ti pod nos strká QR kód, který mění kurz energie v reálném čase. Všímáš si, že jeho stín se nehybe s ním, ale plně synchronizovaný s pohybem mraků.
+[[A) Přistoupíš k obchodu a vyměníš kredity za plechovku Reality Fuel, abys zkusil pochopit lokální ekonomiku energie.->4 Strez 16: Touch Grass]]
+[[B) Ignoruješ prodejce a nasadíš si jeho kuchařskou čepici jako buff pro sociální interakci, doufajej, že ti pomůže při další konfrontaci.->4 Strez 16: Touch Grass]]
+
+:: 3 smycka 11 [smycka CORE] {"position":"540,100"}
+//Vzduch je tu hustý jako lagující server před patchem. Slunce se odráží od suché trávy, která praská pod tvýma botama jak starý disk. Cítíš tu známou frustraci z infinite loading screenů, jenže tady se nic nenačítá, jenom opakuje. Každý krok je pasivní grind za connectivity points, které ti v hlavě blikají jako notifikace na Discordu, který nikdo nepřečetl. Je to bezpečné, nudný a zároveň úchylně uklidňující, protože víš, že pokud uděláš chybu, prostě se resetneš na checkpoinku za rohem. Realita tu funguje jak infinite farm spot pro XP, kde hlavní boss je vlastně jenom tvůj vlastní apatie.//
+Po desáté obcházíš stejnou lesní cestu a už ti dochází zásoba memeů na vytržení. Z ničeho nic se v trávě zableskne hliněný kelímek s vodou, který tam předtím rozhodně nebyl – vypadá to jako drobný loot drop za vytrvalost. Vedle něj leží kus suché louky, jakoby někdo výstřihoval kousek reality a schoval ho do kapsy. Tvůj telefon má stále jen jeden pruh, ale v duchu ti bliká zpráva: 'Touch grass to sync profile.'
+[[A) Vyjimeš vodu z kelímku a rychle se pokusíš synchronizovat svůj profil s fyzickým světem, než ti vyprší trvanlivost.->11 Cíl 12: Offline]]
+[[B) Vezmeš si ten kus suché louky jako vzorek a zkusíš ho porovnat se svými poznámkami v sešitu Realita.md.->11 Cíl 12: Offline]]
+
+:: 4 Strez 16: Touch Grass [strez SIDE] {"position":"760,100"}
+//Světlo slunce pálí jinak než backlight monitoru. Vzduch voní praškem a čerstvě posekanou trávou, což tvůj mozek interpretuje jako critical error ve vizualizaci. Slyšíš vrabce, ne notifikace Discordu. Je to absurdní, almost glitchy feeling, když se snažíš najít UI v realitě. Cítíš tlak na nohou – gravitace tu nefunguje jako AFK timer. Jsi offline, ale tvůj ping je nekonečný. Každý krok bolí, protože sis zvykl na WASD, ne na svalové skupiny. Tento svět je high-latency a bez cheatů.//
+Stojíš před zábradlím parku, které vypadá jako firewall s nízkým health barem. Strážný NPC s výrazem permanentní rage face ti blokuje cestu dovnitř. V ruce drží stik 'Dodržuj TOS' a ukazuje na zem, kde leží modrý Ticket – tvůj jediný klíč k bypassnutí této lokace. Pokud ho nezískáš, dostaneš debuff 'Tichý ban' a budeš jen mlčet jako smazný účet.
+[[A) Zkusíš hacknout situaci: rychle prohledáš odpadní koš vedle lavičky, abys našel ztracený Ticket předtím, než strážný zavolá admina.->15 informace 17]]
+[[B) Jdeš na to s diplomacií: nabídneš mu svůj poslední energetický drink jako úplatek za 'VIP přístup' bez ověřování identity.->20 gated 18]]
+
+:: 5 Gated 6: Firewall lesa [gated CORE] {"position":"980,100"}
+//Vzduch tu voní prašinou z monitorů a rezavým železem. Před tebou se tyčí masivní brána, která vypadá, jako by někdo spojil plot ze sítě s firewall antivity. Nad branou blikají červené LED diody v rytmu, který připomíná srdeční tep někoho ve stresu. V dálce, odkud jsi přišel, se lesní stromy chovají podezřele staticky, jako by se zasekly při renderování. Cítíš tlak na uších a chuť oceli v ústech. Je to moment, kdy online svět naráží na fyzickou realitu s doslovnou silou zdi.//
+Brána je zamčená digitovým zámkem požadujícím tři Hvězdné mince – tvůj poslední kapitál. Zvedáš sešit Realita.md a všimneš si, že strany kolem tebe migrují v barvách RGB. Vedle nohou leží zamknutá krabice s lootem, která pulsuje slabým světlem. Vítr přináší zvuk šumění serverovny z hlubin lesa za branou.
+[[A) Zkusím mince vložit do slotu doufaje v RNG štěstí.->18 Postava 7: Glitch v trávě]]
+[[B) Nejdřív zkoumám tu záhadnou krabici s lootem u nohou.->18 Postava 7: Glitch v trávě]]
+
+:: 6 Touch Grass [informace CORE] {"position":"100,260"}
+//Vzduch tu voní pryskyřicí a starým deštěm, což je pro tvůj digitální nos úplně nová zkušenost. Světlo se láme korunami stromů tak nesouvisle, jako by render engine šetřil RAM. V dálce se tyčí obrys toho lesa, ze kterého jsi přišel, ale tady v centru 'Realita.md' je signál nulový. Cítíš na kůži studený dotyk reality, který nelze ignorovat ani minimizovat. Je to nepohodlné, hrubé a překvapivě vysoké rozlišení.//
+Na větví dubu ti v cestě visí kus papíru s nápisem: 'Všechno je jen ping. Pokud to nestíháš, zkus to vypnout.' Pod ním leží roztříštěná skládanka kódu – fragment serverového logu, který vypadá jako error hláška. V ruce ti drží kus křídy, kterou můžeš použít k psaní do vzduchu pro rychlou komunikaci s NPC.
+[[A) Pokusíš se dekódovat log pomocí křídy a vizualizuješ data ve vzduchu.->21 strez 5]]
+[[B) Ignoruješ kód a vydáš se fyzicky hledat zdroj toho pingu v hloubce lesa.->21 strez 5]]
+
+:: 7 Obchodník 19: Pán 'Touch Grass' [obchodnik SIDE] {"position":"320,260"}
+//Vzduch v parku voní spícím asfaltem a čerstvě posečenou trávou, která pálí nohy bez bot. Stín pod dubem je chladnější než tvůj displej. Obchodník sedí na kůru, před ním váha s digitálním displejem blikajícím červeně. Je to bezpečná zóna, ale jeho úsměv je glitchující – příliš symetrický. Zdá se, že ví o tvém ping-u víc, než by mělo. Atmosféra je tichá, jen cvrčci a vzdálené bzučení routeru.//
+Stojíš před stánkem 'Realita.md'. Obchodník ti podstrčí černý trh katalog a poklepá na váhu: 'Máš loot ze slepých uliček? Za kredity ti dám klíče.' Ukáže na hromadu Hvězdných mincí, které svítí jako bugovaný UI. Najednou se váha rozezní – detekovala tvou přítomnost a čeká na input.
+[[A) Prohodíš mince za užitečný klíč a ptáš se na bezpečný bod.->9 smycka 20]]
+[[B) Zkusíš podvést váhu falešným předmětem.->9 smycka 20]]
+
+:: 8 Onboarding 1: Kicknut z Lobby [onboarding CORE] {"position":"540,260"}
+//Probudíš se s pocitem, jako by ti někdo vypnul monitor ve chvíli, kdy jsi stahoval update reality. Vyskytuje se to tam, kde končí Wi-Fi a začíná... hmota? Vzduch je těžký, plný prachu a vůně deště, která nepáchne ako pixelový asset, ale jako faktická vlhkost. Okolo tebe leží roztříštěné fragmenty tvého digitálního ego – ztracené notifikace, vypršelé subskripce a echo posledního 'gg wp'. Zde neexistuje respawn point, jen drsný terén života. Musíš rychle pochopit pravidla, protože bez připojení jsi zcela offline a zranitelný proti základním živlům, jako je hlad nebo nudný rozhovor s cizincem.//
+Tvoj Discord avatar se rozpadá v mlze a systémové hlášky ti hučí v uších: 'Uživatel byl kicknut pro 14 dní AFK'. Pochopíš, že lobby bylo jen čekárna. Na zemi leží křehká mapka regionů a návestí s popsaným textem 'Vítej v Realitě', které vypadá podezřele jako špatně renderovaný UI prvek tvého nového života.
+[[A) Pober si mapku a vydaj sa smerom ku svetlu, kde by mal čakať tvoj prvý NPC tutoriál. Tvoj side quest 'Najdi svoj originál' ti dovoľuje iba posúvať sa vpred.->17 Rozcestí 2: Touch Grass]]
+
+:: 9 smycka 20 [smycka SIDE] {"position":"760,260"}
+//Slunce pálí stejně jako před deseti minutami, jen stíny se posunuly o milimetr. Vzduch voní po čerstvě posekané trávě a levné kávé z automatu. Je to pocit, kdy hra zasekne a ty stále mačkáš tlačítko restartu. Park je plný lidí, kteří se tváří, že dělají něco důležitého, ale ve skutečnosti jen čerpají WiFi. Cítíš tu známou úzkost z lagů reality. Všechno vypadá normálně, až příliš normálně, jako by nějaký líný vývojář zapomněl změnit texturu nebe. Je to smyčka, ze které se nedostaneš bez glitchu.//
+Kloužeš mezi lavičkami a narazíš na stánek, který jsi už viděl dvakrát dnes. Tentokrát prodává něco jiného než obvykle. Na pultě ti poskočí kulička s nápisem 'GPS'. Vedle leží lístek: 'Sleva 0%'. Proč by ti někdo dal nic? Je to past nebo Easter Egg?
+[[A) Chytíš Navigační kuličku. Ačkoli věšíš, že funguje jen jednou a ukáže na náhodný bug ve světě, potřebuješ vidět, kam tenhle loop směřuje, než se zblázníš.->13 jednosmer 21]]
+[[B) Vezmeš si Kupon slevy 0%. Je to satira na konzumentismus, který tě táhne do propasti, ale kdo ví, jestli ho nebudeš potřebovat jako klíč k odemknutí dalšího levelu.->4 Strez 16: Touch Grass]]
+
+:: 10 slepa 9 [slepa CORE] {"position":"980,260"}
+//Vzduch tu voní vlhkou zemí a rezavějícím kovem starých plotů. Slunce probíhá korunami stromů jako prasklý monitor, rozsvícený jen na polovinu. V dálce se rýsuje silueta hradu z předchozího levelu, který teď vypadá jako bug v texturách reality. Zde, uprostřed ničeho, ti do očí bije absenci WiFi signálu. Je ticho tak hluboké, že slyšíš vlastní heartbeat syncující se pulsem země. Tvoje ruce samy od sebe hledají kapesník na otření obrazovky, která tu neexistuje. Jsou tu jen ty, tvůj dech a tlak na tebe k tomu, abys konečně vypnul headset a podíval se do očí světu, který ti neukazuje žebříček ani notifikace. Je to nepříjemné, ostré, ale zvláštním způsobem autentické.//
+Stojíš před obrovským balvanem, který vypadá jako wall-clip v terénu – zdánlivě neprůchozí slepá ulička, kde se končí tvůj pathfinding. Zuby skřípeš nad tím, že jsi zase zabloudil do offline módu bez mapy. Ale když ses opřeš o studený kámen, ten praskne a odhalí tmavou dutinu plnou prachu z minulé éry. Uvnitř leží zářivá Hvězdná mince, která pulzuje jako LED dioda na routeru, a vedle ní poznámkový blok s podezřele technickým nápisem. Cítíš, že tohle není random loot, ale side quest od vývojářů reality.
+[[A) Jemně vytáhneš minci a přečteš si text v bloku předtím, než ti někdo vyruší soukromí.->18 Postava 7: Glitch v trávě]]
+[[B) Rychle strhneš minci do kapsy a ignoruješ papíry – potřebuješ loot před spawnem mobů.->18 Postava 7: Glitch v trávě]]
+
+:: 11 Cíl 12: Offline [cil CORE] {"position":"100,420"}
+//Zelená tráva pod nohama působí suspektně fiktivně, jako by měl někdo zapomenout aktualizovat texturu. Vzduch je tlakem a pachy až bolestivě reálný – cítíš prach, vlhkost z květin a nepříjemný štípavý zápach deště na asfaltu. Tohle není bezpečné lobby na AFK, ale persistentní server, který synchronizuje tvůj online profil prostřednictvím fyzické přítomnosti. Tvůj mozek se snaží najít bug ve scéně, ale najde jen vlastní únavu a nutkání konečně vypnout monitor života.//
+Vyskočil jsi z lesní smyčky přímo do přívalového deště reality. Před tebou stojí poslední překážka před odpojením: hrubě vytesané kamenné tlačítko LOG OUT s blikajícím červeným LED světlem, které připomíná přehřátý GPU. Nad ním se v moři vytváří holografické Finální potvrzovací okno s varováním o ztrátě XP a reputace na Discordu. Musíš aktivovat terminál přijetím toho, že život není hra, co můžeš kdykoliv pauznout.
+
+:: 12 Postava 10: Zrcadlový Dvořák [postava CORE AHA] {"position":"320,420"}
+//Vzduch v lese voní jehlicemi a starým deštěm, ale tady je to jiné. Je tu pach ozonu a přehřátých grafických karet. Mluví ti do očí typ, co vypadá jako glitchovaný render – jeho obličej bliká mezi tvářem a pixely. V ruce drží zrcadlo, které nezobrazuje tvůj odraz, ale avatar s defaultním skinem. Na zemi leží vytištěné selfie z roku 2019, tvoje. Typ se usměje úsměvem, který jsi viděl tisíckrát v Discordu. Řekne větu, kterou jsi právě psal do chatu o tři hodiny dříve. Realita kolem vás zatřese a tiše šepće: 'Synchronizace úspěšná.'//
+Stojíš před typem, který vypadá jako živý screenshot tvého profilu. V ruce má zrcadlo ukazující tvůj avatar, ne tebe, a pod nohou ti leží ta fotka z 2019. Podíváš se na něj a on ti odpoví větu, kterou jsi praveďák psal do Discordu ještě před tím, než si ji vůbec uvědomil.
+[[A) Zeptáš se ho přímo: 'Jsem jen data?'->16 Postava 8: Offline Oracle]]
+[[B) Vezmeš selfie a zrcadlo a ujedeš.->16 Postava 8: Offline Oracle]]
+
+:: 13 jednosmer 21 [jednosmer SIDE] {"position":"540,420"}
+//Vzduch tu voní směsicí osvěžujících tráv a zkažených datových kabelů pod chodníkem. Slunce svítí s plnou intenzitou, což pro tvé po celou noc oči připomínající dvě červené lavičky na Discordu působí jako DoS útok. V dálce se tyčí brána lesa, cíl tvého side questu nazvaného 'Přežití reality'. Šipka na zemi svítí neonově, jako by ji sem vykreslil nějaký agresivní NPC s admin právy. Cítíš, jak ti v hlavě bzučí notifikace, které tu neexistují.//
+Stojíš před rozvětveným chodníkem, který vypadá jako glitchovaná mapa. Z kartonové tabule čouhá šipka s nápisem 'One Way Out' a vedle ní samolepka 'Návratová trasa povolená', která se loupí od vlhkosti. Tvůj sešit Realita.md v kapse štěbetavě vibruje, jako by ti chtěl připomenout, že tvůj online profil je teď jen tenká vrstva oleje na vodě – musíš být fyzicky tady. Zprava z křoví zazní tlumený zvuk skotačícího psa a šustění listí, což naznačuje, že nejsi jediným hráčem v tomto lobby.
+[[A) Dbej striktně značení a běž rovně. Je to safe play, bez rizika spawnu aggro mobů z křoví.->18 Postava 7: Glitch v trávě]]
+[[B) Odhodni samolepku 'Návratová trasa' do křoví a sleduj zvuk psa. Možná je tam Easter egg nebo drop.->18 Postava 7: Glitch v trávě]]
+
+:: 14 Léčitel #13 [lecitel SIDE] {"position":"760,420"}
+//Vzduch je plný prachu a výparů z přehřátých procesorů, které tu někdo nedávno nechal běžet naplno. Občas sem pronikne vzdálený zvuk sirény nebo pískání notifikací, které se zdají být stále blíže. Cítíš tu tíhu nekonečného scrollování a FOMO, jako bys byl připojen k nějakému neviditelnému kabelu. Každý krok tady bolí víc než na discordu, protože realita nemá rychlé respawnování ani možnost se odhlásit.//
+Sedíš na lavce pod starým dubem, který vypadá jako glitch ve textuře světa. Naproti ti sedí muž v bílém plášti s nápisem 'ADMIN', před ním leží hrnky s heřmánkovým čajem. Přistoupíš k němu a on ti podává kartičku s QR kódem vedoucím na 'offline terapii'. Piješ čaj, cítíš, jak se FOMO rozpouští v žaludku jako bad pixel.
+[[A) Zeptáš se ADMINA na vzorce chování NPC. Potřebuješ pochopit, proč se realita synchronizuje jen při fyzické přítomnosti.->2 postava 14]]
+[[B) Odemkneš QR kód na telefon. Je to past pro AFK hráče, která tě okamžitě teleportuje do nekonečné smyčky reklám.->19 Slepá ulička #15]]
+
+:: 15 informace 17 [informace SIDE] {"position":"980,420"}
+//Vzduch voní po čerstvě pokosené trávě a výfukových plynech nedaleké silnice. Slunce pálí do týla, připomínajíc, že biologický clock tická reálně, ne jako ping na serveru. Vidíš před sebou starou dřevěnou tabuli zasazenou do země. Je to divné spojení venkovského klidu a digitální ironie. Cítíš tlak v očích od monitoru a nutkavou potřebu něčeho se dotknout, co má váhu a texturu.//
+Na tabuli jsou fixou vyrytá 'Pravidla reality', která děsivě kopírují EULA tvého oblíbeného serveru. Čteš řádek o 'povinném fyzickém pripojení pro synchronizaci auru' a uvědomíš si, že svět kolem není jen lobby na AFK. Je to persistentní server, který čeká na tvůj input. V ruce svíráš fixku, která ti připadá těžká jako zbraň, a vedle ní leží gumka, schopena smazat jeden nepříjemný debuff.
+[[A) Použiješ fixku a přepíšeš pravidlo 'Offline = Death' na 'Touch Grass = XP'. Riskuješ, že se ti server rozpadne, ale možná získáš admin práva.->2 postava 14]]
+[[B) Vezmeš gumku a pečlivě vymažeš položku 'Debuff: Stres'. Je to bezpečný side quest, který ti vrátí jasnou mysl pro další kroky.->2 postava 14]]
+
+:: 16 Postava 8: Offline Oracle [postava CORE] {"position":"100,580"}
+//Les tady nepůsobí jako příroda, ale jako buffer zóny, kde se načítá textura trávy v příliš vysokém rozlišení. Větrný šum není ambientní hudba, ale white noise maskující chyby renderingu. Vzduch voní jehličím a starým deštěm – ta specifická vůně 'low poly' realismu, která ti připomene, že tvůj avatar už příliš dlouho žije v lobby. Slunce proniká korunami stromů jako špatně nastavené bloom lighting, osvětluje prachové částice ve vzduchu, které se hýbou pomalu, téměř lenivě. Je cítit tlak nečinnosti, ten samý, co znáš z Discordu, kdy ti přestávají chodít notifikace a začíná panika ze ztráty relevance.//
+U křížovky cest stojí postava bez tváře, jen s kapucí složenou z pixelů stínů. Nemluví, jen mírně kývne hlavou směrem k tmavé číši – aktivuješ tím pasivní buff 'Přítomnost', který zvýší šanci na nalezení skrytých side-questů. Na zemi před ním leží dvě věci: kovová tlama s klíčem a hladký černý kámen, ze kterého prchá jakýkoli zvuk. Větrný vír ti přinese myšlenku: 'Vyber si svou realitu.'
+[[A) Zvedneš tlamu na klíč. Je těžká a studená, mechanická jistota proti digitálnímu chaosu.->3 smycka 11]]
+[[B) Schováš Ticho-kámen do kapsy. Blokuje zvukové pasty systému a umožňuje ti přehlédnout varování.->3 smycka 11]]
+
+:: 17 Rozcestí 2: Touch Grass [rozcesti CORE] {"position":"320,580"}
+//Slunce pálí tak intenzivně, že ti v bradavkách bublá voda a tvůj smartphone se ve stínové režimu chová jako vyhřívaná podložka. Větrná čišta se přelévala přes asfalt, ale teď stojíš na hraničním páse mezi civilizací a chaosem přírody. Vzduch voní prašnou zemí, spáleným píškem a vzdáleným pocitem ztráty signalizace. Slyšíš jen cvrčky a vlastní tlukot srdce, které si stěžuje na nízký FPS reality. Cítíš, jak ti klesá social battery, protože nikdo neodpovídá na Discordu. Je čas konat, nebo budešAFK navždy.//
+Stojíš uprostřed rozcestí, kde se ztrácí tvůj komfortní bublinový chat. Vlevo se do hloubky lesa vine tmavá cesta plná stromů, které vypadají podezřele autenticky a mají příliš mnoho textur. Napravo se otevírá úzký parkoviště vedoucí k městskému parku s lavičkami, na kterých leží staré noviny a pohřešovaní psi. Mezi nohama ti cinká něco kovového – je to kompas, jehož jehla se šíleně kroutí, jako by hledala Wi-Fi místo severu. Ve džínách cítíš váhu předmětu: kus odpojeného kabelu od routeru, který ti náhodou spadl do kapsy při útěku z domu.
+[[A) Případně vlez do lesa. Ten stín mezi kmeny vypadá jako spawn point pro další level, ale tvůj zdravý rozum říká, že tam není Wi-Fi a ani baterie.->1 Informace 3: Touch Grass]]
+[[B) Jdi přes park. Je to bezpečnější route s menším počtem nepříznivých monster typu 'komáři' a 'jedovaté žábky'. Možná tam najdeš někoho, kdo má nabíječku.->6 Touch Grass]]
+[[C) Zůstaň stát a zkuste připojit ten kus kabelu do kompasu. Je to hazardní experiment, ale možná tím kalibruješ svoji polohu v serverové síti reality.->14 Léčitel #13]]
+
+:: 18 Postava 7: Glitch v trávě [postava CORE] {"position":"540,580"}
+//Vzduch tu voní prachem po dešti a zapáchá starým potem z diskuzních fór, kde nikdo neřeší smysl života. Okolní stromy se mírně trhají, jako by server měl nízký FPS a snažil se vykreslit větví příliš mnoho. Na zemi leží roztrhané listy papíru s bílým pozadím – to je ten fáměný výpis chyb, glitch log, který vypadá víc jako návod k přežití než error message. Téměř cítíš, jak se pod nohama třese textura trávy, připomínající ti, že tvůj online profil má limitovaný bandwidth. Zrakem sleduješ poloviční mapu regionů, která končí v prázdném prostoru, kde realita přestává být lobby a začíná být persistentní.//
+Mezi keři stojí chlapík s kapucí přes hlavu, který ti ukazuje na zem, kde se leskne prázdný prostor mezi kořeny. Řeče, že tohle místo je bug v systému, ale jeho hlas zní jako syntezér z roku 2015. Předkládá ti dvě možnosti buď si vzít poloviční mapu regionů a pokusit se ji doplnit, nebo si přečíst výpis chyb, který vypadá jako deník někoho, kdo už tu byl a nevydržel.
+[[A) Vezmi poloviční mapu regionů. Cítíš, že ti chybí kontext celého světa a možná najdeš cestu ven z této smyčky.->12 Postava 10: Zrcadlový Dvořák]]
+[[B) Přečti si výpis chyb (glitch log). Možná ti to odhalí pravdu o tom, proč tu jsi a co se stalo s předchozími hráči.->10 slepa 9]]
+
+:: 19 Slepá ulička #15 [slepa SIDE] {"position":"760,580"}
+//Vzduch v kanceláři je těžký, plný prachu a vůně starého tónerja. Světlo zářivek bliká rytmem, který ti nejde z hlavy, připomínajíc heartbeat nekonečného ladicího kruhu. Máš pocit, že tě prostor sleduje, jako by každý prázdný stůl byl očima NPC čekající na tvůj input. Ticho zde není klidné, je to ticho před výbuchem, kdy se servery chystají na restart a ty jsi jediný hráč, který ještě nespí. Cítíš tlak reality, která se snaží synchronizovat s tvým offline profilem, ale něco v systému chybuje. Zvuk klávesnice někde v dálce zní jako údery do kovové pudy.//
+Vstoupíš do místnosti, která vypadá jako mrtvá zóna po masivním server crashi. Stoly jsou prázdné, jen blikající LED diody na vypnutých monitorech tvoří podivný neonový vzor. V koutě stojí šedá skříň s nápisem „Archivy“, která se mírně chvěje, jako by v ní běželo nějaké těžké renderování.
+[[A) Přistoupíš ke skříni a pokusíš se ji otevřit pomocí hackovacího nástroje z inventáře. Cíl je získat data uvnitř bez ohledu na bezpečnostní protokoly.->14 Léčitel #13]]
+[[B) Pozorovně otevřeš skříň rukama, aby sis nepřipravil důkazy o nečistotách v systému. Hledáš Zlatý klíč pro Final Boss zónu potichu.->14 Léčitel #13]]
+
+:: 20 gated 18 [gated SIDE] {"position":"980,580"}
+//Park po dešti voně močálem a starým asfaltovým prachem. Lavičky jsou mokré, světla ulic blikají jako selhávající serverové LEDky. Cítíš tu tíhu reality – žádné respawnování, jen tvůj puls a vlhký chlad pronikající skrz džíny. V dálce se rýsuje silueta brány, za kterou by měl být obchodník s tím, co potřebuješ k přežití této epiky. Ale mezi tebou a cílem stojí železná mříž. Žádný hack, žádný cheat kod. Jen tvůj profil, tvoje mince a tvůj osud. Vzduch je hustý jako lag na mobilním datovém připojení.//
+Stojíš před branou označenou jako 'Entry Point'. Na zarážce leží Modrý Ticket: Přístup do Zóny, vypadá, že ho někdo omylem vyhodil z kapsy. Vedle něj bliká malý displej skeneru otisků prstů s výzvou: 'Vyžadováno: Platný token nebo biometrická identifikace.' Cítíš, jak ti kapky deště stékají po zádech, zatímco se snažíš zachovat klid. V kapse cítíš chladnou váhu Hvězdných mincí, které jsi sbíral skrze předchozí questy.
+[[A) Vložíš Modrý Ticket do čtečky a doufáš, že systém uzná jeho platnost jako dostatečnou autorizaci pro vstup do Zóny.->7 Obchodník 19: Pán 'Touch Grass']]
+[[B) Položíš prst na skener a přizpůsobíš se hardwaru. Je to bezpečnější, ale riskuješ, že tě systém identifikuje a zaznamená tvou přítomnost v databázi parku.->7 Obchodník 19: Pán 'Touch Grass']]
+
+:: 21 strez 5 [strez CORE] {"position":"100,740"}
+//Vzduch tu voní po prašné zemi a zapomenutém občerstvení. Světlo slunce je příliš jasné, bolestivé do očí na rozdíl od měkkého svitu LED diod. Cítíš, jak ti chybí ergonomické křeslo. Hnědý trávník se tyčí před tebou jako nekonečné open-world levely bez checkpointů. Na obzoru vidíš stromy – vysoké polygonové modely s realistickými animacemi větru. Je tu ticho, které není lagem, ale skutečnou přítomností. Tvůj mozek se snaží přepnout z režimu AFK do offline módu.//
+Před tvýma nohama stojí NPC strážce v uniformě, která vypadá jako defaultní skin. V ruce drží 'Rychloměr' – podivné zařízení na test reflexů, a předkládá ti pergamen: 'Smlouva o uživatelských podmínkách'. Hlasem plným digitální statické interference tě varuje: 'Před vstoupěním do lesa musíš prokázat pochopení Terms of Survival. Odpověz správně, nebo budeš kicknuta zpět do labyrintu.'
+[[A) Podepíšeš smlouvu rychlým kliknutím a aktivuješ Rychloměr. Tvrdíš, že tvůj ping je nulový a fyzická realita je jen další server.->5 Gated 6: Firewall lesa]]
+[[B) Odmítneš číst Terms of Service a místo toho se dotkneš trávy. Prohlásíš, že realita je persistentní server vyžadující fyzickou přítomnost.->5 Gated 6: Firewall lesa]]

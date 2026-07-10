@@ -134,19 +134,19 @@ def postav_skeleton(
     # Spolu s CORE (7,8,10) dávají 60min postavy=4+lecitel=1=5 (§SKÁLOVÁNÍ 5–7).
         # --- SIDE region B (jen 60min), sbíhá se do uzlu 7 před AHA ---------- #
     LAYOUTS = [
-        # Layout 1: Split & Merge (13->14/16, merges at 19)
+        # Layout 1: Split & Merge (13->14/16, merges at 19, loopback 19->14)
         {
             13: [14, 16], 15: [14],
             14: [17, 15], 16: [18],
             17: [19], 18: [19],
-            19: [20], 20: [21], 21: [7]
+            19: [20, 14], 20: [21], 21: [7]
         },
-        # Layout 2: Loop / Stuck (14->16->17->14 loop, escape via 16->18)
+        # Layout 2: Loop / Stuck (14->16->17->14 loop, escape via 16->18, loopback 20->16)
         {
             13: [14, 15], 15: [13],
             14: [16], 16: [17, 18],
             17: [14], 18: [19],
-            19: [20], 20: [21], 21: [7]
+            19: [20], 20: [21, 16], 21: [7]
         },
         # Layout 3: Double Branching (13->14/16, 16->18/20)
         {
@@ -155,12 +155,12 @@ def postav_skeleton(
             17: [19], 18: [19],
             19: [21], 20: [21], 21: [7]
         },
-        # Layout 4: Web (Split at 14, merge/split at 18/19, merge at 21)
+        # Layout 4: Web (Split at 14, merge/split at 18/19, loopback 20->14)
         {
             13: [14, 15], 15: [13],
             14: [16, 17], 16: [18],
             17: [19], 18: [20],
-            19: [20], 20: [21], 21: [7]
+            19: [20], 20: [21, 14], 21: [7]
         },
         # Layout 5: High Risk Shortcut (Short path 13->16->18->21, long loop 13->14->17->19->20->21)
         {
@@ -169,34 +169,34 @@ def postav_skeleton(
             17: [19], 18: [21],
             19: [20], 20: [21], 21: [7]
         },
-        # Layout 6: Circular Maze (Looping back to 13 from 17)
+        # Layout 6: Circular Maze (Looping back to 13 from 17, loopback 19->16)
         {
             13: [14, 15], 15: [13],
             14: [16], 16: [17, 18],
             17: [13], 18: [19],
-            19: [20], 20: [21], 21: [7]
+            19: [20, 16], 20: [21], 21: [7]
         },
-        # Layout 7: Central Hub (19 is a central hub reachable from multiple branches)
+        # Layout 7: Central Hub (19 is a central hub, loopback 19->14)
         {
             13: [14, 16], 15: [13],
             14: [17, 15], 16: [18],
             17: [19], 18: [19],
-            19: [20], 20: [21], 21: [7]
+            19: [20, 14], 20: [21], 21: [7]
         },
-        # Layout 8: Multiple loops and forks
+        # Layout 8: Multiple loops and forks (loopback 18->14)
         {
             13: [14, 16], 15: [14],
             14: [15, 17], 16: [18],
-            17: [19], 18: [20],
+            17: [19], 18: [20, 14],
             19: [16],
             20: [21], 21: [7]
         },
-        # Layout 9: Decoy / Fork (13->18 gated, 13->14 postava)
+        # Layout 9: Decoy / Fork (13->18 gated, 13->14 postava, loopback 19->14)
         {
             13: [14, 18], 15: [14],
             14: [16, 15], 16: [17],
             17: [19], 18: [19],
-            19: [20], 20: [21], 21: [7]
+            19: [20, 14], 20: [21], 21: [7]
         },
         # Layout 10: Loop back from JEDNOSMER (21->14)
         {

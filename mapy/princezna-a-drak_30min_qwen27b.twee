@@ -1,0 +1,129 @@
+:: StoryTitle
+princezna-a-drak_30min_qwen27b
+
+:: StoryData
+{"ifid": "00000000-0000-4000-8000-000000000000", "format": "Harlowe", "format-version": "3.3.8"}
+
+:: 1 Obchodník u starého javoru [obchodnik SIDE] {"position":"100,100"}
+//Vzduch tu voní po pryskyřici a prašném písku z cesty, kterou jsi právě urazil. Stín starého javoru chrání malý dřevěný předsun před sluncem, pod kterým si opírá lokty muž v opotřebovaném plášti. Na stolu před ním leží věci, které vypadají jako z jiného světa: sklenice s bublinami a těžké kovové předměty. Javor šustí listím, jako by se snažil něco říct, ale obchodník jen lhostejně kouká do dlaní. Jeho oči jsou chytré a trochu unavené, připomínají ty z pohádek, kde vědí všechno, ale řeknou jen tolik, za kolik jsi ochoten platit.//
+Obchodník ti předkládá dvě věci: zářivý láhev léčivého elixíru a hrubě vytesaný klíč od brány. 'Pro draky neexistuje lék na šílenství,' zašeptá s úsměvem, který není zcela upřímný. 'Ale pokud chceš jít cestou míru, budeš potřebovat tento klíč.' Ukazuje prstem na temnou roztroušenou skalní stěnu za tebou.
+[[A) Nabídneš mu svůj meč jako výměnu za Klíč od brány. Chceš se vyhnout boji a najít klidnější řešení.->9 gated 18]]
+[[B) Koupíš si Léčivý elixír za všechny své mince. Připravuješ se na to, že bys mohl utrpět zranění při přímém střetu.->9 gated 18]]
+
+:: 2 Léčitel 13 [lecitel SIDE] {"position":"320,100"}
+//Vchod do chaty je úzký a smrdí bylinkami i spáleným dřevem. Uvnitř hoří pouze jediná lucerna, která vrhá dlouhé stíny na police plné sušených kořenů. Léčitel sedí u malého stolku a třídí skleněné lahvičky. Jeho pohled je vážný, ale v koutech úst se mu rýsuje lehký úsměv, jako by věděl něco, co ty ještě nevíš. Vzduch je těžký od magického zářivého prachu.//
+"Než půjdeš za drakem, musíš vidět, jak svět opravdu vypadá," šeptne léčitel a podává ti malou lahvičku se stříbrnou tekutinou. "Pij tento elixír jasu. Uvidíš stopy, které bys jinak přehlédl." Když tekutinu vypiješ, svět kolem sebe začne zářit jemným modrým světlem a všude se vynořují zářivé otisky škvíry.
+[[A) Zeptáš se léčitela na význam těchto zářivých stop. Zajímá tě, proč je drakova jeskyně tak plná magických anomálií a zda není něco v nepořádku.->12 Svědek na louce]]
+[[B) Vezmeš elixír a rychle opustíš chatu. Není čas na otázky, potřebuješ co nejrychleji najít princeznu předtím, než ji drak sní.->3 slepa 15]]
+
+:: 3 slepa 15 [slepa SIDE] {"position":"540,100"}
+//Vítr se tu mračí a víří přes travnaté pole, které před chvílí ještě vypadalo tak klidně. Hradní zdi už jen bledě září v dálce jako přízrak. Na tvém hrdle stoupá vzduch plný polévkových bylinek – česnek a šalvěj. Dracích kýchání se dá snadno rozpoznat podle nich. Než se nadějáš, slyšíš za sebou zvuk padajícího kamene. Vyskočíš a otočíš se na hloubku tmy.//
+Mezi stopy, které opustila princezna při svém dobrovolném výletu, leží ztracený batoh. Uvnitř najdeš starý dopis pro otce, kde se omlouvá za náhlé odchody a slibuje brzké návraty. Doporučuje ti ho vzít s sebou jako důkaz, že vše je v pořádku.
+[[A) Odčtoucí se do hlubiny lesa prozkoumáš, zda ti někdo nekrade stopy. Možná tam najdeš další stopy nebo dokonce i draka.->2 Léčitel 13]]
+[[B) Znovu zkusíš najít stopu po dracích kýcháních. Možná je tam ještě nějaký další příznak, který můžeš využít.->2 Léčitel 13]]
+
+:: 4 Smyčka 20 [smycka SIDE] {"position":"760,100"}
+//Vzduch tu voní pryskyřicí a starým popelem. Horko od sochy draka je tak intenzivní, že tvůj dech se zdá být příliš chladný pro toto místo. Na kamenech pod nohama vidíš praskliny, které připomínají mapu, kterou ses snažil předtím číst. Zvláštní ticho tu panuje, jako by sám čas čekal na tvůj další krok. Světlo z ohniště tančí po zdech hradu a vrhy stínů se neustále mění, někdy připomínají křídla, jindy jen obyčejné kameny. Máš pocit, že si tu už byl – nebo alespoň tyto myšlenky. Je čas přehodnotit plán.//
+Stojíš znovu před ohromnou bránou, kde se dýcha těžce po závanu kouře. Drak za sklem dýchá pomalu a rovnoměrně, jako by spal hlubokým, křehkým snem. V ruce držíš pergamen s mapou chodeb, která se zdá být příliš dokonalá na to, aby byla pravdivá. Najednou ti dojde, že jsi možná opoměl něco důležitého v minulosti.
+[[A) Opětovně prozkoumáš okolí s očima upřenýma na detaily. Možná ti unikla nějaká stopa nebo předmět, který by mohl pomoci.->21 jednosmer 21]]
+[[B) Zhluboka se nadechneš a rozhodneš se pro odpočinek. Tvoje síly jsou vyčerpané a další krok bude potřebovat všechny tvé energie.->21 jednosmer 21]]
+
+:: 5 Stopy v mechu [informace CORE] {"position":"980,100"}
+//Vzduch tady voní jehlicemi a vlhkou zeminou, kterou narušují čerstvé otlačeniny trávy. Sluneční paprsky se prosazují skrz hustý korunní baldachýn stromů a osvětlují prachové částice tancující ve vzduchu. Ticho lesa je rušeno pouze šuměním větru v korunách a vzdáleným zavoláním sovy, která si zřejmě spletla den s nocí. Na místě, kde stojíš, se země mírně nese do kopce směrem k neznámému údolí. V dálce tu a tam probleskne lesklý odraz něčeho kovového, ale když se zadíváš, je to jen světlo na mokré kůře smrků.//
+Při tvém příchodu z hustého lese narazíš na malou, zapuštěnou díru v kořenech starého buku. Uvnitř leží pevně zavázaný deník loveckého psa, který tam pravděpodobně schovala nějaká bystřejší hlava než zvíře. Listiny jsou křehké a voní po starém papíru i špíně z cest. Když rozbalíš svitek, zjistíš, že nepopisuje honičku na draka, ale radostné procházky princezny se psím společníkem po těchto lesích – vidíš nákresy jejich společných cest a poznámky o tom, jak si užívali ticha daleko od dvorských etiket.
+[[A) Opatrně vyndáš deník a pečlivě ho složíš do batohu. Informace je důkazem, že drak nejspíš unášel nikoliv princeznu, ale chránil jejich soukromí.->10 Strez 5: Zkouška run]]
+[[B) Pro jistotu si rychle přečteš všechny stránky a z paměti si zapamatuješ trasu jejich procházek. Původní deník necháš ležet, ať nikdo netuší, že jsi byl.->10 Strez 5: Zkouška run]]
+
+:: 6 Rozcestí dvou osudů [rozcesti CORE] {"position":"100,260"}
+//Větvičky stromů se nad tebou spojují do hustého baldachýnu, který filtruje sluneční paprsky do tanečních proužků světla na mechu. Vzduch voní pryskyřicí a vlhkou zemí po ranním dešti. V dálce se mezi větvemi tyčí zřícenina hradu, jehož zdi připomínají zlomené zuby starého obra. Z tmy lesa doléhá vzdálený hukot, který zní více jako dusný smích než jako rozechvěná kůra stromů. Na rozcestí leží velký plochý balvan, na němž je vyrytá podivná mapa chodeb vedoucích k černé studni v srdci lesa. Cítíš na zádech mráz, ačkoli den slibuje teplo.//
+Tvůj pochod končí před tímto kamenným rozhodnutím. Z levé strany se otevírá slunná cesta do lesní hlubiny, kde stíny hrají divné hry. Vpravo vede stezka k zruinované věži, odkud sem dříve doléhaly zvuky házeného železa. Najednou se blízko tebe ozve ostré kýchnutí, jako by sám vítr byl alergie na tvou přítomnost.
+[[A) Vytáhneš svůj deník a porovnáš ho s mapou vyrytou na balvanu. Zvědavost tě nutí zjistit, kam ty záhadné chodby skutečně vedou.->15 Informace 3: Tajné tábořiště draka]]
+[[B) Řekneš si, že slunce je tvůj přítel. Zamíříš po levé cestě do hloubi lesa, kde je vidět lepší a hrozba úskoků menší.->5 Stopy v mechu]]
+[[C) Rozhodneš se pro opatrnost. Obrátíš se zpět k bezpečí cesty, kterou jsi přišel, a začneš hledat pomoc od místních bylinkářů.->2 Léčitel 13]]
+
+:: 7 Slepá cesta č. 9: Drakov skrytý poklad [slepa CORE] {"position":"320,260"}
+//Vzduch se tu třepí zvláštním, teplým tepem, jako by se pod zemí skrývala pec. Les kolem vás tichne, stromy tvoří přirozenou klenbu nad ústím jeskyně. Ve tmavé hlubině září slabé modré světlo, které pulzuje v rytmu dýchání. Cítíte zde silnou magickou bariéru – vlasy na pažích vám stojí vzpřímeny a kůže štípe. Nejsou to stopy draka, ale zbytky starého kouzla, které chrání něco velmi cenného. Ticho je tak husté, že slyšíte vlastní srdce bušit v hrudi.//
+Postavíte se před vstup do dutiny ve skále, odkud věje jemný vínek vzduchu vonícího po ozonu a starém papíru. Ve vašem batohu se horko zahřeje – lesní kompas začne přehnaně rychle otáčet jehlou přímo k ústí jeskyně, jako by ho tam něco neviditelného táhlo. Na kameni u vchodu leží kus lesklé šupiny, která svítí tlumeným zeleným světlem a reaguje na magickou bariéru tím, že začne jemně vibrovat. Zdá se, že drak zde něco schovává, nebo možná jen čeká.
+[[A) Vezmeš zářivou šupinu jako ochranný talisman a odvážně vkročíš do jasu jeskyně. Doufáš, že její energie ti pomůže proklouznout bariérou bez povšimnutí.->16 Lesní duch a tajemství draka]]
+[[B) Opatrně oběhneš vstup a budeš se pokoušet najít slabé místo v bariéře pomocí kompasu. Předpokládáš, že magie má vždy nějakou mezery.->16 Lesní duch a tajemství draka]]
+
+:: 8 Informace 17 [informace SIDE] {"position":"540,260"}
+//Vzduch v údolí je nečekaně teplý a voní po pryskyřici, nikoli po spáleninách, jak bys čekal. Ve stínu skalních útesů vidíš obří drapérie šupin, které se lesknou do zlatova. Drak leží na boku, zády k tobě, a pravidelně vydechuje malý obláček dýmu. Jeho ocas klidně mává vzduchem, jako by si hrál s neviditelným provázkem. Ticho není napjaté, spíše... ospalé. Je tu cítit bezpečí, které nesedí k pověstem o drakovém hněvu.//
+Přistoupíš ke starému dubu a vylovíš z kapsy svůj poznámkový blok. Otevřeš ho na stránce s výkresem draka a čteš si zaznamenané hlasy. Dneska to znělo jinak – ne jako hřmivý řev, ale jako hlasitý, almost smíchnutí chrapot. Zapisuješ si: „Drak se nebavil s nikým. Zní to... spíše jako by se smějal.“ Tvá ruka zaváhá nad tužkou. Ten zvuk připomínal spíše radost než agresi.
+[[A) Přistoupíš k drakovi s roztaženýma rukama, abys zjistil, zda je opravdu ustaraný.->1 Obchodník u starého javoru]]
+[[B) Zůstaneš schovaný za stromem a sleduješ draka dál, abys nenašel žádné další stopy.->1 Obchodník u starého javoru]]
+
+:: 9 gated 18 [gated SIDE] {"position":"760,260"}
+//Vzduch tu voní po sirnatém dýchu a starém prachu. Škály draka třpytí se v ústraní jako kovy, ale jeho oči nejsou plné žárů, nýbrž zmatené bolesti. Princezna stojí uprostřed jeskyně, neuvězněná, ale hluboce ustaraná. Její korunka je pokrčená, šaty poplácány prachem a ruce svírají pergamen tak pevně, že bělásek kloubů kontrastuje s purpurovým hedvábím. Ticho v jeskyni je tlakující; každý krok zní jako hromobití. Zda jsi přišel zachránit nebo porazit? Drak kašle do kouta, což znejistí tvůj úmysl i postoj princezny.//
+"Čekejte!" vykřikne princezna a vstane. "Vidíte ten klíč ve drakových čelistech? To není kořist, ale pečeť míru. Pokud jej nezískáte, brána se neotevře." Drak zvedne hlavu, jeho výraz je plný vyčerpání, nikoliv hrůzy. Princezna ti podává pergamen s mapou chodeb vedoucích ke studni.
+[[A) Přistoupíš k drakovi a nabídneš mu bylinku z kapsy jako znak smíru.->4 Smyčka 20]]
+[[B) Položíš pergamen na zem a poklekneš, abys ukázal, že nejdeš po krvi.->4 Smyčka 20]]
+
+:: 10 Strez 5: Zkouška run [strez CORE] {"position":"980,260"}
+//Vzduch tu voní deštěm a starým kamením. Před tebou září modravá bariéra, která pulsuje jako srdce obřího tvora. Za ní se tyčí ústí jeskyně, odkud slyšíš daleké, ale klidné dýchaní. Princezna Alžběta stojí vedle tebe, sevřela si plášť a nervózně kouká na zářivou stěnu. „Musíme najít draka,“ šeptá tiše, „ale on vypadá... jinak.“ Na zemi leží kousek papíru z předchozí cesty, na kterém je nakreslený symbol klíče. Takhle tě musíš přivést přes tu bariériu.//
+Magická zeď ti blokuje cestu a její energie se dotýká tvé kůže jako statická elektřina. Princezna Alžběta ukazuje na dvě zářivé runy, které se objevily ve vzduchu před tebou. Jedna vypadá jako otevřená dlaně, druhá jako zaklínadlo. „Runa ochrany nebo runa síly?“ ptá se s napětím v hlase. Víš, že draci nejsou jen zvířata, ale mágové. Musíš vybrat správný přístup, jinak tě bariéra odpálí.
+[[A) Ukaž runu ochrany a nabídneš princezně svoji ruku jako znak míru. Doufáš, že drak ocení respekt před jeho mocí a neagresivní přístup.->14 Gated 6: Hádanka u ohně]]
+[[B) Použiješ runu síly a pokusíš se bariéru prolomit tvrdým nárazem pěstí. Je lepší ukázat odvahu než strach.->14 Gated 6: Hádanka u ohně]]
+
+:: 11 Cíl 12 [cil CORE] {"position":"100,420"}
+//Vzduch nad starobylým hradem se třepetá od horka, ale v temném křídle panuje chladný stín. Na stěně visí prastaré zrcadlo s rozbitou sklenkou, jehož zlomené fragmenty zachycují zkreslené obrazy tvého okolí. Podivné je to, jak se v nich odráží nejen ty, ale i záblesky modrého světla, které připomínají kouzelný amulet z tvé kapsy. Tychoše v místnosti přerušuje jen tlukot tvého srdce a vzdálené dunění hromu za oknem. Připadá ti, že čas tu plyne pomaleji, jako by i samotné kameny čekaly na tvůj rozhodující krok.//
+Stojíš před ústím temné studny v podzemí hradu. Ve vzduchu visí jemný prach, který si přinesl z lesa, odkud jsi právě přišel. V hlavě ti stále zní slova z bylinkářské knihy o dracích kýcháních a překreslená mapa chodeb, kterou si opatrně rozkládáš na kamenném žlabu. Odrážející se záblesk amuletu ve zrcadle ti dává tušit, že drak není unášetel, ale zakletý strážce.
+
+:: 12 Svědek na louce [postava SIDE] {"position":"320,420"}
+//Vzduch nad zeleným kobercem louky voní čerstvě skosenou trávou a jemným sluncem, které proniká skrz tenký závoj mraků. Pastýř sedí na balvanu a klidně hřebe po boku svého ovčáka. Za ním se leskne hladina vzdálené řeky, která odráží oblohu jako polované zrcadlo. Je tu ticho, přerušované jen cinkáním zvonků a šuměním větru v travech. Cítíš na kůži teplé paprsky a slyšíš, jak pastýř tiše huminká starou píseň o odvážných rytířích.//
+Pastýř ti ukazuje na zvláštní stopy v hlíně. Říká, že tam viděl princeznu, jak se smíje a honičkuje s obrovským drakem jako s pejskem. Přikyvuje vážně a nabízí ti svou vrbovou hůl pro ochranu na cestě ke skalám.
+[[A) Přijmeš hůl a odváženě se vydáš přímo za stopami k úpatí skály, kam směřuje pastýřův prst.->17 Střez 16]]
+[[B) Odmítneš hůl s tím, že ji nepotřebuješ, a zvolíš obezřetnější přístup přes lesní okraj, aby ses přiblížil nenápadně.->17 Střez 16]]
+
+:: 13 Věštkyně a kouř [postava CORE AHA] {"position":"540,420"}
+//Tma ve věži je tlustá, přerušovaná jen tancem plamenů nad železnou mříží. Vzduch voní po sušených bylinách a starém prachu. Venku se les třese ve větru, jehož šumění připomíná vzdálené hučení. Věštkyně sedí v hlubokém křesle z tmavého dřeva, její oči jsou zakryty hadrem, ale zdá se, že vidí všechno. Ticho je napjaté jako struna luku. Každý tvůj dech zní příliš hlasitě. Pociťuješ tíhu tajemství, která visí ve vzduchu těžce a vláhově.//
+Věštkyně zvedne ruku a přivoní k hrnce plného kouře, který se stáčí do podivných tvarů. "Podívej se," zašeptá s úsměvem. V kouři nevidíš ohně, ale zrcadlo. Je v něm princezna, ale netrpí – smíje se a ukazuje prstem nahoru. Runová karta padne na stůl: bariéra není zeď, je to spíš jako síť pavučiny. Věštkyně ti vysvětluje, že drak neújí, on strží. A něco uvnitř toho síta je potřeba osvobodit.
+[[A) Zeptáš se na způsob, jak bariéru bezpečně obejít bez boje.->19 Poutník a tajemství studně]]
+[[B) Chceš vědět, jak porazit draka přímo a zničit kouzlo.->19 Poutník a tajemství studně]]
+
+:: 14 Gated 6: Hádanka u ohně [gated CORE] {"position":"760,420"}
+//Výpar z draka smrdí sírou a pečeným karafiátem. Zrak ti bliká od jisker, které stříká z jeho nozder jako z rozhořčeného krbu. Vzduch je tak horký, že se tvé vlasy začínají kroutit do spirál. Drak netančí ani nelétá; místo toho se snaží ovládat svůj dech. Každý nádech způsobí, že mu z očí padají slzy jako oloukaný kovář. Princezna na jeho hřbetě nemá strach. Místo toho má v ruce starou svitkovou mapu a vypadá, jako by čekala na signál. Hrad ve vzdáleném lese za vámi jen tiše pozoruje tuto podivnou scénu.//
+Drak náhle zamrčí hlubokým basem: „Chci jen kýchne! Ale nemohu!“ Jeho oči se zvedají ke tvé tváři a vypadají jako dvě rozzářené louže. Princeška ti šeptá do ucha: „Pamatuješ si na bylinkovou knihu? Draci nesnesou, když je někdo rozčiluje.“ Hádanka o přírodě vyžaduje správný postup. Pokud ho neznáš, hrozí výbuch.
+[[A) Vyndáš z kapsy koření a přiblížíš drakovi nos. Chceš zjistit, zda silná chuť pomůže ulevit tlaku v jeho hlavě.->16 Lesní duch a tajemství draka]]
+[[B) Uklidíš ho jemným štěkaním a napodobením zvuků lesa. Snažíš se vytvořit pro něj klidnou atmosféru, aby mohl dýchat bez stresu.->16 Lesní duch a tajemství draka]]
+
+:: 15 Informace 3: Tajné tábořiště draka [informace CORE] {"position":"980,420"}
+//Vzduch tu voní spáleným dřevem a divnými kořením, které připomíná lékárnickou skříň. Popel v ohništi je ještě teplý a mezi kameny leží roztrhané stránky mapy, na nichž jsou přikresleny podivné spirály. Zdá se, že drak nepřišel útočit, ale spíše se zde dlouze zdržel. Je tu stopy po táboře, ne po bitvě. V dálce za stromy stále čouhá hrad ze karty #6, který nyní vypadá méně ohrožující a spíše jako svědek něčeho, co právě začínáš chápat.//
+Objevíš malé tábořiště uprostřed lesní mýtiny. Na zemi leží roztrhané stránky starého atlasu, na kterých někdo tužkou překreslil cesty kolem studny. Princezna zde nechala svůj závoj, ale není ve vazku, jen v klidu poseděla u ohně.
+[[A) Opatrně zvedneš mapový fragment a uložíš si jej. Chtěl bys mít důkaz před tím, než se pustíš hlouběji do hádanky.->10 Strez 5: Zkouška run]]
+[[B) Rychle projdeš stopy po ohništi, abys zjistil, zda drak opravdu nechal princeznu naživu a bez boje.->10 Strez 5: Zkouška run]]
+
+:: 16 Lesní duch a tajemství draka [postava CORE] {"position":"100,580"}
+//Vzduch v hlubokém lese je tlaký a plný vůně pryskyřice. Světlo slunce se jen stěží probíjí hustým listím, tvoří bledé paprsky, které tancují na mechu. Slyšíš jen šustění větru ve výškách a vzdálené zavolání ptáka. Zdá se, že les sám dýchá. Tvůj dech je viditelný, protože vzduch tu chladne rychleji než jinde. Každý krok ti zdánlivě ztěžuje neviditelná síla, jako by půda pod nohama byla měkká a nedůvěřivá. Přesto cítíš, že jsi pozorován.//
+Stín před tebou se rozbliká a z hustých keřů vystoupí průsvitná postava lesního ducha. Jeho tvář je vážná a oči září jako dvě malé hvězdy. Nevěř všemu, co slyšíš o dracích, zašeptá duch hlasem připomínajícím šustění listí. Zprávy jsou často zmanipulovány strachem. Podá ti malý lesklý lesní plod. Jez a pamatuj si, pravda bývá jinde. Hledej toho, kdo viděl draka upřímně očima, ne přes pomlouvačné jazyky.
+[[A) Přijmeš radu ducha a vydáš se za pravdivým svědkem, kterého duch naznačil.->13 Věštkyně a kouř]]
+[[B) Zamítneš pomoc ducha a raději se vrátíš na známou stezku, kde sis myslel, že jsi viděl stopy draka.->7 Slepá cesta č. 9: Drakov skrytý poklad]]
+
+:: 17 Střez 16 [strez SIDE] {"position":"320,580"}
+//Vzduch je tu tlaký a těžký, jako před bouří. Z dálky se ozývá hluboké dunění, které rezonuje přímo v hrudi. Tvůj dech se tvoří ve tmě, zatímco kolem tebe stíní mohutné postavy v lesklých brněních. Jejich meče jsou sice sklopené, ale pohledy ostré jako břitva. Nejdou o to tě zabít, ale zkontrolovat, jestli nepřijel s úmyslem způsobit chaos. Čekají na tvůj krok, tvoje slovo, tvůj důkaz, že jsi hrdina, ne zloděj.//
+Řada ozbrojených rytířů tě rázně zastaví před vstupem do jeskynního komplexu. Jejich velený ti zdvihne dlaní ruku a vyžaduje okamžité prokázání mírových úmyslů. Ticho je napjaté jako тетивa. Musíš jednat rychle, aby tě neodehlidli jako podvodníka.
+[[A) Zvedneš ruce v gestu pokoje a zdvořile předložíš svůj cestovní průkaz. Ukazuje, že jsi registrovaný dobrodruh s povolením k průzkumu.->8 Informace 17]]
+[[B) Přistoupíš blíže a s úsměvem nabídneš rytíři kousek sladké marmelády z kapsy. Většina válečníků má slabost pro dobré zákusky.->8 Informace 17]]
+
+:: 18 Smyčka 11 [smycka CORE] {"position":"540,580"}
+//Vzduch v jeskyni je náhle teplý a vlhký, přemísený se zápachem špíny. Drak, obrovská bytost s křídly jako plachtění, si dýchá těžce a záchvěvně. Jeho oči jsou zakalené, nos zarudlý. Zdá se, že není hrozbou, nýbrž nemocným strážcem. Pochopuješ, že jeho vztek pramení ze svraskleného žaludu, ne z krutosti. Cítíš napětí mezi touhou utéct a nutností pomoci, nebo alespoň pochopit tajemství tohoto místa.//
+Stojíš před obřím tvorem, který se chvěje při každém vdechu. Není to dravý predátor, ale zakletý strážce, jehož prokletí mu nedovoluje odpočinout si v klidu. Připomíná ti staré pověsti o bytostích uvězněných vlastním osudem. V dálce za ním se rýsuje ústí do hlubšího labyrintu chodeb, které vedou k tomu nejdůležitějšímu místu.
+[[A) Podíváš se pozorně na draka a vzpomeneš si na poznatek z bylinkářské knihy. Jeho dýchání připomíná příznaky, které jsou spojeny s prokletím.->11 Cíl 12]]
+[[B) Obcházíš draka a sleduješ jeho pohyby. Jeho křídla zakrývají vstupy do hlubších chodeb, ale mezi nimi je mezera.->11 Cíl 12]]
+
+:: 19 Poutník a tajemství studně [postava CORE] {"position":"760,580"}
+//Vzduch tady voní pryskyřicí a starým papírem. Poutník sedí u ohně, jehož plameny se mírně chvějí. Jeho oči jsou zaraženě upřený na tebe, jako by čekal, až něco pochopíš. V dálce se rýsuje silueta hradu, který už není jen kamennou stěnou, ale záhadou čekající na vyřešení. Cítíš napětí vzrůstat s každým slovem, které padne. Je to chvíle před bouří, kdy vše visí na vlásku a jediné rozhodnutí může změnit osud celého příběhu.//
+Poutník ti podává svůj cestovní deník. 'Poslouchej dobře,' šeptá ti do ucha, zatímco píšeš. 'Bariéra kolem studně není kletba, ale hádanka. Klíč ze dna musí být vytažen, když se odraz amuletu spojí s měsícem. Drak neunesl princeznu – chrání ji.' Zatímco čteš tyto řádky, uslyšíš za sebou tichý zvuk padajícího kamene.
+[[A) Rychle sbalíš deník a přesuneš se k východu ze jeskyně. Musíš najít místo, kde bude vidět na měsíc a studnici najednou.->18 Smyčka 11]]
+[[B) Zvedneš ho a rychle odejdeš, aby tě nikdo neviděl. Deník si uložíš do kapsy a pokračuješ dál.->18 Smyčka 11]]
+
+:: 20 Onboarding 1 [onboarding CORE] {"position":"980,580"}
+//Ranní mlha se ještě neplně rozplynula nad hradem a na věži zní hluboký, zádumčivý zvuk lící. Vzduch chutná prachu a starého vosku. Cítíš pod nohama studenou dlažbu trůnní síně. Král ti předává pergamen s rukama, které se mírně třesou. Jeho hlas zní vážně, ale v očích má záblesk naděje. Víš, že toto není jen další hra – tvůj osud i osud princezny visí na vlásku.//
+Král ti slavnostně předá zapečetěný list mise. Na papíře je narysovaná draka a místo princezny jen otazník. K tomu ti strčí do dlaně tři lesklé mince s nápisem 'Na nečekanosti'. 'Neváhej, hrdino,' šeptne král. 'Drak spí... nebo se tak zdá.'
+[[A) Přijmi misí a vydej se za drakem. Mince máš, plán je jasný: najít princeznu před polednem.->6 Rozcestí dvou osudů]]
+
+:: 21 jednosmer 21 [jednosmer SIDE] {"position":"100,740"}
+//Stín stromů rychle pohlcuje jasné sluneční paprsky louky. Vzduch tu chutná vlhce a zemitě, jako by se příroda chystala na bouři. Dřeviny se kolem tebe stáčejí do hustých klubko, která brání úniku zpět. Cítíš napětí v nohou, ale víš, že ustupování není volbou. Les je živý a hluk větru v korunách zní jako tiché varování před tím, co čeká za křovím.//
+Za posledním keřem se cesta rozšiřuje do malé lesní cesty. Na zemi leží popel z nedávného ohně a vedle něj stočený starobylý svitek mapy, který na tebe kouká jako oko draka. Než stihneš zvednout oči, ze tmy se ozve hluboké, hrdlořezavé chrapení a zem pod tvýma nohama lehce zatřese.
+[[A) Zvedneš svitek mapy opatrně rukou, abys nerušil spícího draka, a zkusíš si ji prohlédnout ze vzdálenosti.->16 Lesní duch a tajemství draka]]
+[[B) Rychle odskočíš do strany a pokusíš se draka překvapit hlasitým pokřikem, abys zjistil, zda je opravdu nebezpečný.->16 Lesní duch a tajemství draka]]

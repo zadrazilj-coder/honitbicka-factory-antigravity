@@ -923,7 +923,8 @@ def _ocisti_citaci(text: str) -> str:
 def _citace_je_dolozena(citace: str, blob: str) -> bool:
     """Ověří citaci proti kartám (case-insensitive). Model smí legitimně spojit 
     dva doslovné úryvky elipsou (...) – pak se každý fragment ověří zvlášť.
-    Podporuje také částečné shody dlouhých fragmentů pro toleranci překlepů."""
+    Podporuje také toleranci pro skloňování slov v češtině (shoda 4-písmenných prefixů).
+    """
     text = _ocisti_citaci(citace)
     if not text:
         return False
@@ -942,15 +943,30 @@ def _citace_je_dolozena(citace: str, blob: str) -> bool:
         if block_lower in blob_lower:
             continue
             
-        # Pokud se celý blok neshoduje, rozdělíme ho na menší pod-fragmenty podle interpunkce
-        sub_frags = [sf.strip(" .?,;:-—–").lower() for sf in re.split(r",|;|:|\.|—|–", block)]
-        sub_frags = [sf for sf in sub_frags if len(sf) >= 3]
+        # Rozdělíme blok na slova a zkusíme toleranci skloňování/překlepů pomocí prefixů (min 4 znaky)
+        block_words = [w.strip(" .?,;:-—–()\"'“„”‘") for w in re.split(r"\s+|,|;|:|\.|—|–", block_lower)]
+        block_words = [w for w in block_words if len(w) >= 3]
+        if not block_words:
+            return False
+            
+        blob_words = set(w.strip(" .?,;:-—–()\"'“„”‘") for w in re.split(r"\s+|,|;|:|\.|—|–", blob_lower))
         
-        # Pro ověření bloku stačí, když se aspoň jeden dostatečně dlouhý sub-fragment (>= 12 znaků) shodne
-        if any(len(sf) >= 12 and sf in blob_lower for sf in sub_frags):
+        # Kontrola, zda každé slovo z citace odpovídá slovu v kartách (přímá shoda nebo shoda prefixu)
+        block_ok = True
+        for bw in block_words:
+            if bw in blob_words:
+                continue
+            if len(bw) >= 4:
+                prefix = bw[:4]
+                if any(w.startswith(prefix) for w in blob_words):
+                    continue
+            # Neshoduje se slovo ani prefix -> blok selhal
+            block_ok = False
+            break
+            
+        if block_ok:
             continue
             
-        # Pokud se blok neshoduje ani částečně, celá citace padá
         return False
         
     return True

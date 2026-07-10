@@ -1,0 +1,72 @@
+:: StoryTitle
+ctyri-svetla_60min
+
+:: StoryData
+{"ifid": "00000000-0000-4000-8000-000000000000", "format": "Harlowe", "format-version": "3.3.8"}
+
+:: 1 onboarding 1 [onboarding CORE] {"position":"100,100"}
+[[A) dál->2 rozcesti 2]]
+
+:: 2 rozcesti 2 [rozcesti CORE] {"position":"320,100"}
+[[A) dál->3 informace 3]]
+[[B) dál->4 informace 4]]
+[[C) dál->13 rozcesti 13]]
+
+:: 3 informace 3 [informace CORE] {"position":"540,100"}
+[[A) dál->5 strez 5]]
+
+:: 4 informace 4 [informace CORE] {"position":"760,100"}
+[[A) dál->5 strez 5]]
+
+:: 5 strez 5 [strez CORE] {"position":"980,100"}
+[[A) dál->6 gated 6]]
+
+:: 6 gated 6 [gated CORE] {"position":"100,260"}
+[[A) dál->7 rozcesti 7]]
+
+:: 7 rozcesti 7 [rozcesti CORE] {"position":"320,260"}
+[[A) dál->10 prechod 10]]
+[[B) dál->9 slepa 9]]
+
+:: 8 postava 8 [postava CORE AHA] {"position":"540,260"}
+[[A) dál->11 smycka 11]]
+
+:: 9 slepa 9 [slepa CORE] {"position":"760,260"}
+[[A) dál->7 rozcesti 7]]
+
+:: 10 prechod 10 [prechod CORE] {"position":"980,260"}
+[[A) dál->8 postava 8]]
+
+:: 11 smycka 11 [smycka CORE] {"position":"100,420"}
+[[A) dál->12 cil 12]]
+
+:: 12 cil 12 [cil CORE] {"position":"320,420"}
+KONEC — organizátor přečte epilog.
+
+:: 13 rozcesti 13 [rozcesti SIDE] {"position":"540,420"}
+[[A) dál->14 sber 14]]
+[[B) dál->15 slepa 15]]
+
+:: 14 sber 14 [sber SIDE] {"position":"760,420"}
+[[A) dál->16 strez 16]]
+
+:: 15 slepa 15 [slepa SIDE] {"position":"980,420"}
+[[A) dál->13 rozcesti 13]]
+
+:: 16 strez 16 [strez SIDE] {"position":"100,580"}
+[[A) dál->17 informace 17]]
+
+:: 17 informace 17 [informace SIDE] {"position":"320,580"}
+[[A) dál->18 gated 18]]
+
+:: 18 gated 18 [gated SIDE] {"position":"540,580"}
+[[A) dál->19 obchodnik 19]]
+
+:: 19 obchodnik 19 [obchodnik SIDE] {"position":"760,580"}
+[[A) dál->20 smycka 20]]
+
+:: 20 smycka 20 [smycka SIDE] {"position":"980,580"}
+[[A) dál->21 jednosmer 21]]
+
+:: 21 jednosmer 21 [jednosmer SIDE] {"position":"100,740"}
+[[A) dál->7 rozcesti 7]]

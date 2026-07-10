@@ -69,12 +69,34 @@ def zatrid_hru(
     zadani: Zadani, slug: str, zdrojovy_skin_dir: str, *, anotace: str = ""
 ) -> list[str]:
     """Zkopíruje finální výstupy skinu do `hotove_hry/…` (oba profily) a založí
-    INDEX.md bez spoilerů (spec §7). Vrátí seznam vytvořených cílových cest.
-
-    Chybějící PDF (GTK) se přeskočí; INDEX.md se založí vždy.
+    INDEX.md bez spoilerů (spec §7). Zahrnuje automatický export twee mapy
+    do složky hry a centrálního adresáře `mapy/`.
     """
+    import json
+    from honbicka.modely import Mapa, Karta
+    from honbicka.export import export_twee
+
+    # Načteme mapu a karty ze skinu
+    mapa = None
+    karty = None
+    mapa_cesta = os.path.join(zdrojovy_skin_dir, "mapa.json")
+    karty_cesta = os.path.join(zdrojovy_skin_dir, "karty.json")
+    if os.path.exists(mapa_cesta):
+        with open(mapa_cesta, encoding="utf-8") as f:
+            mapa = Mapa.model_validate_json(f.read())
+    if os.path.exists(karty_cesta):
+        with open(karty_cesta, encoding="utf-8") as f:
+            karty = [Karta.model_validate(k) for k in json.load(f)]
+
     vytvorene: list[str] = []
     anot = anotace or f"Venkovní karetní dobrodružství „{zadani.tema or slug}“."
+
+    # Uložíme twee do zdrojové složky skinu
+    if mapa is not None:
+        twee_obsah = export_twee(mapa, karty, nazev=slug)
+        with open(os.path.join(zdrojovy_skin_dir, f"{slug}.twee"), "w", encoding="utf-8") as f:
+            f.write(twee_obsah)
+
     for profil in (30, 60):
         cil = cesta_hotove_hry(zadani, slug, profil)
         os.makedirs(cil, exist_ok=True)
@@ -84,6 +106,20 @@ def zatrid_hru(
             if os.path.exists(zdroj):
                 shutil.copy2(zdroj, os.path.join(cil, soubor))
                 zkopirovane.append(soubor)
+
+        # Uložíme twee mapu do složky hry a centrální mapy/
+        if mapa is not None:
+            twee_cesta_hry = os.path.join(cil, f"mapa_{profil}min.twee")
+            with open(twee_cesta_hry, "w", encoding="utf-8") as f:
+                f.write(export_twee(mapa, karty, nazev=slug))
+            zkopirovane.append(f"mapa_{profil}min.twee")
+
+            # Uložíme do centrální mapy/
+            os.makedirs("mapy", exist_ok=True)
+            twee_cesta_central = os.path.join("mapy", f"{slug}_{profil}min.twee")
+            with open(twee_cesta_central, "w", encoding="utf-8") as f:
+                f.write(export_twee(mapa, karty, nazev=slug))
+
         index = os.path.join(cil, "INDEX.md")
         with open(index, "w", encoding="utf-8") as f:
             f.write(_index_md(zadani, slug, profil, anot, zkopirovane))

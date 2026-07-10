@@ -1,0 +1,129 @@
+:: StoryTitle
+princezna-a-drak_30min_gpt20b
+
+:: StoryData
+{"ifid": "00000000-0000-4000-8000-000000000000", "format": "Harlowe", "format-version": "3.3.8"}
+
+:: 1 Obchodník s perličkovým kloboukem [obchodnik SIDE] {"position":"100,100"}
+//Ve světle odrážejícím se v zlatých listích je lesa šplouchající potok a stíny staré cesty. V dálce rozléhá smích princezny, která se třepotá na malém křídle, když objevuje roztomilého obchodníka s kloboukem ozdobeným perličkami. Vůně dřeva a pikantního koření naplňuje vzduch a drakovi zní jako smích – co to znamená?//
+Princezna kráčí lesem a potkává roztomilého obchodníka s kloboukem ozdobeným perličkami. Ten jí nabídne směnu zlatých medailonek za kouzelný nůž, který otevře cestu do lesa. Když se rozhodne oběti cenu, objeví nápis na krabici: 'Drak ukrývá poklad pod kamenným mostem.'
+[[A) Vlož křišťálový klíč, který obdržel od obchodníka, a otevři tajný portál do lesa.->9 gated 18]]
+[[B) Zapůjči si od obchodníka dražší zlato, aby ti pomohl najít správný vstup do lesa.->9 gated 18]]
+
+:: 2 Lecitel 13 [lecitel SIDE] {"position":"320,100"}
+//Stíny lesních paprsků tančí na mokré listovce, když šelest větru rozeznívá mezi stromy tichý zvuk škrábání křídla. V dálce se ozve smích princezny, její oči však září odstrašeně, protože ztrátové hřmění draka stále rezonuje ve vzduchu. Když nastoupíš na cestu, pocítíš, jak jiskra v tvých prstech rozsvítí stopu, kterou tě čeká nový příběh.//
+Princese se právě vrací z hrozných výprav. Váš léčitel ji přivítá a podává jí malé krystalkové lžičky, které ji uzdraví po nebezpečné události. Když se usmívá, šeptá: "Drak je slabý tam, kde je křišťálový klíč – najdi ho a drak ztratí sílu."
+[[A) Sleduj krystalový klíč, který září pod stínem stromů.->12 Princezna a drak]]
+[[B) Rozhlédneš se po stromech, kde šeptá šedé listí a v dálce se ozývá tichý křik.->3 Princezna a Drak – Slepa 15]]
+
+:: 3 Princezna a Drak – Slepa 15 [slepa SIDE] {"position":"540,100"}
+//V šeru zchátralé uličky se zdá, že stíny tancují pod ledným světlem lampy. Každý krok odráží šelest listů a v dálce se ozývá drakovo kruknutí. Vzduch je těžký jako zlatý mlýn, přetékající pikantní vůní horkého čaje, co skrývá tajemství mezi stěnami staré věže. Když se otočíš, slyšíš šepot listů a zvuk praskajících ohně. Střípky světla se křehle třpytí, když se v dálce rozezní zlověstná píšťalka draků.//
+Uschlepená na úzkou uličku, kterou vedla z mechu k starému hradu, jsi v srdci podél stínů. Když projdeš kolem rohu, objevíš zlaté hvězdné mince, jejichž lesk roste při kontaktu s ohněm a vyzařují světlo jako malé dračí plameny. Princezna ti šeptá: "Tyto mince nám otevřou cestu ke klíči, který skrývá drakovo srdce." Ty se rozhodneš přidat je do svého batohu a jít dál.
+[[A) Rozsvítíš hvězdné mince v ruce a požádáš draka o pomoc.->2 Lecitel 13]]
+[[B) Položíš mince do ohně, aby vyvolaly světelný stín k nalezení cesty.->2 Lecitel 13]]
+
+:: 4 Smyčka 20 – Kolo a klíč [smycka SIDE] {"position":"760,100"}
+//Ve stínu lesů se rozprostírá malebná louka, kde sluneční paprsky procházejí mezi křovím, vytvářející zlaté pásy na trávě. V dálce se ozývá šumění řeky a cítíte jemný dotek větru v křídlech ptačích hnízd. Postava se otevírá před vážným rozhodnutím: je to prastaré kolo, které ji vrátí zpět ke bráně, ale jeho náhled je zahalen tajemnou kouzelnou mglou. Když se pokusíte odhalit, co kolo skrývá, slyšíte tiché šepoty dráku, jakž by mohl chránit klíč pod starým dubem.//
+Zastavujete se u hrubého kolu, které se ztrácí ve stínu stromů. Kolo se třpytí pod slunečním světlem a šustí, jako by mluvilo o dávných příbězích. Před vámi leží starý dub s hroznou prasklinou; je to místo, kde klíč může být ukryt.
+[[A) Opatrně vyhledáš klíč pod dubem a pečlivě ho vkládáš do mechanismu kolového otvoru->21 Jednosmer 21]]
+[[B) Rychle si vezmeš klíč z půdy a okamžitě otevřeš kolo, čímž rychle odhalíš tajemství->21 Jednosmer 21]]
+
+:: 5 Informace 4: Kletba draka [informace CORE] {"position":"980,100"}
+//Vstoupíš do malé zámku ukrytého v srdci lesa, kde se stíny rozprostírají jako tajuplné pláště. V dálce hřmí silný šelest a praskot draků, jehož křídla pomalu rozkřehávají vzduchové proudy. Zde se ztrácí světlo a teplo, ale v srdci pod zemí se rozzáří slabý lesklý odraz – krystalový klíč, který věříš, že změní osud.//
+Když se rozhlásíš do ticha lesa, objevíš hřbetející klenutý domov draka. Na stole leží starý záznam: aby se kletba přerušila, musí být zpívána píseň východu slunce, kterou princezna naučila jedině v srdci lesa. Teď je na tobě zjistit, kde najdeš klíč.
+[[A) Použij krystalový klíč a otevři zámkovou bránu, kde drak spí->10 Strez 5]]
+[[B) Skrči se pod hřebenem stromů a vyhledej stopy po draci->10 Strez 5]]
+
+:: 6 Rozcesti 2 [rozcesti CORE] {"position":"100,260"}
+//Ve stínu starého dubu se lesklé světélka ztrácí mezi listím, jako drobné poklady vyzvednuté prasklinou. Vzduch je osvěžený vůní čerstvých květů a lehkým podotčením poříznutého vřesku, ale za každým křupavým listem šumí tichá hrozba drakova oddechu. Tiché šepoty vírů dřeva hladí tvář, a srdce ti burácí ve stínu příběhu, kde se princezna setkává s nevyzpytatelnými dobrodružstvími.//
+Princezna Elara stojí na křižovatce lesních cest. Před ní roztahuje stará trubka z kamene, na které se zdá, že stín draka se mění v ticho. Za ní se rozpořila hluboká cesta do lesa, kde se říká, že skrývá křišťálový klíč. Přestože srdce je plné odvahy, zvuk praskajícího dřeva jí připomíná, že i hrdinové musí občas zvolit cestu nebo zůstat.
+[[A) Prozkoumej trubku a pošlápni na ní staré runy, které by mohly odhalit tajný vchod.->15 Zpěv, klíč, odpojení]]
+[[B) Zavěž do lesa a nechte šumění kapek v dálce vést tvé kroky k tajné studni.->5 Informace 4: Kletba draka]]
+[[C) Slyšte draka a zeptejte se ho na jeho oblíbený květinový vůni.->2 Lecitel 13]]
+
+:: 7 Slepa 9 [slepa CORE] {"position":"320,260"}
+//Když vstoupíš do úzké uličky po lesním háji, světlo z lampy se trhá jako plamen ve tmě a stíny tančí na kamenných zdech. Všechno cítíš – šum listí, hřmot hrůzy v dálce a vůni hořícího dřeva. Přibližuje se drak, jeho dech vrhá teplotu tak silnou, že se stínům zkrčují.//
+Našel jsi uličku, kde se stíny houpají pod lampou a v dálce slyšíš šepot draka. V srdci lesa ti připomíná ticho, ale něco tě přitahuje k lampě na rozbitém kameni. Když se podepříš, zlatý světlo odhalí úzký průchod, který zní jako volání tvého osudu.
+[[A) Použiješ kouzelné dech draka k rozsvícení lucerny a odhalíš tajnou cestu.->16 Princezna a Drak]]
+[[B) Využiješ krystalový klíč z kapsy, abys otevřel zaprášenou lucernu a vyrobíš starodávný svit.->16 Princezna a Drak]]
+
+:: 8 Informace 17 [informace SIDE] {"position":"540,260"}
+//Stoupáš na stříbřitý křídla lesa, když se z dálky ozve šepot listů a odraz měsíčního světla na mokrém trávě. Větvičky houpají jako tiché smíchy dětí, které v noci hrály na schovávanou mezi stromy. Všude pulzuje vůní suchého kvítka a jemného kouře z kamínků, kde kdysi hrál drak. Záhadný vzduch tě obaluje, připomínající příběhy o princeznách a zlatých klíčích.//
+Na louce se rozprostírá starý mapový list, který ti hrdina předal za pokrytý prachem šátek. V něm je vyznačen kruh lesa a červené X ukazující místo, kde drak spí v srdci lesního zákoutí. Když se podíváš na obří stromy, cítíš, že ticho je jen maska před nadcházející bouří.
+[[A) Použiješ starý klíč z křídla a otevřeš tajnou truhlu u podu prastarého dubu.->1 Obchodník s perličkovým kloboukem]]
+[[B) Zapůjčíš si z lesní chůvy šátek a přebavíš se na odvážného rytíře, abys mohl projít prastarým mostem s drakem.->1 Obchodník s perličkovým kloboukem]]
+
+:: 9 gated 18 [gated SIDE] {"position":"760,260"}
+//A heavy mist curls around the roots of an ancient oak gate, its iron hinges murmuring as the wind whistles through the leaves. The air smells faintly of rosemary and old stone, and from beyond a curtain of vines you catch a glimpse of flickering scales that seem almost friendly. The dragon's distant rumble feels like a gentle lullaby, while a curious giggle drifts on the breeze—perhaps the forest sprites are playing a game with the princess.//
+You step into the clearing where an ancient oak gate stands, its iron hinges creaking in the wind. Inside, the princess of the kingdom cries out, trapped on the other side while a fierce dragon guards the entrance. As you approach, a silver key glints from your pocket, hinting that the merchant's gift may open this barrier.
+[[A) Try the silver key from the merchant on the gate.->4 Smyčka 20 – Kolo a klíč]]
+[[B) Shout bravely to the dragon and ask if it will let you pass.->4 Smyčka 20 – Kolo a klíč]]
+
+:: 10 Strez 5 [strez CORE] {"position":"980,260"}
+//Vzduch je svěží a naplněný vůní borovic, který se mísí s čerstvým šumem listí pod tvými nohami. Střípky slunce probíhají skrz zelený potok křišťálové cesty vedoucí ke kamennému mostu, jehož povrch září jemným zlatavým odleskem. V dálce se ozývá šepot staré legendy a kolem tebe třpytí drobné křišťály, které se chvějí v prachu větru.//
+Stála jsi na prahu staré brány, kde ti patrný strážce s křídlatým šátkem vyhrnul klid. V jeho hlasu znělo: „Příliš blízko se díváš – hádej, kdo draka drží?“ Když se ozvalo hřmání hory, vzpomněla jsi si na starou pověst o krystalovém srdci.
+[[A) Opusť klid a dej strážci svůj zlatý klíč, který skrývá tvůj odhad.->14 Závoj z lesu]]
+[[B) Zavolej drakovi vtipným hlasem: „Dáme si zmrzlinu?“ a nechej ho přinést klíč.->14 Závoj z lesu]]
+
+:: 11 Cíl 12 – Krystalový most [cil CORE] {"position":"100,420"}
+//V lese, kde se stíny plazí mezi stromy a slunce hraje na listí. Tiše šeptají příběhy starých víl. V dálce se šumí voda skákající přes kameny, a každé zvonění zní jako praskání malého křesťanů. Princezna cítí po sobě vůni kořeněného kouzla a slyší drakovo hřmotné pískání, které se zrcadlí v kapkách rosy na květinách. Všechno je naplněno očekáváním dobrodružství a lehkým humorem, když se svět rozprostírá před ní jako nekonečný příběh.//
+Střípky zlatého slunečního světla se roznášejí mezi listy, když královská princezna šplhá podél horského mostu k tajemné jeskyni. Náhle hřmí drakovo křik, který se ozývá v kapkách rosy na květinách a vyvolává v ní napětí z neznámého – přesto si pamatováním, že ten drak nosí čepici s královskými hvězdami, ulevuje. Když dorazí k cíli, zjistí, že drak stále před ní stojí, a musí shromáždit všechny nápovědy.
+
+:: 12 Princezna a drak [postava SIDE] {"position":"320,420"}
+//V zlatavém světle polední slunce se rozprostírá louka, kde kvetou heřmánky a vůně hory šeptá do vzduchu. V dálce se ozývá slabé šustění listí, ale za hrubým dnem se rozzáří drakova stín, který čeká na klidné podzimní ráno. Na trávě se třpytí motýli ve slunečním světle a v korunách stromů se pomalu rozlévá první křik ptáků. Když se vítr prochází mezi keři, přinese šumění listí a vůni zralých malin. Ve vzduchu je jemná vůně ohně, která připomíná staré královské hořící červený plamen, a zároveň hřmí na křídlech draka jako tichý smích.//
+Princezna se vydala po louce, když najednou uslyšela zpěv z dálky. Před ní se objevil starý zpěvák s kytarou a nabídl jí píseň, která by mohla uklidnit draka. Když hrají tóny, úhel světla se mění a drakova stínová tma se rozzáří v naději.
+[[A) Vložíš krystalový klíč do rytmu písně.->17 strez 16]]
+[[B) Zpíváš píseň bez klíče, nechej melodií naplnit vzduch.->17 strez 16]]
+
+:: 13 Princezna a drak (13) [postava CORE AHA] {"position":"540,420"}
+//Všechno se zdá být klidné, když se prohledáváš lesní průsmyk, ale v dálce šeří světlo na zlaté křídle draka. Jeho dech horký, a tenkou vrstvu rosy rozplývá po stromech. Všude je šepot ptáků, ale zároveň se cítíš jako by tě někoho sledoval v tichu. Tvé srdce buší rychleji, když víš, že za tím hřejivým zábleskem leží tajemství království.//
+Princezna Alia stála u hradeb, když se před ní objevil starý mluvčí s dlouhými šedivými vlasy. Z jeho slova vycházel klid: drak je ochránce království, ne zlovolný tvor. Ale když se podívala na hrozivé křídlo, zistila, že za ochrannou maskou skrývá něco mocnějšího.
+[[A) Pomalu přistoupíš k drakovi a nabídneš mu krystalový klíč, který jsi objevila v truhle->19 Postava 8: Princese a drak]]
+[[B) Rozkřičíš do hluku svůj ospravedlněný smích a držíš krystalový klíč v ruce->19 Postava 8: Princese a drak]]
+
+:: 14 Závoj z lesu [gated CORE] {"position":"760,420"}
+//Vzduch je zahuštěný voňavým aromatem lesních květin a horkého koksu od drakova dechu. V dálce se ztrácí šepot větru, který vrací vzpomínky na rozzářené světlo krystalů v srdci draka. Tvůj krok pod starou listovou kůrou je jako tichý šelest tajemství a každý dech hřeje jako plamen.//
+Stoupáš po křivolaké stezce, kterou vede les do starého hradu. Najednou se před tebou rozprostírá zámek s kovovým portálem, vytesaný ve tvaru drakova hrdla. Klíč, který by měl odemknout bránu, září slabým světlem na podlaze. Další brána před drakem však vyžaduje jiný klíč; musíš najít ten v srdci draka.
+[[A) Využiješ krystalový klíč, který zahlásil pod drobínami na zemi.->16 Princezna a Drak]]
+[[B) Skočíš přes portál a pokusíš se obelstít draka tajným trénikem.->16 Princezna a Drak]]
+
+:: 15 Zpěv, klíč, odpojení [informace CORE] {"position":"980,420"}
+//V lesním koutě, kde se stíny hrají na zřícených kamenech a dřevo šeptá příběhy starých věží, se ozývá zvláštní šumění, jako by vítr přinášel písně úsvitu. V dálce se mihne světlo, které se odráží v odlesku krystalového klíče, co ležící pod listím září jako malé hvězdy na obloze. Přírodní hudba hraje a zní jak přípitek k neviditelnému hostu – drak, jenž kdysi chránil princeznu, nyní zůstává v tichém úsvitu svého domova. Ticho se mísí s hvězdným šepotem a napětí roste jako listy ve větru.//
+Když se blížíš k obličejům staré brány, slyšíš jemné dýchání draka, který se skrývá ve stínu hory. V okamžiku objevíš starou knihu s nápisem: 'Písně úsvitu uklidňují draky.' Rozhlédneš se po krystalu na zemi a pocítíš, že klíč má zvláštní sílu.
+[[A) Použij krystalový klíč k otevření staré truhly->10 Strez 5]]
+[[B) Zpívej 'Písně úsvitu' a přiblíž si draka->10 Strez 5]]
+
+:: 16 Princezna a Drak [postava CORE] {"position":"100,580"}
+//Všední dny v království se proměnily ve vzrušení, když tě lesní duch provede mezi stromy a šeptem šelesty. Jeho oči září světlem, které ti naznačuje, že lucerna a mince otevřou tajný průchod. V kapse pocítíš chlad prachu a slyšíš dýchání draka se ozývá v dálce; jeho hlas zní jako tiché humorné šramotnutí.//
+Stojíš před starobylým hradem z kamene a v kapse držíš lucernu i minci. Lesní duch ti šepne, že spojení těchto dvoch otevře tajný průchod k krystalovému klíči. V dálce se ozývá smích princezny, která tě vítá s úsměvem a připravuje na výstup před drakem.
+[[A) Otevři tajný průchod pomocí lucerny a mince, aby ses dostala k krystalovému klíči.->13 Princezna a drak (13)]]
+[[B) Sleduj stopu v mlze a přidej se k slepě, která ti ukáže cestu do jeskyně.->7 Slepa 9]]
+
+:: 17 strez 16 [strez SIDE] {"position":"320,580"}
+//Na okraji rozlehlé louky se ozývá šepot větru a tiché potlesky krystalických kapek, které se třpytí na slunci jako malé diamanty. V dálce houpá červená obloha s plamenným drakem, jeho křídla se svítí v záři. Přitom slyšíš smích dětské radosti a šťastnou píseň kočičích nohou skákajících po listí.//
+Princezna se pomalu blíží k červenému drakovi, který spí na klidném útesu. Před ní však stojí strážce louky, vysoký muž s modrou kožešinou a přísným pohledem. Můžeš použít zlatou minci, kterou držíš v ruce, aby uklidil jeho mysl, nebo se pokusit ho přemoci.
+[[A) Překvapístrážce zlatou mincí, ukážeš, že jsi přátelská->8 Informace 17]]
+[[B) Odvážně se postavíte strážci bez mince a použijete svou odvahu->8 Informace 17]]
+
+:: 18 Smyčka 11 – Princezna a Drak [smycka CORE] {"position":"540,580"}
+//V dálce se rozléhá šumící les, kde je tiché šepání stínů a ocasní mraky tančí ve světle půlnoci. Tvá nosná včelka ztrácí dech nad kouzelnými kapkami rosy, které na tvém obličeji vytvářejí zlaté pruhy. Všude cítíš vůni horkého čokoládového krému a slyšíš, jak drak zpívá píseň v rozzářené studni. A zlatý svět.//
+Královna se vydala do temného lesa, kde se před ní rozprostřel starý kamenný kruh. Když vstoupila do jeho středu, pocítila, že je vrácena zpět na cestu, ale jeden úsek se rozzářil a odhalil draka v jasle. V zlaté koruně se ozvalo šepot, který jí řekl: "Najdi křišťálový klíč a otevřeš brány do tajného světa."
+[[A) Prozkoumej kouzelný kruh a použij křišťálový klíč, který ti přinesl královna.->11 Cíl 12 – Krystalový most]]
+[[B) Odvážně oslov draka a nabídni mu křišťálový klíč jako dar.->11 Cíl 12 – Krystalový most]]
+
+:: 19 Postava 8: Princese a drak [postava CORE] {"position":"760,580"}
+//V zlaté rosy ranní slunečního světla se rozprostírá královský hradec pod vysokými kopci, kde křídlo draka zdvoří s věží. Když se z lesa vykloubí světlo, hrad vypadá jako obrovský zlatý klenot. Větřík přináší šum listů a vůni borovic. Náhle se ozve smích princezny z balkonu, zatímco hřmění ohnivého draka doprovází šeptatý zvuk kouzelného prachu. Srdce ti buší, když ztrácíš přehled mezi věží a horou.//
+Na rozkvetlé zahradě královského hradu se ti zvedá pohled na princeznu, která se snaží zklidnit draka. V blízkosti stinného stromu se objeví stará žena a předává ti stříbrný klíč ve tvaru draka – poslední klíč k otevření dračího srdce.
+[[A) Použiješ stříbrný klíč k otevření dračího hrdla a hledáš krystalový klíč uvnitř.->18 Smyčka 11 – Princezna a Drak]]
+[[B) Rozproudíš kouzlo z krystalového klíče a vyvoláš světelné stínové cesty k drakovi.->18 Smyčka 11 – Princezna a Drak]]
+
+:: 20 Onboarding 1 – Princiánka a Drak [onboarding CORE] {"position":"980,580"}
+//Vstoupíš do zlatavého lesa, kde slunce hraje s listy a vtáci si přehrávají píseň o ztraceném klíči. Všude se ozývá šustění listů, ale i tiché smíchy z dálky – pravděpodobně dřevěný trpaslík, který zapomněl svůj oblek na křišťálové bradě. Hory podélní pohledem skrývají mrakový plášť a mezi stromy se zvedá jemná vůně skořice, která tě vyzývá, aby jsi prozkoumal tajný prales s krokem.//
+Jsi mladá princezně jménem Liora, která se ztratila v lesním labyrintu na hranici království. Když objevuje zvláštní křišťálový klíč, slyšíš šepot draka, který ti pomůže najít cestu ke staré bráně. Drak se ti zjevuje jako hříšný průvodce s malou vtipnou tváří a radostným smíchem, když tě upozorní na tajemství, které skrývá les.
+[[A) Přesuneš se k bráně, kde drak ukáže další stopu – cesta je plná světla a humoru, protože hrdinství v lese není jen o odvaze, ale i o objevování nových přátel.->6 Rozcesti 2]]
+
+:: 21 Jednosmer 21 [jednosmer SIDE] {"position":"100,740"}
+//V ranním světle se louka rozprostírá jako zlatý koberec, kde praskající listy šepotají příběhy dávných hrdinů. V dálce se zvedá tmavá silueta starého hradu a jeho věže lesknou v ranném slunci, odrážející světlo draka. Náhle před vašimi očima zazní praskající krystalový klíč – kousek z tajemného srdce draka, který může otevřít cestu nebo zavést do pasti.//
+Princezna Alys sleduje ztracenou stopu krve, která vede skrze louku až k starému hradu. Ranní slunce se pomalu vynořuje nad hrad a s ním i tajemství draka; jeden směr přímo vede k jeho jeskyni. Její úkol: následovat cestu při úsvitu nebo najít alternativní záchranu.
+[[A) Použijte krystalový klíč na starou bránu hradu a vydejte se přímo k drakovi.->16 Princezna a Drak]]
+[[B) Odejďte z hradu a najděte úkryt pod starým dubem, abyste si vybrali další krok.->16 Princezna a Drak]]
