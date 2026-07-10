@@ -47,7 +47,8 @@ def test_generuj_json_uspech():
     out = klient.generuj_json(Role.TEMA_GENERATOR, "navrhni téma", SCHEMA_ZADANI)
     assert out["vek"] == "06-09"
     # payload nese model, schema, think, options
-    assert zachyceno["model"] == DEFAULT_MODEL
+    expected_model = DEFAULT_MODEL if isinstance(DEFAULT_MODEL, str) else DEFAULT_MODEL.get(Role.TEMA_GENERATOR, "qwen3.6:27b")
+    assert zachyceno["model"] == expected_model
     assert zachyceno["format"] == SCHEMA_ZADANI
     assert zachyceno["think"] is False
     assert zachyceno["options"]["temperature"] == 1.0

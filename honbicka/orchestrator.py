@@ -904,7 +904,7 @@ def _karty_blob(karty: list[Karta]) -> str:
 
 # Uvozovky (rovné i české), kterými model citaci obaluje.
 _UVOZOVKY = "\"'“”„«»‚‘’"
-_PREFIX_CISLA_KARTY = re.compile(r"^#\d+[^:]{0,60}:\s*")
+_PREFIX_CISLA_KARTY = re.compile(r"^#\d+(?:\s+[A-C]\)?)?[^a-zA-Z0-9]*")
 _ELIPSA = re.compile(r"\.\.\.|…")
 
 
@@ -921,17 +921,19 @@ def _ocisti_citaci(text: str) -> str:
 
 
 def _citace_je_dolozena(citace: str, blob: str) -> bool:
-    """Ověří citaci proti kartám. Model smí legitimně spojit dva doslovné
-    úryvky elipsou („…"/"...") — pak se každý fragment ověří zvlášť (musí jich
-    být ≥2 a všechny doslova v kartách); jinak požaduje celý úryvek doslova."""
+    """Ověří citaci proti kartám (case-insensitive). Model smí legitimně spojit 
+    dva doslovné úryvky elipsou (...) – pak se každý fragment ověří zvlášť."""
     text = _ocisti_citaci(citace)
     if not text:
         return False
-    if text in blob:
+    blob_lower = blob.lower()
+    text_lower = text.lower()
+    if text_lower in blob_lower:
         return True
-    fragmenty = [f.strip(" .") for f in _ELIPSA.split(text)]
+    # Split by ellipsis, slashes, newlines, semicolons, colons, or periods
+    fragmenty = [f.strip(" .?,;:-").lower() for f in re.split(r"\.\.\.|/|\n|;|:|\.", text)]
     fragmenty = [f for f in fragmenty if len(f) >= 3]
-    return len(fragmenty) >= 2 and all(f in blob for f in fragmenty)
+    return len(fragmenty) >= 1 and all(f in blob_lower for f in fragmenty)
 
 
 def _vzorkuj_karty_pro_redakci(

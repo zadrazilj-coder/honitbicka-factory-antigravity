@@ -54,6 +54,15 @@ class Role(StrEnum):
     REDAKTOR = "redaktor"
 
 
+DEFAULT_MODEL: str | dict[Role, str] = {
+    Role.TEMA_GENERATOR: "gpt-oss:20b",
+    Role.ARCHITEKT: "ornith:35b",
+    Role.VYPRAVEC: "qwen3.6:27b",
+    Role.REDAKTOR: "ornith:35b",
+    "default": "qwen3.6:27b"
+}
+
+
 @dataclass(frozen=True)
 class RoleConfig:
     """Parametry role dle spec §1/§3. `system` je jen základ system promptu —
@@ -157,6 +166,17 @@ def _http_embed(
 DEFAULT_KEEP_ALIVE = "30m"  # L5: Ollama defaultně uvolní model po ~5 min nečinnosti
 
 
+def _ocisti_json_text(text: str) -> str:
+    text = text.strip()
+    if text.startswith("```json"):
+        text = text[7:]
+    elif text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    return text.strip()
+
+
 class OllamaKlient:
     """Klient k jednomu modelu se čtyřmi rolemi.
 
@@ -172,7 +192,7 @@ class OllamaKlient:
 
     def __init__(
         self,
-        model: str = DEFAULT_MODEL,
+        model: str | dict[Role, str] = DEFAULT_MODEL,
         base_url: str = DEFAULT_BASE_URL,
         transport: Transport | None = None,
         timeout_s: float = DEFAULT_TIMEOUT_S,
@@ -217,10 +237,10 @@ class OllamaKlient:
         ]
         posledni_chyba = ""
         for _pokus in range(1, MAX_RETRY + 1):
-            odpoved = self._volej(cfg, messages, schema)
+            odpoved = self._volej(role, cfg, messages, schema)
             obsah = odpoved.get("message", {}).get("content", "")
             try:
-                return json.loads(obsah)
+                return json.loads(_ocisti_json_text(obsah))
             except (json.JSONDecodeError, TypeError) as exc:
                 posledni_chyba = f"{exc}"
                 messages.append({"role": "assistant", "content": obsah})
@@ -267,10 +287,10 @@ class OllamaKlient:
         ]
         posledni_chyba = ""
         for _pokus in range(1, MAX_RETRY + 1):
-            odpoved = self._volej(cfg, messages, schema)
+            odpoved = self._volej(role, cfg, messages, schema)
             obsah = odpoved.get("message", {}).get("content", "")
             try:
-                data = json.loads(obsah)
+                data = json.loads(_ocisti_json_text(obsah))
             except (json.JSONDecodeError, TypeError) as exc:
                 posledni_chyba = f"nevalidní JSON: {exc}"
             else:
@@ -305,12 +325,13 @@ class OllamaKlient:
             {"role": "system", "content": system},
             {"role": "user", "content": uzivatel},
         ]
-        odpoved = self._volej(cfg, messages, schema=None)
+        odpoved = self._volej(role, cfg, messages, schema=None)
         return odpoved.get("message", {}).get("content", "")
 
     # -- interní ----------------------------------------------------------- #
     def _volej(
         self,
+        role: Role,
         cfg: RoleConfig,
         messages: list[dict[str, str]],
         schema: dict[str, Any] | None,
@@ -318,14 +339,14 @@ class OllamaKlient:
         """L2: pokud model odmítne `think` (HTTP 400), zkusí to jednou znovu
         bez thinking — role s `thinking=False` už tudy neprochází podruhé."""
         try:
-            return self._volej_pokus(cfg, messages, schema, cfg.thinking)
+            return self._volej_pokus(role, cfg, messages, schema, cfg.thinking)
         except _ThinkingNotSupported as exc:
             if not cfg.thinking:
                 raise HonbickaLLMError(
                     f"transport selhal: model odmítl i volání bez thinking ({exc})"
                 ) from exc
             try:
-                return self._volej_pokus(cfg, messages, schema, False)
+                return self._volej_pokus(role, cfg, messages, schema, False)
             except _ThinkingNotSupported as exc2:
                 raise HonbickaLLMError(
                     f"transport selhal i bez thinking: {exc2}"
@@ -333,14 +354,18 @@ class OllamaKlient:
 
     def _volej_pokus(
         self,
+        role: Role,
         cfg: RoleConfig,
         messages: list[dict[str, str]],
         schema: dict[str, Any] | None,
         thinking: bool,
     ) -> dict[str, Any]:
         """L3: jedno opakování na dočasnou transportní chybu (timeout/5xx)."""
+        model_name = self.model
+        if isinstance(model_name, dict):
+            model_name = model_name.get(role, model_name.get("default", "qwen3.6:27b"))
         payload: dict[str, Any] = {
-            "model": self.model,
+            "model": model_name,
             "messages": messages,
             "stream": False,
             "think": thinking,
