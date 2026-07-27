@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HONBIČKA FACTORY – Web Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <div class="bg-gradient-glow"></div>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo">
+        <span class="logo-icon">🎲</span>
+        <div class="logo-text">
+          <h1>HONBIČKA FACTORY</h1>
+          <span class="logo-subtitle">Generátor venkovních adventur & gamebooků</span>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <button class="nav-btn active" id="nav-catalog" onclick="switchTab('catalog')">
+          <span class="btn-icon">📚</span> Katalog her
+        </button>
+        <button class="nav-btn" id="nav-detail" onclick="switchTab('detail')">
+          <span class="btn-icon">🗺️</span> Detail & Mapa
+        </button>
+        <button class="nav-btn" id="nav-mapy" onclick="switchTab('mapy')">
+          <span class="btn-icon">🌐</span> Správa Map (.twee)
+        </button>
+        <button class="nav-btn nav-btn-primary" id="nav-generator" onclick="switchTab('generator')">
+          <span class="btn-icon">✨</span> Nová Hra
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="main-container">
+
+    <!-- TAB 1: CATALOG -->
+    <section id="tab-catalog" class="tab-content active">
+      <div class="section-header">
+        <h2>Přehled vygenerovaných her</h2>
+        <p>Prohlížejte a stahujte kompletní balíčky venkovních her a tiskových PDF.</p>
+      </div>
+
+      <!-- Filters Bar -->
+      <div class="filters-bar glass-panel">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="Hledat podle názvu nebo tématu..." oninput="filterGames()">
+        </div>
+        <div class="filter-group">
+          <label>Věková kategorie:</label>
+          <select id="filter-vek" onchange="filterGames()">
+            <option value="">Všechny věky</option>
+            <option value="04-06">4–6 let</option>
+            <option value="06-09">6–9 let</option>
+            <option value="09-12">9–12 let</option>
+            <option value="12-15">12–15 let</option>
+            <option value="16plus">16+ let</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Formát hráčů:</label>
+          <select id="filter-format" onchange="filterGames()">
+            <option value="">Všechny formáty</option>
+            <option value="jednotlivci">Jednotlivci</option>
+            <option value="dvojice">Dvojice</option>
+            <option value="tymy_4x4">Týmy (4x4)</option>
+            <option value="volny_format">Volný formát</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Games Grid -->
+      <div id="games-grid" class="games-grid">
+        <div class="loading-spinner">Načítám katalog her...</div>
+      </div>
+    </section>
+
+    <!-- TAB 2: DETAIL & MAP -->
+    <section id="tab-detail" class="tab-content">
+      <div class="section-header flex-between">
+        <div>
+          <button class="back-btn" onclick="switchTab('catalog')">← Zpět do katalogu</button>
+          <h2 id="detail-title">Detail hry</h2>
+        </div>
+        <div id="detail-badges" class="badges-row"></div>
+      </div>
+
+      <div class="detail-layout">
+        <!-- Subtabs -->
+        <div class="subtabs-bar glass-panel">
+          <button class="subtab-btn active" onclick="switchSubtab('mapa')">🗺️ Interaktivní Mapa</button>
+          <button class="subtab-btn" onclick="switchSubtab('karty')">🃏 Herní Karty</button>
+          <button class="subtab-btn" onclick="switchSubtab('posudek')">📋 Redakční Posudek</button>
+          <button class="subtab-btn" onclick="switchSubtab('soubory')">📄 Tisková PDF</button>
+        </div>
+
+        <!-- Subtab Content: Mapa -->
+        <div id="subtab-mapa" class="subtab-content active glass-panel">
+          <h3>Topologická mapa hry (Mermaid)</h3>
+          <p class="subtext">Žluté uzly tvoří AHA momenty, šedé uzly tvoří vedlejší větev / smyčky.</p>
+          <div id="mermaid-container" class="mermaid-box">
+            <div class="placeholder">Načítám rozvržení mapy...</div>
+          </div>
+        </div>
+
+        <!-- Subtab Content: Karty -->
+        <div id="subtab-karty" class="subtab-content glass-panel">
+          <h3>Seznam herních karet</h3>
+          <div id="cards-container" class="cards-list"></div>
+        </div>
+
+        <!-- Subtab Content: Posudek -->
+        <div id="subtab-posudek" class="subtab-content glass-panel">
+          <h3>Vyhodnocení redakčních pravidel (R1–R7)</h3>
+          <div id="posudek-container" class="posudek-list"></div>
+        </div>
+
+        <!-- Subtab Content: Soubory -->
+        <div id="subtab-soubory" class="subtab-content glass-panel">
+          <h3>Soubory ke stažení & Tisková PDF</h3>
+          <div id="soubory-container" class="files-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: SPRAVA MAP (.TWEE) -->
+    <section id="tab-mapy" class="tab-content">
+      <div class="section-header">
+        <h2>Centrální správa Twine map (.twee)</h2>
+        <p>Soubory `.twee` pro import do nástroje <a href="https://twinery.org" target="_blank" class="link-highlight">Twine</a> pro proklikávání grafu hry.</p>
+      </div>
+      <div class="glass-panel">
+        <div id="mapy-list" class="files-grid">
+          <div class="loading-spinner">Načítám mapy...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: GENERATOR -->
+    <section id="tab-generator" class="tab-content">
+      <div class="section-header">
+        <h2>Generátor nové hry</h2>
+        <p>Zadejte téma a parametrizaci – AI orchestrátor automaticky sestaví koncept, mapu, karty i PDF.</p>
+      </div>
+
+      <div class="glass-panel form-panel">
+        <form id="gen-form" onsubmit="handleGenerate(event)">
+          <div class="form-grid">
+            <div class="form-group col-span-2">
+              <label for="gen-tema">Téma / Nápad hry *</label>
+              <input type="text" id="gen-tema" placeholder="Např.: Záhada opuštěné observatoře" required>
+            </div>
+
+            <div class="form-group">
+              <label for="gen-vek">Věková kategorie *</label>
+              <select id="gen-vek" required>
+                <option value="12-15" selected>12–15 let (Teenageři)</option>
+                <option value="09-12">9–12 let (Starší děti)</option>
+                <option value="06-09">6–9 let (Mladší děti)</option>
+                <option value="04-06">4–6 let (Předškoláci)</option>
+                <option value="16plus">16+ let (Dospělí/Mládež)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="gen-format">Formát hráčů *</label>
+              <select id="gen-format" required>
+                <option value="jednotlivci" selected>Jednotlivci</option>
+                <option value="dvojice">Dvojice</option>
+                <option value="tymy_4x4">Týmy (4x4)</option>
+                <option value="volny_format">Volný formát</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="gen-obtiznost">Obtížnost *</label>
+              <select id="gen-obtiznost" required>
+                <option value="stredni" selected>Střední</option>
+                <option value="lehka">Lehká</option>
+                <option value="tezka">Těžká</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="gen-ton">Tón vyprávění</label>
+              <input type="text" id="gen-ton" value="humorný, akční, internetová kultura">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="submit-btn">
+              <span class="btn-icon">🚀</span> Spustit generování hry
+            </button>
+          </div>
+        </form>
+        <div id="gen-status" class="gen-status-box" style="display:none;"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
