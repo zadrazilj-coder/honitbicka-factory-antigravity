@@ -157,7 +157,7 @@ def spust_generovani(params: dict) -> dict:
     yaml_filename = f"{slug_tema}.yaml"
     yaml_path = os.path.join(BASE_DIR, "zadani", yaml_filename)
 
-    yaml_params = {k: v for k, v in params.items() if k != "model"}
+    yaml_params = {k: v for k, v in params.items() if k != "model" and v not in (None, "", [])}
 
     os.makedirs(os.path.join(BASE_DIR, "zadani"), exist_ok=True)
     with open(yaml_path, "w", encoding="utf-8") as f:

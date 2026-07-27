@@ -191,6 +191,9 @@ async function handleGenerate(e) {
   const params = {
     tema: document.getElementById('gen-tema').value,
     popis: document.getElementById('gen-popis').value,
+    postavy: document.getElementById('gen-postavy').value,
+    rekvizity: document.getElementById('gen-rekvizity').value,
+    cil_odmena: document.getElementById('gen-odmena').value,
     vek: document.getElementById('gen-vek').value,
     format_hracu: document.getElementById('gen-format').value,
     obtiznost: document.getElementById('gen-obtiznost').value,
@@ -223,5 +226,28 @@ function toggleCustomModel(selectEl) {
     customInput.style.display = 'block';
   } else {
     customInput.style.display = 'none';
+  }
+}
+
+function toggleChip(chipEl, inputId, val) {
+  chipEl.classList.toggle('selected');
+  const inputEl = document.getElementById(inputId);
+  if (!inputEl) return;
+  
+  let currentVals = inputEl.value ? inputEl.value.split(',').map(s => s.trim()) : [];
+  if (chipEl.classList.contains('selected')) {
+    if (!currentVals.includes(val)) currentVals.push(val);
+  } else {
+    currentVals = currentVals.filter(s => s !== val);
+  }
+  inputEl.value = currentVals.join(', ');
+}
+
+function toggleCustomModel(selectEl) {
+  const customBox = document.getElementById('custom-model-box');
+  if (selectEl.value === 'custom') {
+    customBox.style.display = 'block';
+  } else {
+    customBox.style.display = 'none';
   }
 }

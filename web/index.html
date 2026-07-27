@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HONBIČKA FACTORY – Web Dashboard</title>
+  <title>HONBIČKA FACTORY – Profesionální Web Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
         <span class="logo-icon">🎲</span>
         <div class="logo-text">
           <h1>HONBIČKA FACTORY</h1>
-          <span class="logo-subtitle">Generátor venkovních adventur & gamebooků</span>
+          <span class="logo-subtitle">Generátor venkovních adventur & gamebooků Pro</span>
         </div>
       </div>
       <nav class="nav-links">
@@ -146,83 +146,144 @@
       </div>
     </section>
 
-    <!-- TAB 4: GENERATOR -->
+    <!-- TAB 4: GENERATOR PRO -->
     <section id="tab-generator" class="tab-content">
       <div class="section-header">
-        <h2>Generátor nové hry</h2>
-        <p>Zadejte téma a parametrizaci – AI orchestrátor automaticky sestaví koncept, mapu, karty i PDF.</p>
+        <h2>Profesionální Generátor Nové Hry</h2>
+        <p>Nakonfigurujte příběh, klíčové postavy, fyzické rekvizity i cíl – AI orchestrátor sestaví hru na profesionální úrovni.</p>
       </div>
 
-      <div class="glass-panel form-panel">
-        <form id="gen-form" onsubmit="handleGenerate(event)">
-          <div class="form-grid">
-            <div class="form-group col-span-2">
-              <label for="gen-tema">Téma / Nápad hry *</label>
+      <form id="gen-form" onsubmit="handleGenerate(event)">
+        <div class="generator-pro-layout">
+
+          <!-- CARD 1: STORY & CONCEPT -->
+          <div class="glass-panel form-section-card">
+            <div class="section-card-title">
+              <span class="icon">🔮</span>
+              <div>
+                <h3>1. Příběh & Téma</h3>
+                <p>Základní námět a detailní specifikace děje</p>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="gen-tema">Téma / Název hry *</label>
               <input type="text" id="gen-tema" placeholder="Např.: Ztracený poklad kapitána Korkorána" required>
             </div>
 
-            <div class="form-group col-span-2">
-              <label for="gen-popis">Detailní popis příběhu, postav a odměny (Volitelné)</label>
-              <textarea id="gen-popis" rows="3" placeholder="Uveďte podrobnosti: např. prostředí (Lipno, tajný ostrov), průvodce (papoušek Ara dávající nesmyslné úkoly), cílová odměna (truhla s bonbóny)..."></textarea>
-            </div>
-
-            <div class="form-group col-span-2">
-              <label for="gen-model">LLM Model / Routing</label>
-              <select id="gen-model" onchange="toggleCustomModel(this)">
-                <option value="" selected>⚡ Hybridní Model Routing (gpt-oss:20b / ornith:35b / qwen3.6:27b)</option>
-                <option value="BhupendraA/ThinkingCap-Qwen3.6-27B-MTP-GGUF:Q4_K_M-MTP">🧠 ThinkingCap-Qwen3.6-27B-MTP-GGUF:Q4_K_M-MTP (Nové)</option>
-                <option value="qwen3.6:27b">🤖 qwen3.6:27b</option>
-                <option value="ornith:35b">🦅 ornith:35b</option>
-                <option value="gpt-oss:20b">⚡ gpt-oss:20b</option>
-                <option value="custom">✏️ Jiný model (zadat vlastní název)...</option>
-              </select>
-              <input type="text" id="gen-model-custom" placeholder="Napište přesný název modelu z Ollamy/LMStudio" style="display:none; margin-top:0.5rem;">
+            <div class="form-group">
+              <label for="gen-popis">Detailní příběhové pozadí & prostředí</label>
+              <textarea id="gen-popis" rows="3" placeholder="Zadejte podrobnosti: např. Odehrává se na Lipně, jedeme na tajný ostrov, který není na žádné mapě..."></textarea>
             </div>
 
             <div class="form-group">
-              <label for="gen-vek">Věková kategorie *</label>
-              <select id="gen-vek" required>
-                <option value="12-15" selected>12–15 let (Teenageři)</option>
-                <option value="09-12">9–12 let (Starší děti)</option>
-                <option value="06-09">6–9 let (Mladší děti)</option>
-                <option value="04-06">4–6 let (Předškoláci)</option>
-                <option value="16plus">16+ let (Dospělí/Mládež)</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="gen-format">Formát hráčů *</label>
-              <select id="gen-format" required>
-                <option value="jednotlivci" selected>Jednotlivci</option>
-                <option value="dvojice">Dvojice</option>
-                <option value="tymy_4x4">Týmy (4x4)</option>
-                <option value="volny_format">Volný formát</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="gen-obtiznost">Obtížnost *</label>
-              <select id="gen-obtiznost" required>
-                <option value="stredni" selected>Střední</option>
-                <option value="lehka">Lehká</option>
-                <option value="tezka">Těžká</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="gen-ton">Tón vyprávění</label>
-              <input type="text" id="gen-ton" value="humorný, akční, internetová kultura">
+              <label>Rychlé předvolby tónu & žánru:</label>
+              <div class="chips-group">
+                <span class="chip" onclick="toggleChip(this, 'gen-ton', 'pirátský, dobrodružný')">🏴‍☠️ Pirátský</span>
+                <span class="chip" onclick="toggleChip(this, 'gen-ton', 'humorný, lehký')">😂 Humorný</span>
+                <span class="chip" onclick="toggleChip(this, 'gen-ton', 'cyberpunk, sci-fi')">🤖 Cyberpunk</span>
+                <span class="chip" onclick="toggleChip(this, 'gen-ton', 'pohádkový, kouzelný')">🏰 Pohádka</span>
+                <span class="chip" onclick="toggleChip(this, 'gen-ton', 'detektivní, tajemný')">🕵️ Detektivka</span>
+              </div>
+              <input type="text" id="gen-ton" value="humorný, akční, dobrodružný" style="margin-top:0.5rem;">
             </div>
           </div>
 
-          <div class="form-actions">
-            <button type="submit" class="submit-btn">
-              <span class="btn-icon">🚀</span> Spustit generování hry
-            </button>
+          <!-- CARD 2: CHARACTERS & PROPS -->
+          <div class="glass-panel form-section-card">
+            <div class="section-card-title">
+              <span class="icon">🎭</span>
+              <div>
+                <h3>2. Postavy, Rekvizity & Cíl</h3>
+                <p>Průvodci, fyzické pomůcky a finální výhra</p>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="gen-postavy">Klíčové postavy & NPC průvodci</label>
+              <input type="text" id="gen-postavy" placeholder="Např.: Papoušek Ara (průvodce, dává bláznivé úkoly), starý pirát Korkorán">
+            </div>
+
+            <div class="form-group">
+              <label for="gen-rekvizity">Fyzické rekvizity & pomůcky v terénu</label>
+              <input type="text" id="gen-rekvizity" placeholder="Např.: Starý kompas, šifrovací mřížka, QR kód, zpráva psaná křídou">
+            </div>
+
+            <div class="form-group">
+              <label for="gen-odmena">Hlavní cíl & finální odměna (Climax)</label>
+              <input type="text" id="gen-odmena" placeholder="Např.: Nažití truhly s bonbóny jako odměna na samotném konci hry">
+            </div>
           </div>
-        </form>
-        <div id="gen-status" class="gen-status-box" style="display:none;"></div>
-      </div>
+
+          <!-- CARD 3: MECHANICS & MODEL -->
+          <div class="glass-panel form-section-card">
+            <div class="section-card-title">
+              <span class="icon">⚙️</span>
+              <div>
+                <h3>3. Mechaniky, Věk & AI Model</h3>
+                <p>Cílová skupina, obtížnost a LLM orchestrování</p>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="gen-vek">Věková kategorie *</label>
+                <select id="gen-vek" required>
+                  <option value="12-15" selected>12–15 let (Teenageři)</option>
+                  <option value="09-12">9–12 let (Starší děti)</option>
+                  <option value="06-09">6–9 let (Mladší děti)</option>
+                  <option value="04-06">4–6 let (Předškoláci)</option>
+                  <option value="16plus">16+ let (Dospělí/Mládež)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="gen-format">Formát hráčů *</label>
+                <select id="gen-format" required>
+                  <option value="jednotlivci" selected>Jednotlivci</option>
+                  <option value="dvojice">Dvojice</option>
+                  <option value="tymy_4x4">Týmy (4x4)</option>
+                  <option value="volny_format">Volný formát</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="gen-obtiznost">Obtížnost úkolů *</label>
+                <select id="gen-obtiznost" required>
+                  <option value="stredni" selected>Střední</option>
+                  <option value="lehka">Lehká</option>
+                  <option value="tezka">Těžká</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="gen-model">LLM Model / Routing *</label>
+                <select id="gen-model" onchange="toggleCustomModel(this)">
+                  <option value="" selected>⚡ Hybridní Model Routing (gpt-oss:20b / ornith:35b / qwen3.6:27b)</option>
+                  <option value="BhupendraA/ThinkingCap-Qwen3.6-27B-MTP-GGUF:Q4_K_M-MTP">🧠 ThinkingCap-Qwen3.6-27B-MTP-GGUF:Q4_K_M-MTP</option>
+                  <option value="qwen3.6:27b">🤖 qwen3.6:27b</option>
+                  <option value="ornith:35b">🦅 ornith:35b</option>
+                  <option value="gpt-oss:20b">⚡ gpt-oss:20b</option>
+                  <option value="custom">✏️ Jiný model (zadat název)...</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="custom-model-box" style="display:none; margin-top:1rem;">
+              <input type="text" id="gen-model-custom" placeholder="Napište přesný název modelu z Ollamy nebo LM Studia">
+            </div>
+
+            <div class="form-actions" style="margin-top:1.5rem;">
+              <button type="submit" class="submit-btn-glow">
+                <span class="btn-icon">🚀</span> Spustit profesionální generování hry
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </form>
+
+      <div id="gen-status" class="gen-status-box glass-panel" style="display:none;"></div>
     </section>
 
   </main>

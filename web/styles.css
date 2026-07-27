@@ -1,10 +1,10 @@
 /* Global Design System - Glassmorphic Dark Mode */
 :root {
   --bg-main: #090d16;
-  --bg-panel: rgba(18, 24, 38, 0.7);
-  --bg-panel-hover: rgba(28, 36, 56, 0.85);
+  --bg-panel: rgba(18, 24, 38, 0.75);
+  --bg-panel-hover: rgba(28, 36, 56, 0.9);
   --border-color: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(99, 102, 241, 0.3);
+  --border-glow: rgba(139, 92, 246, 0.4);
   
   --text-main: #f3f4f6;
   --text-muted: #9ca3af;
@@ -40,16 +40,16 @@ body {
   top: -200px;
   left: 50%;
   transform: translateX(-50%);
-  width: 1000px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(6, 182, 212, 0.1) 40%, rgba(9, 13, 22, 0) 70%);
+  width: 1200px;
+  height: 700px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.18) 0%, rgba(6, 182, 212, 0.12) 40%, rgba(9, 13, 22, 0) 75%);
   pointer-events: none;
   z-index: -1;
 }
 
 /* Header & Navigation */
 .app-header {
-  background: rgba(11, 15, 25, 0.8);
+  background: rgba(11, 15, 25, 0.85);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
@@ -203,12 +203,19 @@ body {
 
 .search-box input {
   width: 100%;
-  padding: 0.6rem 0.75rem 0.6rem 2.2rem;
-  background: rgba(0, 0, 0, 0.3);
+  padding: 0.65rem 0.75rem 0.65rem 2.2rem;
+  background: rgba(0, 0, 0, 0.35);
   border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
+  border-radius: 0.6rem;
   color: var(--text-main);
   font-size: 0.9rem;
+  font-family: var(--font-body);
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--accent-violet);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
 }
 
 .filter-group {
@@ -223,12 +230,13 @@ body {
 }
 
 .filter-group select {
-  padding: 0.6rem 0.75rem;
-  background: rgba(0, 0, 0, 0.3);
+  padding: 0.65rem 0.75rem;
+  background: rgba(0, 0, 0, 0.35);
   border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
+  border-radius: 0.6rem;
   color: var(--text-main);
   font-size: 0.9rem;
+  font-family: var(--font-body);
 }
 
 /* Games Grid */
@@ -275,7 +283,6 @@ body {
   border-radius: 2rem;
   font-size: 0.75rem;
   font-weight: 600;
-
 }
 
 .badge-ok { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
@@ -300,7 +307,6 @@ body {
   display: flex;
   gap: 0.5rem;
   margin-top: 1rem;
-
 }
 
 .btn-sm {
@@ -400,40 +406,159 @@ body {
   justify-content: space-between;
 }
 
-/* Generator Form */
-.form-panel { max-width: 800px; margin: 0 auto; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-.col-span-2 { grid-column: span 2; }
-
-.form-group label { display: block; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-.form-group input, .form-group select {
-  width: 100%;
-  padding: 0.7rem;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  color: var(--text-main);
+/* GENERATOR PRO LAYOUT */
+.generator-pro-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.form-actions { margin-top: 1.5rem; text-align: right; }
-.submit-btn {
-  padding: 0.8rem 1.8rem;
+.form-section-card {
+  background: rgba(18, 24, 38, 0.8);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1.75rem;
+  transition: border-color 0.3s;
+}
+
+.form-section-card:hover {
+  border-color: var(--border-glow);
+}
+
+.section-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 0.75rem;
+}
+
+.section-card-title .icon {
+  font-size: 1.75rem;
+}
+
+.section-card-title h3 {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.section-card-title p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #d1d5db;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 0.6rem;
+  color: #f9fafb;
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  transition: all 0.2s ease;
+}
+
+.form-group textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent-violet);
+  background: rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+}
+
+/* Preset Chips */
+.chips-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.chip {
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 0.35rem 0.7rem;
+  border-radius: 2rem;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+}
+
+.chip:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #ddd6fe;
+}
+
+.chip.selected {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: var(--accent-cyan);
+  color: #67e8f9;
+  font-weight: 600;
+}
+
+/* Submit Button Glow */
+.submit-btn-glow {
+  width: 100%;
+  padding: 1rem 2rem;
   background: linear-gradient(135deg, var(--accent-violet), var(--accent-cyan));
   border: none;
-  border-radius: 0.5rem;
-  color: white;
+  border-radius: 0.75rem;
+  color: #ffffff;
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
   font-weight: 700;
-  font-size: 1rem;
   cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+}
+
+.submit-btn-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(6, 182, 212, 0.5);
 }
 
 .gen-status-box {
   margin-top: 1.5rem;
-  padding: 1rem;
+  padding: 1.25rem;
   background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.3);
   color: #34d399;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .loading-spinner { text-align: center; color: var(--text-muted); padding: 3rem; }
