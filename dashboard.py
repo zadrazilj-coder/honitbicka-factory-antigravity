@@ -150,7 +150,10 @@ def nacti_detail_hry(slug: str) -> dict | None:
     return detail
 
 
+current_gen_proc: subprocess.Popen | None = None
+
 def spust_generovani(params: dict) -> dict:
+    global current_gen_proc
     tema = params.get("tema", "Nova Hra").strip()
     model_name = params.get("model", "").strip()
     slug_tema = re.sub(r"[^a-zA-Z0-9]+", "_", tema).strip("_").lower() or "nova_hra"
@@ -164,22 +167,33 @@ def spust_generovani(params: dict) -> dict:
         yaml.safe_dump(yaml_params, f, allow_unicode=True, sort_keys=False)
 
     def run_job():
+        global current_gen_proc
         env = os.environ.copy()
         env["PYTHONUTF8"] = "1"
         cmd = [sys.executable, "-m", "honbicka.cli", "gen", f"zadani/{yaml_filename}"]
         if model_name:
             cmd.extend(["--model", model_name])
-        subprocess.run(
-            cmd,
-            cwd=BASE_DIR,
-            env=env,
-        )
+        proc = subprocess.Popen(cmd, cwd=BASE_DIR, env=env)
+        current_gen_proc = proc
+        proc.wait()
+        current_gen_proc = None
 
     t = threading.Thread(target=run_job)
     t.start()
 
     model_label = model_name if model_name else "Hybrid Routing (gpt-oss:20b / ornith:35b / qwen3.6:27b)"
     return {"status": "OK", "message": f"Generování spuštěno pro zadani/{yaml_filename} s modelem: {model_label}"}
+
+def zastav_generovani() -> dict:
+    global current_gen_proc
+    if current_gen_proc and current_gen_proc.poll() is None:
+        try:
+            current_gen_proc.kill()
+        except Exception:
+            pass
+        current_gen_proc = None
+        return {"status": "OK", "message": "Generování bylo úspěšně zastaveno."}
+    return {"status": "OK", "message": "Žádné generování nebylo aktivní."}
 
 
 class DashboardHandler(http.server.SimpleHTTPRequestHandler):
@@ -226,6 +240,9 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json(res)
             except Exception as e:
                 self.send_json({"error": str(e)}, status=400)
+        elif self.path == "/api/cancel":
+            res = zastav_generovani()
+            self.send_json(res)
         else:
             self.send_json({"error": "Neznamy endpoint"}, status=404)
 

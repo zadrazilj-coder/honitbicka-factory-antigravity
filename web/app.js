@@ -209,7 +209,12 @@ async function handleGenerate(e) {
       body: JSON.stringify(params)
     });
     const data = await res.json();
-    statusBox.innerHTML = `✅ ${data.message}! Generování běží v pozadí. Za pár minut obnovte katalog her.`;
+    statusBox.innerHTML = `
+      <div class="flex-between">
+        <span>⏳ ${data.message}! Generování běží v pozadí.</span>
+        <button class="btn-sm" style="background:rgba(239, 68, 68, 0.2); border-color:rgba(239, 68, 68, 0.4); color:#fca5a5;" onclick="handleCancel()">🛑 Zastavit generování</button>
+      </div>
+    `;
   } catch (err) {
     statusBox.innerHTML = `❌ Chyba při generování: ${err}`;
   }
@@ -249,5 +254,17 @@ function toggleCustomModel(selectEl) {
     customBox.style.display = 'block';
   } else {
     customBox.style.display = 'none';
+  }
+}
+
+async function handleCancel() {
+  const statusBox = document.getElementById('gen-status');
+  statusBox.innerHTML = '🛑 Zastavuji generování...';
+  try {
+    const res = await fetch('/api/cancel', { method: 'POST' });
+    const data = await res.json();
+    statusBox.innerHTML = `🛑 ${data.message}`;
+  } catch (err) {
+    statusBox.innerHTML = `Chyba při zastavování: ${err}`;
   }
 }
