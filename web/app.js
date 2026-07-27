@@ -183,12 +183,18 @@ async function handleGenerate(e) {
   statusBox.style.display = 'block';
   statusBox.innerHTML = '⏳ Odosílám zadání a spouštím generování...';
 
+  let selectedModel = document.getElementById('gen-model').value;
+  if (selectedModel === 'custom') {
+    selectedModel = document.getElementById('gen-model-custom').value.trim();
+  }
+
   const params = {
     tema: document.getElementById('gen-tema').value,
     vek: document.getElementById('gen-vek').value,
     format_hracu: document.getElementById('gen-format').value,
     obtiznost: document.getElementById('gen-obtiznost').value,
     ton: document.getElementById('gen-ton').value,
+    model: selectedModel,
     prostredi: ["les", "park"]
   };
 
@@ -208,4 +214,13 @@ async function handleGenerate(e) {
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function toggleCustomModel(selectEl) {
+  const customInput = document.getElementById('gen-model-custom');
+  if (selectEl.value === 'custom') {
+    customInput.style.display = 'block';
+  } else {
+    customInput.style.display = 'none';
+  }
 }

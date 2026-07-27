@@ -152,19 +152,25 @@ def nacti_detail_hry(slug: str) -> dict | None:
 
 def spust_generovani(params: dict) -> dict:
     tema = params.get("tema", "Nova Hra").strip()
+    model_name = params.get("model", "").strip()
     slug_tema = re.sub(r"[^a-zA-Z0-9]+", "_", tema).strip("_").lower() or "nova_hra"
     yaml_filename = f"{slug_tema}.yaml"
     yaml_path = os.path.join(BASE_DIR, "zadani", yaml_filename)
 
+    yaml_params = {k: v for k, v in params.items() if k != "model"}
+
     os.makedirs(os.path.join(BASE_DIR, "zadani"), exist_ok=True)
     with open(yaml_path, "w", encoding="utf-8") as f:
-        yaml.safe_dump(params, f, allow_unicode=True, sort_keys=False)
+        yaml.safe_dump(yaml_params, f, allow_unicode=True, sort_keys=False)
 
     def run_job():
         env = os.environ.copy()
         env["PYTHONUTF8"] = "1"
+        cmd = [sys.executable, "-m", "honbicka.cli", "gen", f"zadani/{yaml_filename}"]
+        if model_name:
+            cmd.extend(["--model", model_name])
         subprocess.run(
-            [sys.executable, "-m", "honbicka.cli", "gen", f"zadani/{yaml_filename}"],
+            cmd,
             cwd=BASE_DIR,
             env=env,
         )
@@ -172,7 +178,8 @@ def spust_generovani(params: dict) -> dict:
     t = threading.Thread(target=run_job)
     t.start()
 
-    return {"status": "OK", "message": f"Generování spuštěno pro zadani/{yaml_filename}"}
+    model_label = model_name if model_name else "Hybrid Routing (gpt-oss:20b / ornith:35b / qwen3.6:27b)"
+    return {"status": "OK", "message": f"Generování spuštěno pro zadani/{yaml_filename} s modelem: {model_label}"}
 
 
 class DashboardHandler(http.server.SimpleHTTPRequestHandler):

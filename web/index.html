@@ -161,6 +161,19 @@
               <input type="text" id="gen-tema" placeholder="Např.: Záhada opuštěné observatoře" required>
             </div>
 
+            <div class="form-group col-span-2">
+              <label for="gen-model">LLM Model / Routing</label>
+              <select id="gen-model" onchange="toggleCustomModel(this)">
+                <option value="" selected>⚡ Hybridní Model Routing (gpt-oss:20b / ornith:35b / qwen3.6:27b)</option>
+                <option value="BhupendraA/ThinkingCap-Qwen3.6-27B-MTP-GGUF:Q4_K_M-MTP">🧠 ThinkingCap-Qwen3.6-27B-MTP-GGUF:Q4_K_M-MTP (Nové)</option>
+                <option value="qwen3.6:27b">🤖 qwen3.6:27b</option>
+                <option value="ornith:35b">🦅 ornith:35b</option>
+                <option value="gpt-oss:20b">⚡ gpt-oss:20b</option>
+                <option value="custom">✏️ Jiný model (zadat vlastní název)...</option>
+              </select>
+              <input type="text" id="gen-model-custom" placeholder="Napište přesný název modelu z Ollamy/LMStudio" style="display:none; margin-top:0.5rem;">
+            </div>
+
             <div class="form-group">
               <label for="gen-vek">Věková kategorie *</label>
               <select id="gen-vek" required>

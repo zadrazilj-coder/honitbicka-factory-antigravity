@@ -20,9 +20,11 @@ import yaml
 from honbicka import __version__
 
 
-def _vytvor_klienta():
+def _vytvor_klienta(model: str | None = None):
     """Tovární funkce klienta (testy monkeypatchnou na mock)."""
     from honbicka.llm import OllamaKlient
+    if model:
+        return OllamaKlient(model=model)
     return OllamaKlient()
 
 
@@ -36,7 +38,8 @@ def _cmd_gen(args: argparse.Namespace) -> int:
     from honbicka.davka import nacti_zadani
     from honbicka.orchestrator import vyrob_hru
     zadani = nacti_zadani(args.zadani)
-    hra = vyrob_hru(zadani, _vytvor_klienta(), copypaste=args.copypaste)
+    klient = _vytvor_klienta(model=getattr(args, "model", None))
+    hra = vyrob_hru(zadani, klient, copypaste=args.copypaste)
     print(f"Hra: {hra.slug} — {hra.report.stav.value} (seed {hra.report.seed})")
     for c in hra.report.chyby:
         print(f"  ! {c}")
@@ -141,6 +144,7 @@ def vytvor_parser() -> argparse.ArgumentParser:
     g = sub.add_parser("gen", help="vyrob jednu hru (30+60) z YAML zadání")
     g.add_argument("zadani", help="cesta k YAML zadání")
     g.add_argument("-c", "--copypaste", action="store_true", help="spustit v copy-paste rezimu pro placene LLM")
+    g.add_argument("-m", "--model", help="specificky LLM model (napr. BhupendraA/ThinkingCap-Qwen3.6-27B-MTP-GGUF:Q4_K_M-MTP)")
     g.set_defaults(func=_cmd_gen)
 
     b = sub.add_parser("batch", help="dávka her z plánu")
