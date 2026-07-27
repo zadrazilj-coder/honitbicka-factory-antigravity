@@ -190,6 +190,7 @@ async function handleGenerate(e) {
 
   const params = {
     tema: document.getElementById('gen-tema').value,
+    popis: document.getElementById('gen-popis').value,
     vek: document.getElementById('gen-vek').value,
     format_hracu: document.getElementById('gen-format').value,
     obtiznost: document.getElementById('gen-obtiznost').value,
