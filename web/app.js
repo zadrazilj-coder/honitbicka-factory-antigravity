@@ -140,6 +140,8 @@ async function openDetail(slug) {
     // 4. Render Mermaid
     if (currentGame.mermaid) {
       renderMermaid(currentGame.mermaid);
+    } else {
+      document.getElementById('mermaid-container').innerHTML = '<p class="subtext">Mapa není k dispozici.</p>';
     }
 
   } catch (err) {

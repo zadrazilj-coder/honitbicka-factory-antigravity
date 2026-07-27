@@ -1,0 +1,50 @@
+flowchart TD
+    n1["1 Obchodník s perličkovým kloboukem (obchodnik)"]
+    n2["2 Lecitel 13 (lecitel)"]
+    n3["3 Princezna a Drak – Slepa 15 (slepa)"]
+    n4["4 Smyčka 20 – Kolo a klíč (smycka)"]
+    n5["5 Informace 4: Kletba draka (informace)"]
+    n6["6 Rozcesti 2 (rozcesti)"]
+    n7["7 Slepa 9 (slepa)"]
+    n8["8 Informace 17 (informace)"]
+    n9["9 gated 18 (gated)"]
+    n10["10 Strez 5 (strez)"]
+    n11(("11 Cíl 12 – Krystalový most (cil)"))
+    n12["12 Princezna a drak (postava)"]
+    n13["13 Princezna a drak (postava)"]
+    n14["14 Závoj z lesu (gated)"]
+    n15["15 Zpěv, klíč, odpojení (informace)"]
+    n16["16 Princezna a Drak (postava)"]
+    n17["17 strez 16 (strez)"]
+    n18["18 Smyčka 11 – Princezna a Drak (smycka)"]
+    n19["19 Postava 8: Princese a drak (postava)"]
+    n20["20 Onboarding 1 – Princiánka a Drak (onboarding)"]
+    n21["21 Jednosmer 21 (jednosmer)"]
+    n20 --> n6
+    n6 --> n15
+    n6 --> n5
+    n6 --> n2
+    n15 --> n10
+    n5 --> n10
+    n10 --> n14
+    n14 --> n16
+    n16 --> n13
+    n16 --> n7
+    n19 --> n18
+    n7 --> n16
+    n13 --> n19
+    n18 --> n11
+    n2 --> n12
+    n2 --> n3
+    n12 --> n17
+    n3 --> n2
+    n17 --> n8
+    n8 --> n1
+    n9 --> n4
+    n1 --> n9
+    n4 --> n21
+    n21 --> n16
+    classDef side fill:#eee,stroke:#999,stroke-dasharray: 5 5;
+    classDef aha fill:#ffd54f,stroke:#c00,stroke-width:3px;
+    class n2,n12,n3,n17,n8,n9,n1,n4,n21 side;
+    class n13 aha;

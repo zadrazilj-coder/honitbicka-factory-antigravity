@@ -1,0 +1,52 @@
+flowchart TD
+    n1["1 Informace 3: Touch Grass (informace)"]
+    n2["2 postava 14 (postava)"]
+    n3["3 smycka 11 (smycka)"]
+    n4["4 Strez 16: Touch Grass (strez)"]
+    n5["5 Gated 6: Firewall lesa (gated)"]
+    n6["6 Touch Grass (informace)"]
+    n7["7 Obchodník 19: Pán &#x27;Touch Grass&#x27; (obchodnik)"]
+    n8["8 Onboarding 1: Kicknut z Lobby (onboarding)"]
+    n9["9 smycka 20 (smycka)"]
+    n10["10 slepa 9 (slepa)"]
+    n11(("11 Cíl 12: Offline (cil)"))
+    n12["12 Postava 10: Zrcadlový Dvořák (postava)"]
+    n13["13 jednosmer 21 (jednosmer)"]
+    n14["14 Léčitel #13 (lecitel)"]
+    n15["15 informace 17 (informace)"]
+    n16["16 Postava 8: Offline Oracle (postava)"]
+    n17["17 Rozcestí 2: Touch Grass (rozcesti)"]
+    n18["18 Postava 7: Glitch v trávě (postava)"]
+    n19["19 Slepá ulička #15 (slepa)"]
+    n20["20 gated 18 (gated)"]
+    n21["21 strez 5 (strez)"]
+    n8 --> n17
+    n17 --> n1
+    n17 --> n6
+    n17 --> n14
+    n1 --> n21
+    n6 --> n21
+    n21 --> n5
+    n5 --> n18
+    n18 --> n12
+    n18 --> n10
+    n16 --> n3
+    n10 --> n18
+    n12 --> n16
+    n3 --> n11
+    n14 --> n2
+    n14 --> n19
+    n2 --> n4
+    n19 --> n14
+    n4 --> n15
+    n4 --> n20
+    n15 --> n2
+    n20 --> n7
+    n7 --> n9
+    n9 --> n13
+    n9 --> n4
+    n13 --> n18
+    classDef side fill:#eee,stroke:#999,stroke-dasharray: 5 5;
+    classDef aha fill:#ffd54f,stroke:#c00,stroke-width:3px;
+    class n14,n2,n19,n4,n15,n20,n7,n9,n13 side;
+    class n12 aha;

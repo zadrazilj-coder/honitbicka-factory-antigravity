@@ -32,7 +32,11 @@ def export_twee(mapa: Mapa, karty: list[Karta] | None = None, *, nazev: str = ""
     atmosféru, úvod a texty voleb. Odkaz `[[text->cíl]]` vzniká z hran grafu —
     stejný zdroj jako tištěná navigace."""
     karty_dle_cisla = {k.cislo: k for k in (karty or [])}
-    jmena = {u.cislo: _nazev_pasaze(u.cislo, u.nazev) for u in mapa.uzly}
+    karty_by_cislo = {k.cislo: k for k in karty} if karty else {}
+    jmena = {
+        u.cislo: _nazev_pasaze(u.cislo, karty_by_cislo[u.cislo].nazev if (u.cislo in karty_by_cislo and karty_by_cislo[u.cislo].nazev) else u.nazev)
+        for u in mapa.uzly
+    }
     radky: list[str] = [
         f":: StoryTitle\n{nazev or 'HONBIČKA'}\n",
         ':: StoryData\n{"ifid": "00000000-0000-4000-8000-000000000000", '
@@ -66,12 +70,15 @@ def export_twee(mapa: Mapa, karty: list[Karta] | None = None, *, nazev: str = ""
     return "\n".join(radky)
 
 
-def export_mermaid(mapa: Mapa) -> str:
+def export_mermaid(mapa: Mapa, karty: list[Karta] | None = None) -> str:
     """Mermaid `flowchart TD`: uzly s typem, hrany s podmínkami, zvýrazněný
     AHA uzel a odlišené SIDE uzly (jen 60min)."""
+    karty_by_cislo = {k.cislo: k for k in karty} if karty else {}
     radky = ["flowchart TD"]
     for u in sorted(mapa.uzly, key=lambda x: x.cislo):
-        popisek = _html.escape(f"{u.cislo} {u.nazev} ({u.typ.value})", quote=True)
+        karta = karty_by_cislo.get(u.cislo)
+        nazev = karta.nazev if (karta and karta.nazev) else u.nazev
+        popisek = _html.escape(f"{u.cislo} {nazev} ({u.typ.value})", quote=True)
         popisek = popisek.replace('"', "'")
         if u.typ == TypUzlu.CIL:
             radky.append(f'    n{u.cislo}(("{popisek}"))')

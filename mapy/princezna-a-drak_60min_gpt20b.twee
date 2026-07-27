@@ -75,7 +75,7 @@ Princezna se vydala po louce, když najednou uslyšela zpěv z dálky. Před ní
 [[A) Vložíš krystalový klíč do rytmu písně.->17 strez 16]]
 [[B) Zpíváš píseň bez klíče, nechej melodií naplnit vzduch.->17 strez 16]]
 
-:: 13 Princezna a drak (13) [postava CORE AHA] {"position":"540,420"}
+:: 13 Princezna a drak [postava CORE AHA] {"position":"540,420"}
 //Všechno se zdá být klidné, když se prohledáváš lesní průsmyk, ale v dálce šeří světlo na zlaté křídle draka. Jeho dech horký, a tenkou vrstvu rosy rozplývá po stromech. Všude je šepot ptáků, ale zároveň se cítíš jako by tě někoho sledoval v tichu. Tvé srdce buší rychleji, když víš, že za tím hřejivým zábleskem leží tajemství království.//
 Princezna Alia stála u hradeb, když se před ní objevil starý mluvčí s dlouhými šedivými vlasy. Z jeho slova vycházel klid: drak je ochránce království, ne zlovolný tvor. Ale když se podívala na hrozivé křídlo, zistila, že za ochrannou maskou skrývá něco mocnějšího.
 [[A) Pomalu přistoupíš k drakovi a nabídneš mu krystalový klíč, který jsi objevila v truhle->19 Postava 8: Princese a drak]]
@@ -96,7 +96,7 @@ Když se blížíš k obličejům staré brány, slyšíš jemné dýchání dra
 :: 16 Princezna a Drak [postava CORE] {"position":"100,580"}
 //Všední dny v království se proměnily ve vzrušení, když tě lesní duch provede mezi stromy a šeptem šelesty. Jeho oči září světlem, které ti naznačuje, že lucerna a mince otevřou tajný průchod. V kapse pocítíš chlad prachu a slyšíš dýchání draka se ozývá v dálce; jeho hlas zní jako tiché humorné šramotnutí.//
 Stojíš před starobylým hradem z kamene a v kapse držíš lucernu i minci. Lesní duch ti šepne, že spojení těchto dvoch otevře tajný průchod k krystalovému klíči. V dálce se ozývá smích princezny, která tě vítá s úsměvem a připravuje na výstup před drakem.
-[[A) Otevři tajný průchod pomocí lucerny a mince, aby ses dostala k krystalovému klíči.->13 Princezna a drak (13)]]
+[[A) Otevři tajný průchod pomocí lucerny a mince, aby ses dostala k krystalovému klíči.->13 Princezna a drak]]
 [[B) Sleduj stopu v mlze a přidej se k slepě, která ti ukáže cestu do jeskyně.->7 Slepa 9]]
 
 :: 17 strez 16 [strez SIDE] {"position":"320,580"}

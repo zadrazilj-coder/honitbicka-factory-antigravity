@@ -1,0 +1,50 @@
+flowchart TD
+    n1["1 onboarding 1 (onboarding)"]
+    n2["2 rozcesti 2 (rozcesti)"]
+    n3["3 informace 3 (informace)"]
+    n4["4 informace 4 (informace)"]
+    n5["5 strez 5 (strez)"]
+    n6["6 gated 6 (gated)"]
+    n7["7 rozcesti 7 (rozcesti)"]
+    n8["8 postava 8 (postava)"]
+    n9["9 slepa 9 (slepa)"]
+    n10["10 prechod 10 (prechod)"]
+    n11["11 smycka 11 (smycka)"]
+    n12(("12 cil 12 (cil)"))
+    n13["13 rozcesti 13 (rozcesti)"]
+    n14["14 sber 14 (sber)"]
+    n15["15 slepa 15 (slepa)"]
+    n16["16 strez 16 (strez)"]
+    n17["17 informace 17 (informace)"]
+    n18["18 gated 18 (gated)"]
+    n19["19 obchodnik 19 (obchodnik)"]
+    n20["20 smycka 20 (smycka)"]
+    n21["21 jednosmer 21 (jednosmer)"]
+    n1 --> n2
+    n2 --> n3
+    n2 --> n4
+    n2 --> n13
+    n3 --> n5
+    n4 --> n5
+    n5 --> n6
+    n6 --> n7
+    n7 --> n10
+    n7 --> n9
+    n8 --> n11
+    n9 --> n7
+    n10 --> n8
+    n11 --> n12
+    n13 --> n14
+    n13 --> n15
+    n14 --> n16
+    n15 --> n13
+    n16 --> n17
+    n17 --> n18
+    n18 --> n19
+    n19 --> n20
+    n20 --> n21
+    n21 --> n7
+    classDef side fill:#eee,stroke:#999,stroke-dasharray: 5 5;
+    classDef aha fill:#ffd54f,stroke:#c00,stroke-width:3px;
+    class n13,n14,n15,n16,n17,n18,n19,n20,n21 side;
+    class n8 aha;

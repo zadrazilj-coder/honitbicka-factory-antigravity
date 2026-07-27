@@ -98,6 +98,8 @@ def nacti_detail_hry(slug: str) -> dict | None:
         return None
 
     detail = {"slug": slug}
+    from honbicka.modely import Mapa, Karta
+    from honbicka.export import export_mermaid, export_twee
 
     for f_name, key in [
         ("koncept.md", "koncept"),
@@ -132,6 +134,19 @@ def nacti_detail_hry(slug: str) -> dict | None:
                             "cesta": rel_path.replace("\\", "/")
                         })
     detail["soubory"] = pdf_list
+
+    # Dynamic Mermaid & Twee rendering with real story card titles
+    if "mapa_json" in detail:
+        try:
+            mapa_obj = Mapa.model_validate(detail["mapa_json"]) if isinstance(detail["mapa_json"], dict) else Mapa.model_validate_json(detail["mapa_json"])
+            karty_objs = None
+            if "karty" in detail and isinstance(detail["karty"], list):
+                karty_objs = [Karta.model_validate(k) for k in detail["karty"]]
+            detail["mermaid"] = export_mermaid(mapa_obj, karty_objs)
+            detail["twee"] = export_twee(mapa_obj, karty_objs, nazev=slug)
+        except Exception as e:
+            pass
+
     return detail
 
 
